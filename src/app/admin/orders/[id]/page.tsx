@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { getOrderDetail } from "@/modules/admin";
 import { noShowAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
@@ -16,7 +16,7 @@ const KIND: Record<string, string> = {
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireRole("admin");
+  await requireView(P.ordersView);
   const d = await getOrderDetail(id);
   if (!d) notFound();
 

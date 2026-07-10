@@ -2458,6 +2458,98 @@ export type Database = {
           },
         ]
       }
+      staff_login_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          ip_address: string | null
+          staff_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          ip_address?: string | null
+          staff_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          ip_address?: string | null
+          staff_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_login_events_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_members: {
+        Row: {
+          created_at: string
+          department: string | null
+          id: string
+          invited_by: string | null
+          last_login_at: string | null
+          permissions: string[]
+          staff_role: Database["public"]["Enums"]["staff_role"]
+          status: string
+          two_factor_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          invited_by?: string | null
+          last_login_at?: string | null
+          permissions?: string[]
+          staff_role: Database["public"]["Enums"]["staff_role"]
+          status?: string
+          two_factor_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          invited_by?: string | null
+          last_login_at?: string | null
+          permissions?: string[]
+          staff_role?: Database["public"]["Enums"]["staff_role"]
+          status?: string
+          two_factor_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       provider_ratings: {
@@ -2499,6 +2591,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_feature_enabled: { Args: { flag_key: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       my_provider_id: { Args: never; Returns: string }
       my_rider_id: { Args: never; Returns: string }
       owns_booking_as_customer: {
@@ -2546,6 +2639,7 @@ export type Database = {
         Args: { body: string }
         Returns: Database["public"]["Enums"]["moderation_flag_reason"][]
       }
+      staff_has_permission: { Args: { perm: string }; Returns: boolean }
     }
     Enums: {
       booking_status:
@@ -2617,6 +2711,14 @@ export type Database = {
         | "delivered"
         | "returned"
         | "cancelled"
+      staff_role:
+        | "super_admin"
+        | "rider_operations"
+        | "service_vendor_manager"
+        | "product_vendor_manager"
+        | "customer_support"
+        | "finance"
+        | "marketing"
       user_role: "admin" | "provider" | "customer" | "rider"
       vehicle_type: "bike" | "car" | "van"
       verification_status:
@@ -2829,6 +2931,15 @@ export const Constants = {
         "delivered",
         "returned",
         "cancelled",
+      ],
+      staff_role: [
+        "super_admin",
+        "rider_operations",
+        "service_vendor_manager",
+        "product_vendor_manager",
+        "customer_support",
+        "finance",
+        "marketing",
       ],
       user_role: ["admin", "provider", "customer", "rider"],
       vehicle_type: ["bike", "car", "van"],

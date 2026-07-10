@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listOrders } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
@@ -10,7 +10,7 @@ const STATUSES = ["paid_held", "accepted", "in_progress", "completed", "cancelle
 
 /** Order monitoring. PRD Section 12. */
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  await requireRole("admin");
+  await requireView(P.ordersView);
   const { status } = await searchParams;
   const orders = await listOrders(status);
 

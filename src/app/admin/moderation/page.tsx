@@ -1,4 +1,4 @@
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listFlags } from "@/modules/admin";
 import { flagToStrikeAction, resolveFlagAction } from "@/modules/admin/actions";
 import { Card, PageHeader } from "@/components/ui";
@@ -16,7 +16,7 @@ const REASON: Record<string, string> = {
  * anti-poaching consequence, the same structure as a no-show.
  */
 export default async function ModerationPage() {
-  await requireRole("admin");
+  await requireView(P.moderationView);
   const [pending, confirmed] = await Promise.all([listFlags("pending"), listFlags("confirmed")]);
 
   return (

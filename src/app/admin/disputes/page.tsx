@@ -1,4 +1,4 @@
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listDisputes } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
@@ -6,7 +6,7 @@ import { DisputeActions } from "./dispute-actions";
 
 /** Disputes queue. PRD Sections 10, 12. Includes caution-fee damage claims. */
 export default async function DisputesPage() {
-  await requireRole("admin");
+  await requireView(P.disputesView);
   const disputes = await listDisputes();
 
   return (

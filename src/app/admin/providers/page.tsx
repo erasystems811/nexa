@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listProviders } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 import { AddProvider } from "./add-provider";
@@ -13,7 +13,7 @@ export default async function ProvidersPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireRole("admin");
+  await requireView(P.providersView);
   const { status } = await searchParams;
   const providers = await listProviders(status);
 

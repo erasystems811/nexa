@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { requireRole } from "@/modules/auth";
+import { requireStaff } from "@/modules/admin";
 import { adminDashboard } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
 /** Admin dashboard. PRD Section 12. */
 export default async function AdminDashboard() {
-  await requireRole("admin");
+  await requireStaff();
   const d = await adminDashboard();
 
   const queues = [

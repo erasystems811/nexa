@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/modules/auth";
+import { requirePermission, PERMISSIONS as P } from "@/modules/admin";
 import {
   setFlag,
   updateSetting,
@@ -24,13 +24,13 @@ export async function toggleFlagAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { profile } = await requireRole("admin");
+  const userId = await requirePermission(P.settingsManage);
 
   const key = String(formData.get("key")) as FlagKey;
   const enabled = formData.get("enabled") === "true";
 
   try {
-    await setFlag(key, enabled, { id: profile.id, role: profile.role });
+    await setFlag(key, enabled, { id: userId, role: "admin" });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not update the flag" };
   }
@@ -44,9 +44,12 @@ export async function updateSettingAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { profile } = await requireRole("admin");
-
+  // Commission is the most sensitive setting; it needs the commission permission.
   const key = String(formData.get("key")) as SettingKey;
+  const userId = await requirePermission(
+    key === "commission_percent" ? P.settingsCommission : P.settingsManage,
+  );
+
   const raw = String(formData.get("value") ?? "");
   const value = Number(raw);
 
@@ -55,7 +58,7 @@ export async function updateSettingAction(
   }
 
   try {
-    await updateSetting(key, value, { id: profile.id, role: profile.role });
+    await updateSetting(key, value, { id: userId, role: "admin" });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not update the setting" };
   }

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { getProviderDetail } from "@/modules/admin";
 import {
   featureProviderAction,
@@ -14,7 +14,7 @@ import { ApproveProvider } from "./approve-provider";
 
 export default async function ProviderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireRole("admin");
+  await requireView(P.providersView);
   const d = await getProviderDetail(id);
   if (!d) notFound();
 

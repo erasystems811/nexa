@@ -15,6 +15,18 @@
  * automatically — removal is always a manual decision (Section 05).
  */
 export { AdminError, audit } from "./context";
+export {
+  PERMISSIONS, PERMISSION_LABELS, ALL_PERMISSIONS,
+  STAFF_ROLES, STAFF_ROLE_LABELS, ROLE_BUNDLES, bundleFor,
+  type Permission, type StaffRole,
+} from "./permissions";
+export {
+  currentStaff, requireStaff, requirePermission, requireView, can,
+  listStaff, getStaffMember, inviteStaff, setStaffRole,
+  toggleStaffPermission, setStaffStatus, recordLogin,
+  staffActivity, activityFeed,
+  type StaffContext,
+} from "./staff";
 export { adminDashboard } from "./dashboard";
 export {
   listProviders, getProviderDetail, approveProvider, rejectProvider,

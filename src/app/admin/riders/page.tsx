@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listRiders } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 
@@ -8,7 +8,7 @@ const STATUSES = ["pending", "approved", "suspended", "rejected"] as const;
 
 /** Rider management. PRD Sections 12, 15. */
 export default async function RidersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  await requireRole("admin");
+  await requireView(P.ridersView);
   const { status } = await searchParams;
   const riders = await listRiders(status);
 

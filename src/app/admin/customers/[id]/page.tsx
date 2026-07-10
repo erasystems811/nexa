@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { getCustomerDetail } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireRole("admin");
+  await requireView(P.customersView);
   const d = await getCustomerDetail(id);
   if (!d) notFound();
 

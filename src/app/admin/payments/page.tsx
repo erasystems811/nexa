@@ -1,4 +1,4 @@
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { paymentOverview, recentLedger, pendingPayouts } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
@@ -10,7 +10,7 @@ const KIND: Record<string, string> = {
 
 /** Payment management. PRD Sections 10, 12. */
 export default async function PaymentsPage() {
-  await requireRole("admin");
+  await requireView(P.paymentsView);
   const [o, ledger, payouts] = await Promise.all([paymentOverview(), recentLedger(60), pendingPayouts()]);
 
   return (

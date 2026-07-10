@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { getRiderDetail } from "@/modules/admin";
 import { suspendRiderAction, verifyRiderAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
@@ -8,7 +8,7 @@ import { ActionButton } from "../../action-button";
 
 export default async function RiderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireRole("admin");
+  await requireView(P.ridersView);
   const d = await getRiderDetail(id);
   if (!d) notFound();
 

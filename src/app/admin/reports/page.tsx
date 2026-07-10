@@ -1,11 +1,11 @@
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { reports } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
 /** Reports. PRD Section 12. */
 export default async function ReportsPage() {
-  await requireRole("admin");
+  await requireView(P.reportsView);
   const r = await reports();
 
   return (

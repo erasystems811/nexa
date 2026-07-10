@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listCustomers } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 
 /** Customer management. PRD Section 12. */
 export default async function CustomersPage() {
-  await requireRole("admin");
+  await requireView(P.customersView);
   const customers = await listCustomers();
 
   return (

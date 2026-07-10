@@ -1,4 +1,4 @@
-import { requireRole } from "@/modules/auth";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listingQueue } from "@/modules/admin";
 import { decideListingAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
@@ -7,7 +7,7 @@ import { ActionButton } from "../action-button";
 
 /** Listing approval queue. PRD Section 06, 12. */
 export default async function ListingsQueuePage() {
-  await requireRole("admin");
+  await requireView(P.listingsView);
   const queue = await listingQueue();
 
   return (

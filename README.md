@@ -6,12 +6,23 @@ Nexa holds the money until the job is done.
 The product spec is [`PRD.md`](./PRD.md). Every non-obvious decision in this
 codebase cites the section it came from.
 
-## Status: V1 foundation complete (Roadmap Phase 1)
+## Status: V1 foundation complete (Roadmap Phase 1) + staff RBAC
 
 All four apps and the Admin Console are built and verified against the live
 project. Not started, by design: Plan My Event, Event Stand Mode, multi-city.
 
 Built:
+
+- **Staff roles & permissions** (Addendum v1.1 §4). Every teammate has their own
+  login — no shared admin account. Named roles (Super Admin, Rider Ops, Service
+  / Product Vendor Manager, Support, Finance, Marketing) each seed a default set
+  of *views*, and a Super Admin can grant or revoke any individual view per
+  person on top of that. Authorisation is permission-based, checked in the
+  database and again in every server action, so a Finance staffer cannot approve
+  a vendor and Support cannot see revenue — hidden tab *and* refused endpoint.
+  Suspending an account strips all access. Every action is written to an audit
+  log tied to the account that performed it, viewable as an Activity feed and
+  per-person; each staff account has visible login history.
 
 - **Admin Console** (Section 12). Dashboard; provider management (add manually,
   approve with terms, suspend, feature, remove); rider management (verify,
@@ -100,6 +111,7 @@ npm run e2e:marketplace   # 49 assertions across both fulfillment paths
 npm run e2e:studio        # 21 assertions on provider boundaries
 npm run e2e:rider         # 31 assertions across delivery + return + damage
 npm run e2e:admin         # 24 assertions on the admin workflows
+npm run e2e:staff         # 17 assertions on staff roles & permissions
 npm run e2e:purge         # remove leftover e2e-* rows afterwards
 ```
 

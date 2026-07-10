@@ -1,4 +1,5 @@
 import { getFlags, getSettings } from "@/modules/settings";
+import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 import { FlagToggle } from "./flag-toggle";
 import { SettingRow } from "./setting-row";
@@ -10,6 +11,7 @@ import { SettingRow } from "./setting-row";
  * here and nowhere else. There is no constant for any of them in the codebase.
  */
 export default async function AdminSettingsPage() {
+  await requireView(P.settingsManage);
   const [settings, flags] = await Promise.all([getSettings(), getFlags()]);
 
   return (
