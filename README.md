@@ -6,9 +6,20 @@ Nexa holds the money until the job is done.
 The product spec is [`PRD.md`](./PRD.md). Every non-obvious decision in this
 codebase cites the section it came from.
 
-## Status: Phase 1 foundation
+## Status: Phase 1 foundation + in-app communication
 
 Built:
+
+- **In-app chat and masked calling** (Section 08). Customer ↔ provider chat tied
+  to a listing or booking, realtime, shared by the Marketplace and Business
+  Studio. Calls bridge through proxy numbers — neither side ever sees the
+  other's real number, and `provider_contacts` keeps those numbers behind a
+  row-level policy rather than a column grant.
+- **Contact-info flagging.** Messages are scanned in a database trigger for
+  phone numbers, bank account numbers, and off-platform solicitation. A flagged
+  message still sends; Admin reviews it at `/admin/moderation`. Confirming a flag
+  records it against the sender and does not create a strike — that stays an
+  Admin judgment call (Section 05).
 
 - **Project structure** — one module per domain (PRD Section 17), with the
   architectural boundaries enforced by ESLint rather than convention. See
@@ -24,8 +35,19 @@ Built:
 - **Payments behind an interface** — `holdFunds`, `releaseFunds`, `refund`.
   Nothing outside `modules/payments` can reach a processor.
 
-Not built yet, by design: listings, bookings, payments flows, chat, the rider
-flow, and every marketplace screen.
+Not built yet, by design: listings, bookings, payments flows, the rider flow, and
+every marketplace screen.
+
+### Verifying the communication layer
+
+```bash
+npm run e2e:messaging
+```
+
+Creates three throwaway accounts against the live project, drives chat, flagging,
+isolation, and masked calling through the real module and the real RLS policies,
+then deletes them. 31 assertions. It found two genuine leaks the first time it
+ran, which is the only reason to trust the ones that pass now.
 
 ## Getting started
 

@@ -15,6 +15,13 @@ const serverSchema = z.object({
   FLUTTERWAVE_SECRET_KEY: z.string().optional(),
   FLUTTERWAVE_ENCRYPTION_KEY: z.string().optional(),
   FLUTTERWAVE_WEBHOOK_SECRET: z.string().optional(),
+
+  // Masked calling. "mock" until a provider account and a proxy number pool
+  // exist (PRD Section 08).
+  TELEPHONY_PROVIDER: z.enum(["mock", "africastalking"]).default("mock"),
+  TELEPHONY_API_KEY: z.string().optional(),
+  TELEPHONY_USERNAME: z.string().optional(),
+  TELEPHONY_WEBHOOK_SECRET: z.string().optional(),
 });
 
 // Next.js inlines NEXT_PUBLIC_* only when referenced statically, so these cannot

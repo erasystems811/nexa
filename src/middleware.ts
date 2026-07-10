@@ -15,6 +15,10 @@ const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> =
   { prefix: "/studio", roles: ["provider"] },
   { prefix: "/rider", roles: ["rider"] },
   { prefix: "/account", roles: ["customer", "provider", "rider", "admin"] },
+  // Messaging is shared by the Marketplace and Business Studio (PRD Section 08),
+  // so it is not nested under either surface. RLS decides which conversations
+  // each of them can see.
+  { prefix: "/messages", roles: ["customer", "provider", "admin"] },
 ];
 
 const AUTH_ROUTES = ["/login", "/register"];

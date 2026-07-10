@@ -16,6 +16,9 @@ export default async function AdminLayout({
             Nexa Admin
           </Link>
           <nav className="flex items-center gap-4 text-sm">
+            <Link href="/admin/moderation" className="underline">
+              Moderation
+            </Link>
             <Link href="/admin/settings" className="underline">
               Settings
             </Link>

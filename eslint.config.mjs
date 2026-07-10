@@ -36,7 +36,7 @@ const config = [
    */
   {
     files: ["src/**/*.{ts,tsx}"],
-    ignores: ["src/modules/payments/**"],
+    ignores: ["src/modules/payments/**", "src/modules/messaging/**"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -56,6 +56,28 @@ const config = [
             {
               group: ["@/modules/payments/service", "@/modules/payments/calculations"],
               message: "Import from '@/modules/payments', not from its internals.",
+            },
+            {
+              // A telephony adapter takes real phone numbers as arguments. Only
+              // modules/messaging is allowed to hold one (PRD Section 08).
+              group: [
+                "**/modules/messaging/telephony",
+                "**/modules/messaging/telephony/*",
+                "@/modules/messaging/telephony",
+                "@/modules/messaging/telephony/*",
+              ],
+              message:
+                "The telephony provider is private to modules/messaging (PRD Section 08): " +
+                "it handles real phone numbers. Import startMaskedCall from '@/modules/messaging'.",
+            },
+            {
+              group: [
+                "@/modules/messaging/calls",
+                "@/modules/messaging/messages",
+                "@/modules/messaging/conversations",
+                "@/modules/messaging/moderation",
+              ],
+              message: "Import from '@/modules/messaging', not from its internals.",
             },
           ],
         },
