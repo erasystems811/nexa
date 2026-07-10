@@ -13,52 +13,32 @@ import type {
 } from "./types";
 
 /**
- * In-memory gateway for development and tests.
+ * Stateless mock gateway for development, tests, and the pre-Flutterwave demo.
  *
  * This is the default (PAYMENT_GATEWAY=mock) and stays the default until
  * Flutterwave confirms their escrow product is approved for Nexa's account —
  * PRD Section 20 lists that as the one open founder decision, and until it
  * closes, no real money should be routed anywhere.
+ *
+ * Deliberately holds NO in-memory state: every hold succeeds and every release
+ * and refund is accepted. Balance integrity is not the gateway's job here — the
+ * payments service enforces it against the database (held_kobo, released_kobo,
+ * the delivery-fee budget, the stage-released timestamps), which is the real
+ * source of truth. An in-memory ledger would also not survive a serverless
+ * deployment, where each request may run in a fresh instance.
  */
 export class MockGateway implements PaymentGateway {
   readonly name = "mock";
 
-  private readonly held = new Map<string, number>();
-  private readonly seenIdempotencyKeys = new Set<string>();
-
-  async holdFunds(request: HoldFundsRequest): Promise<HoldFundsResult> {
-    const gatewayReference = `mock_${randomUUID()}`;
-    const total =
-      request.amountKobo + (request.cautionFeeKobo ?? 0) + (request.deliveryFeeKobo ?? 0);
-    this.held.set(gatewayReference, total);
-    return { gatewayReference, status: "held" };
+  async holdFunds(_request: HoldFundsRequest): Promise<HoldFundsResult> {
+    return { gatewayReference: `mock_${randomUUID()}`, status: "held" };
   }
 
   async releaseFunds(request: ReleaseFundsRequest): Promise<ReleaseFundsResult> {
-    // Mirrors the real contract: a repeated key is a no-op, not a second payout.
-    if (this.seenIdempotencyKeys.has(request.idempotencyKey)) {
-      return { gatewayReference: request.gatewayReference, status: "released" };
-    }
-    this.seenIdempotencyKeys.add(request.idempotencyKey);
-
-    const balance = this.held.get(request.gatewayReference) ?? 0;
-    if (request.amountKobo > balance) {
-      throw new Error(
-        `Mock gateway: cannot release ${request.amountKobo} from a hold of ${balance}`,
-      );
-    }
-    this.held.set(request.gatewayReference, balance - request.amountKobo);
     return { gatewayReference: request.gatewayReference, status: "released" };
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
-    if (this.seenIdempotencyKeys.has(request.idempotencyKey)) {
-      return { gatewayReference: request.gatewayReference, status: "refunded" };
-    }
-    this.seenIdempotencyKeys.add(request.idempotencyKey);
-
-    const balance = this.held.get(request.gatewayReference) ?? 0;
-    this.held.set(request.gatewayReference, Math.max(0, balance - request.amountKobo));
     return { gatewayReference: request.gatewayReference, status: "refunded" };
   }
 
