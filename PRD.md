@@ -1,6 +1,6 @@
 # NEXA
 
-### P O W E R E D B Y E R A
+### Powered by ERA
 
 *Product Requirements Document*
 
@@ -46,6 +46,10 @@ Nexa is an event supply marketplace --- a commerce platform, not a planning tool
 
 There is no fixed launch category list. Categories are fully open and admin-managed from day one --- Admin adds a category the moment the first real, verified provider in that category is onboarded. Whichever category brings the first trustworthy provider becomes the first live category.
 
+### What Building Nexa Actually Means
+
+The platform is the structure, not the supply. Finding real vendors and riders, convincing them to sign up, and building the trust that makes the marketplace work is manual operational work --- done by the founder and team, one onboarding at a time. Nexa\'s job is to be ready to support each one the moment they\'re found: registration, verification, listings, bookings, payments, all already working. The build should stay at this base-platform level; it should not try to automate vendor or rider discovery, sourcing, or recruitment --- that is deliberately a human job, not a feature.
+
 ## 02 PRODUCT ARCHITECTURE
 
 Nexa is four applications sharing one backend, one provider database, and one booking/payment engine: one core platform, role-specific surfaces on top.
@@ -78,21 +82,23 @@ Nexa is four applications sharing one backend, one provider database, and one bo
 
 ## 04 CORE DATA OBJECTS
 
--   Category --- dynamic, admin-managed, never hardcoded. Every category is tagged as either a physical-goods category (uses the rider network) or a service category (provider attends in person).
+-   Category --- dynamic, admin-managed, never hardcoded. Every category is tagged with one of four fulfillment types: Delivery, Delivery + Return, On-site Service, or Vendor-Location Service (Section 10).
 
 -   Provider --- business profile, verification status, documents, reliability score, wallet.
 
 -   Listing --- belongs to a provider and a category; has price, payment type (full or deposit), media, availability, and approval status.
 
--   Booking --- a single customer-provider transaction with a lifecycle state, a delivery confirmation code, and a payment record.
+-   Booking --- a single customer-provider transaction with a lifecycle state, one or two delivery confirmation codes depending on fulfillment type, and a payment record with a stage-1 and stage-2 release.
 
--   Delivery Confirmation Code --- a unique code generated per booking and given to the customer. Whoever completes the job --- the rider for goods, the provider for services --- enters this code to mark the booking delivered/completed, which is what triggers payment release.
+-   Delivery Confirmation Code --- a unique code per stage, shown only to the customer. Delivery and service bookings generate one code; Delivery + Return bookings generate two (drop-off and return). Whoever completes that stage --- rider or provider --- enters the code to trigger that stage\'s payment release.
 
--   Rider --- registered independently of providers, with their own vehicle; assigned to physical-goods bookings only, never to service bookings.
+-   Rider --- registered independently of providers, with a declared vehicle type (bike, car, or van/bus); assigned to Delivery and Delivery + Return bookings only, never to service bookings.
+
+-   Caution Fee --- a separate held deposit on Delivery + Return bookings, refunded to the customer at return or partially claimed by Admin decision if the item is damaged (Section 10).
 
 -   Event Project --- groups multiple bookings under one customer event (used by Plan My Event), with a shared checklist and a single status dashboard.
 
--   Payment record --- tracks the amount held, the single release on confirmed delivery, commission, and any penalty deductions.
+-   Payment record --- tracks the amount held, stage-1 and stage-2 releases, commission, and any penalty deductions.
 
 -   Review --- structured ratings (quality, punctuality, communication, value) tied to a completed booking only.
 
@@ -124,7 +130,7 @@ No provider appears publicly without manual review. This is non-negotiable in th
 
 -   Bank account number and BVN, cross-checked against each other --- confirms the account genuinely belongs to the person or business claiming it, not a mismatched or borrowed account.
 
--   Live verification --- a short video call or selfie-with-ID at onboarding, since submitted documents alone can be forged or borrowed.
+-   Live verification --- a selfie-with-ID at onboarding, since a submitted document alone can be forged or borrowed.
 
 -   Physical address or business location --- a GPS-tagged photo at minimum; a one-time physical visit for higher-value categories.
 
@@ -218,9 +224,9 @@ Not every category has a fixed price. Decor, catering, and bespoke packages ofte
 
 The deeper defence isn\'t the flag itself --- it\'s making the protections Nexa provides (held payment, dispute resolution, review history) something both sides don\'t want to risk losing. The flagging system exists to catch and discourage the obvious attempts, not to pretend it stops every handshake.
 
-  -------------------------------------------------------------------------------------------------------------------------------------------------
+  ---------------------------------------------------------------------------------------------------------------------------------
 ### State**        **Meaning
-  ---------------- --------------------------------------------------------------------------------------------------------------------------------
+  ---------------- ----------------------------------------------------------------------------------------------------------------
   Pending          Customer has requested; provider has not yet responded
 
   Accepted         Provider confirmed; customer\'s fast full-refund window closes
@@ -229,14 +235,14 @@ The deeper defence isn\'t the flag itself --- it\'s making the protections Nexa 
 
   Paid / Held      Full payment confirmed and held by Nexa --- nothing is released yet
 
-  In Progress      Provider has begun the job (goods: rider assigned and en route; services: provider checked in)
+  In Progress      Stage 1 checkpoint passed (rider picked up / dropped off, or provider checked in) --- stage 1 payment released
 
-  Completed        Customer\'s delivery confirmation code has been entered and verified; full payment releases to the provider in one transaction
+  Completed        Final delivery/return/service code entered and verified; stage 2 payment releases
 
   Cancelled        Refund calculated per the cancellation policy stage
 
   Disputed         Escalated to Admin for manual resolution
-  -------------------------------------------------------------------------------------------------------------------------------------------------
+  ---------------------------------------------------------------------------------------------------------------------------------
 
 ### Cancellation Policy
 
@@ -248,19 +254,41 @@ The deeper defence isn\'t the flag itself --- it\'s making the protections Nexa 
 
 ## 10 PAYMENT & ESCROW MODEL
 
-> *Customers never pay providers directly. Full payment is held by Nexa and released once delivery is confirmed --- in one payment, not in stages.*
+> *Customers never pay providers directly. Nexa holds the money and releases it in stages, tied to real checkpoints --- never on a provider or rider simply tapping "done."*
 
-This is the founder\'s explicit decision: there is no partial or milestone-based release. Nexa holds 100% of the payment from the moment the customer pays until the job is verified complete, then releases the full amount (minus commission and any penalty) in a single transaction. Everything else --- deposits, penalties --- sits on top of this simple rule, not instead of it.
+Not every category fulfils the same way, so payment can\'t release on one fixed trigger. Nexa recognises four fulfillment types, set at the Category level, each with its own version of the same underlying rule: money moves only when a real, verifiable checkpoint has passed.
+
+### Fulfillment Types & Payment Stages
+
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+### Type**                  **Examples**                                    **Stage 1 (partial release)**             **Stage 2 (remainder)
+  ------------------------- ----------------------------------------------- ----------------------------------------- ------------------------------------------------------------------
+  Delivery                  Cake, small drinks order, small decor           Rider picks up from provider              Customer\'s delivery code, entered on drop-off
+
+  Delivery + Return         Chairs, tables, canopies, sound equipment       Rider drops off --- customer\'s code #1   Rider picks item back up after the event --- customer\'s code #2
+
+  On-site service           DJ, MC, photographer, decorator                 Provider checks in at the venue           Customer\'s code, given at end of service
+
+  Vendor-location service   Studio makeup trial, self-drive rental pickup   Provider accepts the booking              Customer\'s code, given on arrival and service
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+The stage-1 release percentage is an Admin Console setting, not hardcoded --- it applies as a platform default across all fulfillment types unless a provider has a recorded override.
+
+### Caution Fee (Delivery + Return only)
+
+Rented items carry damage risk the moment they leave the provider\'s hands. For Delivery + Return bookings, a separate Caution Fee is collected from the customer at checkout, alongside the normal payment, and held apart from the regular escrow flow --- it is not part of the provider\'s payout calculation.
+
+-   If the item is returned in good condition, the full Caution Fee is refunded to the customer once the return code is confirmed.
+
+-   If damage is reported at return, Admin reviews the case and can deduct from the Caution Fee to compensate the provider, refunding any remainder to the customer. This is a manual Admin decision, not an automatic deduction --- damage claims need a human look, not a rule.
+
+### Delivery Fee
+
+Delivery fee is set by Nexa, not the provider --- this keeps it consistent and prevents providers from quietly pricing out riders. V1 uses a flat delivery fee stored as an Admin Console setting. Distance-based calculation is a real improvement worth making, but it needs a distance/mapping mechanism and is a Phase 2+ upgrade, not a V1 blocker --- launch with a flat default and revisit once volume justifies the added complexity.
 
 ### Delivery Confirmation Code
 
-Every booking generates a unique code, shown only to the customer. This is the single trigger for payment release, and it works differently depending on the category:
-
--   Physical goods --- the assigned rider asks the customer for the code on drop-off and enters it in the Rider App. This is the same pattern that makes delivery platforms like Chowdeck trustworthy: nobody can falsely claim a delivery happened.
-
--   Services --- the customer gives the provider the code once the service is satisfactorily delivered (e.g. at the end of the DJ set, on handover of the decorated venue).
-
--   Entering the correct code is what moves the booking to Completed and releases payment --- not a provider or rider simply tapping "done."
+Every booking generates a unique code, shown only to the customer (Delivery + Return bookings generate two: one for drop-off, one for return). This is what actually moves a stage forward --- never a rider or provider simply marking something done.
 
 ### Commission
 
@@ -272,7 +300,7 @@ There is no platform-wide deposit default. Each provider\'s deposit percentage i
 
 ### Late & No-Show Penalties
 
-The standard Provider Agreement every provider signs at onboarding sets a default penalty of 1% of the booking value deducted per 30 minutes late. This is the platform default for all providers; Admin can record a negotiated override for an individual provider where one has been agreed. Penalties are deducted from the single payout at release --- they don\'t require a separate transaction.
+The standard Provider Agreement every provider signs at onboarding sets a default penalty of 1% of the booking value deducted per 30 minutes late. This is the platform default for all providers; Admin can record a negotiated override for an individual provider where one has been agreed.
 
   -------------------------------------------------------------------------------------------------------------------------------------------
 ### Trigger**                          **Consequence
@@ -293,6 +321,12 @@ Penalty amounts are retained by Nexa, not the provider. Of the penalty collected
 -   Tracks wallet balance, pending earnings, completed earnings, and withdrawal history.
 
 -   Payouts settle on a schedule (e.g. weekly) rather than instantly after every event, giving Admin a window to catch disputes before money leaves the platform.
+
+### Rider Earnings
+
+-   Delivery-only jobs: the rider\'s full delivery fee pays out on the single delivery code.
+
+-   Delivery + Return jobs: the rider\'s delivery fee also splits in two --- half on the drop-off code, half on the return code. A rider who only does the drop-off leg is paid only the drop-off half.
 
 ### Compliance Note
 
@@ -440,11 +474,13 @@ Every provider profile should visibly surface this evidence --- completed event 
 
 ## 15 RIDER APP --- FEATURE SPECIFICATION
 
-Riders register independently --- with their own bike or car, like a delivery platform rider --- and are only ever assigned to physical-goods bookings. Service categories (DJs, photographers, decorators and similar) never involve a rider; the provider attends in person.
+Riders register independently, like a delivery platform rider, and are only ever assigned to physical-goods bookings (Delivery and Delivery + Return fulfillment types). Service categories never involve a rider; the provider or customer travels instead (Section 10).
 
 ### Rider Onboarding
 
--   Name, contact, vehicle type and documents, ID verification --- reviewed and approved by Admin before a rider can accept jobs, the same verification discipline as providers
+-   Name, contact, vehicle type (bike, car, or van/bus) and documents, ID verification --- reviewed and approved by Admin before a rider can accept jobs, the same verification discipline as providers (Section 05).
+
+-   Vehicle type matters for assignment: bulk or large orders (large drinks orders, big rental loads) are matched to riders with cars or vans, not bikes.
 
 ### Delivery Queue
 
@@ -452,11 +488,21 @@ Riders register independently --- with their own bike or car, like a delivery pl
 
 -   Accept or decline an assigned delivery
 
+-   Large orders can be assigned to more than one rider as a team on the same booking --- the booking doesn\'t split, the assignment does. Whichever rider handles the final drop-off collects the customer\'s code.
+
 ### Delivery Flow
 
 -   Mark picked up from provider → mark en route → arrive at customer → enter the customer\'s delivery confirmation code to mark delivered
 
--   Entering the correct code is what completes the booking and releases payment (Section 10) --- a rider cannot mark a delivery complete without it
+-   Entering the correct code is what completes the Delivery stage and releases the associated payment (Section 10) --- a rider cannot mark a delivery complete without it.
+
+### Return Flow (Delivery + Return bookings only)
+
+-   After the event, Nexa assigns a return pickup --- this is a Nexa rider job, not the provider\'s responsibility, the same way outbound delivery is.
+
+-   Rider marks item picked up from the customer, notes visible condition, and enters the customer\'s return code to confirm the return.
+
+-   This triggers the stage-2 payout to the provider and the rider, and starts the Caution Fee refund/claim process (Section 10).
 
 ### Rider Reliability
 
@@ -464,7 +510,9 @@ Riders register independently --- with their own bike or car, like a delivery pl
 
 ### Earnings
 
--   Per-delivery fee, running total, and payout history
+-   Delivery-only jobs pay out in full on the delivery code; Delivery + Return jobs pay out half on drop-off and half on return (Section 10).
+
+-   Running total and payout history
 
 ## 16 DESIGN PRINCIPLES
 
@@ -480,7 +528,7 @@ Riders register independently --- with their own bike or car, like a delivery pl
 
 -   No hardcoded categories, providers, or cities --- everything is database-driven from day one
 
--   Modular architecture with clearly separated domains: Auth, Users, Admin, Provider, Rider, Marketplace, Bookings, Payments, Notifications, Reviews, Search, Settings
+-   Modular architecture with clearly separated domains: Auth, Users, Admin, Provider, Rider, Marketplace, Bookings, Payments, Messaging, Disputes, Notifications, Reviews, Search, Settings
 
 -   The Payments module sits behind an internal interface (e.g. holdFunds, releaseFunds, refund) that calls out to the payment provider --- the escrow logic and data model do not assume Flutterwave specifically, so the underlying processor can be swapped without touching booking logic
 
@@ -488,13 +536,27 @@ Riders register independently --- with their own bike or car, like a delivery pl
 
 -   Launch as a single-city platform (Abuja) that is structurally ready for multi-city expansion without a rebuild
 
-## 18 EXPLICITLY OUT OF SCOPE FOR V1
+### Feature Flagging Strategy
 
-Excluding these from V1 is a deliberate scope decision, not an oversight --- each adds real complexity that is only worth taking on once the core marketplace has real provider and order volume.
+Architecture and exposure are different decisions, and should be made separately. The database, backend, and permission model should be built for the full product --- including everything in Section 18 --- from the start. What\'s controlled per phase is only what\'s visible to users, through Admin Console feature flags, not what exists in the schema. This is how Uber Eats shipped on Uber\'s existing maps, drivers, payments, and ratings infrastructure instead of being rebuilt from zero.
 
--   Event Stand Mode --- vendors selling live, walk-up-and-pay to any guest at an event (Section 08 covers pre-booked in-app chat/negotiation only, which is different and is in V1)
+-   Example: the Rider App and rider assignment logic exist in the schema from Phase 1. If a category has no registered riders yet, Admin assigns "Provider Delivery" as a manual fallback; Rider Delivery switches on for that category without any rebuild.
 
--   AI-generated recommendations
+-   Example: the Event Project table and the logic linking multiple bookings to one event exist from Phase 1. The Plan My Event entry point on the Marketplace home screen stays behind a "Coming Soon" flag until Section 19\'s Phase 2, then switches on.
+
+-   Example: Reliability Score fields (on-time rate, cancellation rate, completed jobs) are tracked from a provider\'s first booking. The score itself only displays publicly once Admin enables it --- either platform-wide once there\'s enough data, or per-provider once that provider has enough completed jobs to make the number meaningful.
+
+-   What should genuinely wait, even at the architecture level: AI recommendations, marketing automation, and advanced analytics (Section 18). These aren\'t foundational the way payments, permissions, or the booking data model are --- they\'re additive layers with no structural cost to building later.
+
+## 18 EXPLICITLY OUT OF SCOPE FOR V1 EXPOSURE
+
+These are excluded from what customers, providers, or riders can see and use in V1 --- not from the architecture. Per Section 17, the schema and backend logic for most of these should exist from Phase 1, gated behind a feature flag, so turning them on later is a config change, not a rebuild.
+
+-   Plan My Event and Event Stand Mode --- vendors selling live, walk-up-and-pay to any guest at an event (Section 08 covers pre-booked in-app chat/negotiation only, which is different and is in V1)
+
+-   Public Reliability Score display (data collection starts immediately; the number itself stays hidden until Admin enables it)
+
+-   AI-generated recommendations --- genuinely deferred, including at the architecture level (Section 17)
 
 -   Coupons and subscriptions
 
@@ -502,21 +564,23 @@ Excluding these from V1 is a deliberate scope decision, not an oversight --- eac
 
 -   Referral system and loyalty programs
 
--   Marketing automation
+-   Marketing automation --- genuinely deferred, including at the architecture level (Section 17)
 
--   Advanced analytics dashboards beyond the core Admin reports
+-   Advanced analytics dashboards beyond the core Admin reports --- genuinely deferred, including at the architecture level (Section 17)
 
 ## 19 PHASED ROADMAP
 
-  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Per Section 17, Phase 1\'s schema and backend cover the full product, not just what\'s visible at launch. What each later phase actually adds is UI exposure and any genuinely new logic (like Event Stand Mode\'s live QR checkout) --- not a rebuild of what came before.
+
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### Phase**                                      **Scope
-  ---------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  Phase 1 --- Foundation                         Auth, Admin Console, Business Studio, Marketplace Search & Book, Rider App, in-app chat and masked calling with contact-info flagging (Section 08). Nexa\'s own registered riders handle physical-goods delivery from day one; service providers attend in person. Abuja only.
+  ---------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Phase 1 --- Foundation                         Auth, Admin Console, Business Studio, Marketplace Search & Book, Rider App, in-app chat and masked calling with contact-info flagging (Section 08). Schema for Event Project, Reliability Score, and feature flags built now even though their UI stays gated (Section 17). Nexa\'s own registered riders handle physical-goods delivery from day one; service providers attend in person. Abuja only.
 
-  Phase 2 --- Plan My Event & Event Stand Mode   Guided planning flow, bundles/packages, Event Project dashboard, plus live walk-up vendor selling at events (QR-based, Section 08\'s out-of-scope note).
+  Phase 2 --- Plan My Event & Event Stand Mode   Flip the Plan My Event flag on (schema already exists from Phase 1) and build its UI: guided flow, bundles/packages, Event Project dashboard. Event Stand Mode is genuinely new work --- live walk-up vendor selling at events, QR-based checkout (Section 08\'s out-of-scope note).
 
-  Phase 3 --- Expansion                          Multi-city rollout, premium white-glove full-service tier, AI-assisted recommendations.
-  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Phase 3 --- Expansion                          Multi-city rollout, premium white-glove full-service tier. AI-assisted recommendations, marketing automation, and advanced analytics are new architecture, not flagged features --- built here, not before (Section 17, Section 18).
+  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 20 FOUNDER DECISIONS
 
