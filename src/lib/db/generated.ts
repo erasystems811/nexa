@@ -159,7 +159,7 @@ export type Database = {
           notes?: string | null
           provider_arrived_at?: string | null
           provider_id: string
-          reference: string
+          reference?: string
           rejected_at?: string | null
           scheduled_end?: string | null
           scheduled_start: string
@@ -1569,6 +1569,74 @@ export type Database = {
           },
         ]
       }
+      price_offers: {
+        Row: {
+          accepted_at: string | null
+          amount_kobo: number
+          conversation_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          listing_id: string
+          note: string | null
+          provider_id: string
+          status: Database["public"]["Enums"]["price_offer_status"]
+        }
+        Insert: {
+          accepted_at?: string | null
+          amount_kobo: number
+          conversation_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          listing_id: string
+          note?: string | null
+          provider_id: string
+          status?: Database["public"]["Enums"]["price_offer_status"]
+        }
+        Update: {
+          accepted_at?: string | null
+          amount_kobo?: number
+          conversation_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          listing_id?: string
+          note?: string | null
+          provider_id?: string
+          status?: Database["public"]["Enums"]["price_offer_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_offers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_offers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_offers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1959,6 +2027,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_featured: boolean
           is_on_probation: boolean
           logo_url: string | null
           rejection_reason: string | null
@@ -1983,6 +2052,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_featured?: boolean
           is_on_probation?: boolean
           logo_url?: string | null
           rejection_reason?: string | null
@@ -2007,6 +2077,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_featured?: boolean
           is_on_probation?: boolean
           logo_url?: string | null
           rejection_reason?: string | null
@@ -2380,7 +2451,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      provider_ratings: {
+        Row: {
+          avg_rating: number | null
+          provider_id: string | null
+          review_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       assigned_to_booking_as_rider: {
@@ -2486,6 +2572,7 @@ export type Database = {
         | "partially_refunded"
         | "failed"
       payment_type: "full" | "deposit"
+      price_offer_status: "pending" | "accepted" | "withdrawn" | "superseded"
       price_type: "fixed" | "negotiable"
       rider_assignment_status:
         | "assigned"
@@ -2696,6 +2783,7 @@ export const Constants = {
         "failed",
       ],
       payment_type: ["full", "deposit"],
+      price_offer_status: ["pending", "accepted", "withdrawn", "superseded"],
       price_type: ["fixed", "negotiable"],
       rider_assignment_status: [
         "assigned",

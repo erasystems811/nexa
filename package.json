@@ -10,7 +10,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/db/generated.ts",
-    "e2e:messaging": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-messaging.ts"
+    "e2e:messaging": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-messaging.ts",
+    "e2e:marketplace": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-marketplace.ts",
+    "e2e:purge": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-purge.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

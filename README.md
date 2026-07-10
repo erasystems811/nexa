@@ -6,9 +6,20 @@ Nexa holds the money until the job is done.
 The product spec is [`PRD.md`](./PRD.md). Every non-obvious decision in this
 codebase cites the section it came from.
 
-## Status: Phase 1 foundation + in-app communication
+## Status: foundation + communication + Search & Book
 
 Built:
+
+- **Marketplace — Search & Book** (Sections 07, 09, 10, 14). Home, category
+  browse and search, provider and listing pages, checkout, My Orders. A
+  Fixed-price listing goes straight to date/time → confirm → pay. A Negotiable
+  listing opens the Phase 2 chat first, and a booking exists only once the
+  customer accepts a price the provider offered inside that conversation.
+  On payment, the confirmation code(s) are minted and shown on the order — one
+  for Delivery/service, two for Delivery + Return. Payment releases in two
+  stages against real checkpoints; the stage-1 percentage is an Admin setting;
+  a caution fee is collected and held apart on Delivery + Return. Nothing
+  releases on a "mark done". Not built: Plan My Event, Event Stand Mode.
 
 - **In-app chat and masked calling** (Section 08). Customer ↔ provider chat tied
   to a listing or booking, realtime, shared by the Marketplace and Business
@@ -49,6 +60,19 @@ isolation, and masked calling through the real module and the real RLS policies,
 then deletes them. 31 assertions. It found two genuine leaks the first time it
 ran, which is the only reason to trust the ones that pass now.
 
+```bash
+npm run e2e:marketplace   # 49 assertions across both fulfillment paths
+npm run e2e:purge         # remove leftover e2e-* rows afterwards
+```
+
+The marketplace test drives a Fixed on-site booking and a Negotiable
+delivery-and-return booking from search to completion, checking that a forged
+price is overwritten from the listing, that money is only held at checkout, that
+each stage releases the right amount to the right party, that a wrong or reused
+code is rejected, and that a rejected booking refunds automatically. It also
+found one real accounting bug on its first run: escrow could never reach "fully
+released" because commission never leaves as a release.
+
 ## Getting started
 
 ```bash
@@ -67,8 +91,8 @@ npx supabase db push
 npm run db:types             # regenerates src/lib/db/types.ts from the real schema
 ```
 
-They have not been run against a live Postgres yet — the schema was written
-ahead of the project existing.
+All migrations are applied to the live project and every module ships with an
+end-to-end test that runs against it.
 
 ### Creating the first admin
 
@@ -95,14 +119,22 @@ exactly the hardcoding Section 17 forbids.
 
 The only seeded rows are platform settings and feature flags.
 
-## Two things the PRD needs to resolve
+## Open PRD questions
 
-**Payment release.** Section 10 specifies a two-stage escrow with an admin-set
-stage-1 release percentage. Section 20's Resolved table says *"Single full
-release on delivery confirmation code, not staged milestones."* These
-contradict. The schema implements the staged model, because it is the superset:
-setting `stage_1_release_percent` to 0 collapses it to a single release on the
-code, with no code change. Someone should still pick one and fix the PRD.
+**Payment release — resolved.** Section 10 (two-stage escrow) and Section 20
+("single full release") contradicted each other. The founder settled it when
+commissioning Search & Book: *"each releasing payment in TWO stages tied to real
+checkpoints — never a single release."* The staged model stands. Setting
+`stage_1_release_percent` to 0 still collapses it to a single release on the
+code, so the setting spans both readings, but the default is two stages.
+
+**Booking lifecycle order.** Section 09's state table lists Accepted before
+Paid/Held, yet also says a Rejected booking is "refunded automatically" — which
+is only possible if money was already taken — and Section 14 shows the code
+"once payment is made," before any provider has responded. So the build holds
+money at checkout and the provider accepts a booking that is already paid:
+`pending → paid_held → accepted → in_progress → completed`. Worth reconciling in
+the PRD table.
 
 **Deposit percentage.** Section 06 says a listing declares "a deposit percentage
 within a platform-defined range." Section 20 says there is no platform-wide

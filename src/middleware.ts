@@ -19,6 +19,8 @@ const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> =
   // so it is not nested under either surface. RLS decides which conversations
   // each of them can see.
   { prefix: "/messages", roles: ["customer", "provider", "admin"] },
+  { prefix: "/orders", roles: ["customer", "admin"] },
+  { prefix: "/book", roles: ["customer", "admin"] },
 ];
 
 const AUTH_ROUTES = ["/login", "/register"];

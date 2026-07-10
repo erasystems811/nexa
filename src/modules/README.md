@@ -12,13 +12,13 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 | `admin` | verification queues, approvals, audit log | empty |
 | `provider` | `providers`, agreements, reliability, wallets | empty |
 | `rider` | `riders`, `rider_assignments`, wallets | empty |
-| `marketplace` | public read model | empty |
-| `bookings` | `bookings`, confirmation codes, `event_projects` | empty |
+| `marketplace` | public read model | built |
+| `bookings` | `bookings`, confirmation codes, `price_offers`, `event_projects` | built (Search & Book) |
 | `messaging` | `conversations`, `messages`, `call_sessions`, `moderation_flags` | built |
 | `disputes` | `disputes`, `dispute_evidence` | empty |
 | `notifications` | `notifications`, preferences | empty |
 | `reviews` | `reviews` | empty |
-| `search` | no tables; reads the marketplace model | empty |
+| `search` | no tables; reads the marketplace model | built |
 
 ## Rules that are enforced, not just written down
 
