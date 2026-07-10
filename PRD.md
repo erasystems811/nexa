@@ -4,7 +4,7 @@
 
 *Product Requirements Document*
 
-Version 1.0 · July 2026
+Version 1.1 · July 2026
 
 Prepared for Chidera Umeh, Founder
 
@@ -184,7 +184,7 @@ Each listing also declares its payment type at creation: full payment (best for 
 
 -   If the listing is Negotiable rather than Fixed, the customer opens in-app chat or calls the provider first (Section 08); the booking is created only once a final price is agreed, and payment follows from that agreed amount.
 
--   If the booking is a physical-goods category, Nexa assigns a registered rider once the provider marks the item ready --- the provider never has to arrange their own delivery. Service-category bookings skip this step entirely; the provider attends in person.
+-   If the booking is a physical-goods category, the provider calls a rider once the item is ready --- pressing "Call a bike", "Call a car", or "Call a van" books a registered, Nexa-verified rider of that vehicle class from the platform's own pool. The provider chooses the vehicle class, never a specific individual and never a rider outside the verified pool. Service-category bookings skip this step entirely; the provider attends in person.
 
 ### Plan My Event
 
@@ -426,7 +426,7 @@ Every provider profile should visibly surface this evidence --- completed event 
 
 -   Pending, accepted, completed, cancelled; accept or reject with one tap
 
--   For physical-goods bookings: mark the item ready for pickup, which triggers rider assignment --- the provider does not arrange their own delivery. For service bookings: check in on arrival as before.
+-   For physical-goods bookings: call a rider by vehicle class --- "Call a bike / car / van" --- which both marks the item ready and books a registered, Nexa-verified rider of that class. The provider picks the vehicle class from Nexa's own rider pool, not a specific person and not an outside rider. For service bookings: check in on arrival as before.
 
 ### Wallet & Payouts
 
@@ -480,13 +480,13 @@ Riders register independently, like a delivery platform rider, and are only ever
 
 -   Name, contact, vehicle type (bike, car, or van/bus) and documents, ID verification --- reviewed and approved by Admin before a rider can accept jobs, the same verification discipline as providers (Section 05).
 
--   Vehicle type matters for assignment: bulk or large orders (large drinks orders, big rental loads) are matched to riders with cars or vans, not bikes.
+-   Vehicle type matters for dispatch: the provider calls the vehicle class the load needs --- bulk or large orders (large drinks orders, big rental loads) get a car or van, not a bike. Nexa matches the call to an available registered rider of that class.
 
 ### Delivery Queue
 
--   Assigned deliveries with pickup location (provider), drop-off location (customer), and item details
+-   Called deliveries with pickup location (provider), drop-off location (customer), and item details --- a rider is called by a provider (outbound) or scheduled by Nexa (returns), and lands in the rider's queue
 
--   Accept or decline an assigned delivery
+-   Accept or decline a called delivery; a decline frees the job for the provider to call another rider, or for Admin to reassign
 
 -   Large orders can be assigned to more than one rider as a team on the same booking --- the booking doesn\'t split, the assignment does. Whichever rider handles the final drop-off collects the customer\'s code.
 
@@ -498,7 +498,7 @@ Riders register independently, like a delivery platform rider, and are only ever
 
 ### Return Flow (Delivery + Return bookings only)
 
--   After the event, Nexa assigns a return pickup --- this is a Nexa rider job, not the provider\'s responsibility, the same way outbound delivery is.
+-   After the event, Nexa schedules a return pickup automatically --- unlike the outbound leg, the provider does not call this one, because the provider is not present when the event ends. Nexa assigns it to a registered rider of the same vehicle class the outbound used. If none is free, Admin assigns it manually.
 
 -   Rider marks item picked up from the customer, notes visible condition, and enters the customer\'s return code to confirm the return.
 
@@ -605,7 +605,9 @@ Per Section 17, Phase 1\'s schema and backend cover the full product, not just w
 
   Payment release model         Single full release on delivery confirmation code, not staged milestones
 
-  Delivery ownership            Nexa registers and operates its own riders for physical-goods categories from V1; services are self-attended by the provider
+  Delivery ownership            Nexa registers, verifies, and operates its own rider pool for physical-goods categories from V1; services are self-attended by the provider
+
+  Rider dispatch                Provider-called by vehicle class ("Call a bike / car / van") from Nexa's verified rider pool for outbound legs; Nexa auto-schedules the return leg. Supersedes the earlier "Nexa auto-assigns; the provider never arranges delivery" model --- the provider now chooses the vehicle class, but still never a specific individual or an outside rider
 
   Payment provider              Flutterwave, chosen for its native escrow product --- availability and terms to be confirmed directly with Flutterwave before Payments module is finalised
 
