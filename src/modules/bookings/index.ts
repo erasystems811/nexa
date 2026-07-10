@@ -13,6 +13,7 @@ export {
   checkout,
   acceptBooking,
   rejectBooking,
+  markReadyForPickup,
   recordStage1,
   confirmWithCode,
   BookingsError,

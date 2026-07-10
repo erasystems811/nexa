@@ -125,6 +125,7 @@ export type Database = {
           notes: string | null
           provider_arrived_at: string | null
           provider_id: string
+          ready_for_pickup_at: string | null
           reference: string
           rejected_at: string | null
           scheduled_end: string | null
@@ -159,6 +160,7 @@ export type Database = {
           notes?: string | null
           provider_arrived_at?: string | null
           provider_id: string
+          ready_for_pickup_at?: string | null
           reference?: string
           rejected_at?: string | null
           scheduled_end?: string | null
@@ -193,6 +195,7 @@ export type Database = {
           notes?: string | null
           provider_arrived_at?: string | null
           provider_id?: string
+          ready_for_pickup_at?: string | null
           reference?: string
           rejected_at?: string | null
           scheduled_end?: string | null

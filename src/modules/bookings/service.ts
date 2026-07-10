@@ -170,6 +170,25 @@ async function transition(bookingId: string, to: BookingStatus) {
   if (error) throw new BookingsError(`Could not update the booking: ${error.message}`);
 }
 
+/**
+ * Marks a physical-goods booking ready for a rider to collect. PRD Section 13:
+ * this is the whole of the provider's delivery involvement — "the provider does
+ * not arrange their own delivery." It releases no money (the rider's pickup is
+ * the stage-1 checkpoint, Phase 5) and only stamps a time.
+ *
+ * Runs on the caller's own client so RLS and guard_booking_ready_for_pickup
+ * (0018) apply: only the owning provider, only on a goods booking, only once.
+ */
+export async function markReadyForPickup(bookingId: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("bookings")
+    .update({ ready_for_pickup_at: new Date().toISOString() })
+    .eq("id", bookingId);
+
+  if (error) throw new BookingsError(error.message);
+}
+
 /** Provider confirms. PRD Section 09: the customer's free-cancellation window closes. */
 export async function acceptBooking(bookingId: string): Promise<void> {
   await transition(bookingId, "accepted");

@@ -10,7 +10,7 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 | `payments` | `payments`, `payment_ledger_entries`, `payouts`, `penalty_applications` | interface + escrow math built; gateway stubbed |
 | `users` | `profiles` | empty |
 | `admin` | verification queues, approvals, audit log | empty |
-| `provider` | `providers`, agreements, reliability, wallets | empty |
+| `provider` | `providers`, agreements, reliability, wallets, own listings/media/orders | built (Business Studio) |
 | `rider` | `riders`, `rider_assignments`, wallets | empty |
 | `marketplace` | public read model | built |
 | `bookings` | `bookings`, confirmation codes, `price_offers`, `event_projects` | built (Search & Book) |

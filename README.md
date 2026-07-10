@@ -6,9 +6,18 @@ Nexa holds the money until the job is done.
 The product spec is [`PRD.md`](./PRD.md). Every non-obvious decision in this
 codebase cites the section it came from.
 
-## Status: foundation + communication + Search & Book
+## Status: foundation + communication + marketplace + Business Studio
 
 Built:
+
+- **Business Studio** (Section 13). Provider dashboard, business profile,
+  listings (create/edit/delete/pause/duplicate — each declaring payment type and
+  price type), media upload into a private bucket, availability calendar, orders
+  (accept/decline; "mark ready for pickup" for goods, "check in" for services),
+  wallet with payout account and ledger, and review replies. Every listing and
+  media upload starts in Pending Approval. Deposit %, penalty overrides, featured
+  status, verification, and wallet balances are Admin-only — the database refuses
+  a provider who tries to set them.
 
 - **Marketplace — Search & Book** (Sections 07, 09, 10, 14). Home, category
   browse and search, provider and listing pages, checkout, My Orders. A
@@ -62,8 +71,17 @@ ran, which is the only reason to trust the ones that pass now.
 
 ```bash
 npm run e2e:marketplace   # 49 assertions across both fulfillment paths
+npm run e2e:studio        # 21 assertions on provider boundaries
 npm run e2e:purge         # remove leftover e2e-* rows afterwards
 ```
+
+The Studio test drives a provider through their own business and hammers on
+every boundary Section 13/05/10 draw: a listing starts and re-enters pending, a
+provider cannot approve/feature/verify themselves or set their own deposit % or
+wallet balance, goods are marked ready while services check in, a review can be
+replied to but not rescored. It found one real bug on its first run — the listing
+status guard and the re-approval trigger contradicted each other, so a provider
+could not edit or pause an approved listing at all.
 
 The marketplace test drives a Fixed on-site booking and a Negotiable
 delivery-and-return booking from search to completion, checking that a forged
