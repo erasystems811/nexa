@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/*
+ * PRD Section 16: modern, premium, minimal, fast. Airbnb and Chowdeck, not a
+ * directory app. Mobile-first — every value below is the phone value, and
+ * larger screens opt in.
+ */
+@theme {
+  --color-ink: #0d0d0f;
+  --color-ink-muted: #6b6b74;
+  --color-line: #e7e7ea;
+  --color-surface: #ffffff;
+  --color-surface-sunk: #f7f7f8;
+  --color-accent: #1a1a1a;
+  --color-danger: #b42318;
+  --color-success: #067647;
+
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Never let a phone zoom on focus. iOS does that below 16px. */
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
