@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Nexa — event supply marketplace. Powered by ERA.",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

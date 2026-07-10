@@ -4,11 +4,44 @@ Nexa is a Next.js app backed by Supabase. The database is already live and
 migrated (project `nsaashgvpwtxrjtknimr`); deploying means putting the web app
 on the internet and pointing it at that database.
 
-**Recommended host: Vercel** — it is made by the creators of Next.js, has a free
-tier, and deploys straight from GitHub with no configuration. (Railway, named in
-the PRD, also works but needs a Dockerfile for Next.js — more setup for no gain.)
+**Host: Railway** — consistent with the other ERA apps. The repo already carries
+the config Railway needs (`railway.json`, `.nvmrc`), so it builds without extra
+setup. (Vercel is also a fine option and needs even less config; its steps are
+kept at the bottom of this file.)
 
-## One-time setup on Vercel
+## Deploy on Railway
+
+1. Go to <https://railway.app> and sign in with the **GitHub** account that owns
+   `erasystems811/nexa`.
+2. **New Project → Deploy from GitHub repo → nexa.** Railway reads `railway.json`
+   and builds with Nixpacks automatically (Node 20, `npm run build`, then
+   `next start` on Railway's port).
+3. Open the service → **Variables** and add these, then let it redeploy:
+
+   | Name | Value | Notes |
+   | --- | --- | --- |
+   | `NEXT_PUBLIC_SUPABASE_URL` | `https://nsaashgvpwtxrjtknimr.supabase.co` | safe to expose |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(Supabase → Settings → API → anon public)* | safe to expose |
+   | `SUPABASE_SERVICE_ROLE_KEY` | *(Supabase → Settings → API → service_role)* | **secret** |
+   | `PAYMENT_GATEWAY` | `mock` | real money stays off until Flutterwave is confirmed |
+   | `TELEPHONY_PROVIDER` | `mock` | masked calling stays off until a provider is wired |
+
+   The keys are also in your local `nexa/.env.local` if that is easier to copy
+   from. Never paste the `service_role` key anywhere public.
+
+   > These must be set **before** the build finishes — the build reads the
+   > `NEXT_PUBLIC_*` values. If the first build ran without them, just add them
+   > and hit **Redeploy**.
+
+4. **Settings → Networking → Generate Domain.** Railway gives you a public URL
+   like `https://nexa-production.up.railway.app`. That is your live app.
+5. Add one more variable, `NEXT_PUBLIC_SITE_URL`, set to that URL, and redeploy
+   once more so sign-in links point at the right place.
+6. Tell Supabase the address: Supabase → **Auth → URL Configuration** → set
+   **Site URL** to the Railway URL and add it under **Redirect URLs**. (Claude
+   can do this for you via the Supabase API — just share the URL.)
+
+## Deploy on Vercel (alternative)
 
 1. Go to <https://vercel.com> and sign up with the **GitHub** account that owns
    `erasystems811/nexa`.
