@@ -1,12 +1,12 @@
 # NEXA
 
-*Powered by ERA Systems*
+### P O W E R E D B Y E R A
 
 *Product Requirements Document*
 
 Version 1.0 · July 2026
 
-Prepared for Chidera Umeh, Founder --- ERA Systems Ltd
+Prepared for Chidera Umeh, Founder
 
 ## 01 VISION & POSITIONING
 
@@ -48,7 +48,7 @@ There is no fixed launch category list. Categories are fully open and admin-mana
 
 ## 02 PRODUCT ARCHITECTURE
 
-Nexa is four applications sharing one backend, one provider database, and one booking/payment engine. This mirrors the operating model ERA Systems already uses across its own products: one core platform, role-specific surfaces on top.
+Nexa is four applications sharing one backend, one provider database, and one booking/payment engine: one core platform, role-specific surfaces on top.
 
   -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### Application**        **Audience**             **Purpose
@@ -62,25 +62,19 @@ Nexa is four applications sharing one backend, one provider database, and one bo
   Nexa Rider App         Registered riders        Accept assigned deliveries for physical-goods bookings, update pickup/drop-off status
   -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| **Powered by ERA**                                                                                                                                                                                                                                                                                                        |
-|                                                                                                                                                                                                                                                                                                                           |
-| Nexa runs on ERA Systems\' shared infrastructure and applies ERA\'s core operating discipline --- structure that repeats the same way every time, without the founder present --- to provider onboarding, listing approval, and order monitoring. It is ERA\'s own methodology applied to ERA\'s own marketplace product. |
-+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
 ## 03 USER ROLES & PERMISSIONS
 
-  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-### Role**           **Sees**                                                          **Can do
-  ------------------ ----------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------------------------------
-  Admin (Nexa ops)   Everything: all providers, listings, orders, payments, disputes   Approve/reject providers and listings, monitor every order, intervene on payments, resolve disputes, manually create bookings
+  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+### Role**           **Sees**                                                                  **Can do
+  ------------------ ------------------------------------------------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Admin (Nexa ops)   Everything: all providers, riders, listings, orders, payments, disputes   Approve/reject providers, verify/suspend riders, approve/reject listings, monitor every order, intervene on payments, resolve disputes, manually create bookings, manually reassign a delivery
 
-  Provider           Only their own business                                           Create/edit/pause listings, upload media (pending approval), set availability, accept/reject orders, view payouts, reply to reviews
+  Provider           Only their own business                                                   Create/edit/pause listings, upload media (pending approval), set availability, accept/reject orders, view payouts, reply to reviews
 
-  Customer           Public marketplace + their own bookings                           Search, book, pay, track orders, cancel per policy, leave reviews, save favourites
+  Customer           Public marketplace + their own bookings                                   Search, book, pay, track orders, cancel per policy, leave reviews, save favourites
 
-  Rider              Assigned deliveries only                                          Register with own bike/car, accept a delivery job, update pickup/drop-off status, confirm delivery via the customer\'s code
-  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Rider              Assigned deliveries only                                                  Register with own bike/car, accept a delivery job, update pickup/drop-off status, confirm delivery via the customer\'s code
+  ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 04 CORE DATA OBJECTS
 
@@ -114,11 +108,35 @@ No provider appears publicly without manual review. This is non-negotiable in th
 
 -   Provider submits sample media (photos, and for talent categories, video is required, not optional).
 
--   Admin reviews the application against a verification checklist.
+-   Admin reviews the application against the verification checklist below.
 
 -   Admin approves, rejects, or requests changes. Approved providers get a live Business Studio account, but their listings still start in Pending state.
 
 -   As part of approval, the provider signs the Provider Agreement, which sets their deposit percentage (negotiated per provider --- there is no platform-wide default) and confirms the standard late-arrival penalty terms (see Section 10), which apply unless Admin has recorded an override for that specific provider.
+
+### Verification Checklist
+
+-   NIN (National Identification Number) --- required.
+
+-   CAC registration --- optional, but improves credibility and can be highlighted on the provider\'s public profile.
+
+-   Phone number and email address --- required, verified with an OTP/confirmation link, not just collected.
+
+-   Bank account number and BVN, cross-checked against each other --- confirms the account genuinely belongs to the person or business claiming it, not a mismatched or borrowed account.
+
+-   Live verification --- a short video call or selfie-with-ID at onboarding, since submitted documents alone can be forged or borrowed.
+
+-   Physical address or business location --- a GPS-tagged photo at minimum; a one-time physical visit for higher-value categories.
+
+-   Past-client references --- one or two phone numbers of previous clients, contacted directly by Admin before approval.
+
+-   Existing social media presence --- checked for activity and consistency with what was submitted; a provider with no online footprint at all is a higher-risk signal.
+
+-   Once real provider volume exists, BVN/NIN/CAC checks should move from manual review to an automated Nigerian KYC API (e.g. Dojah, Youverify, Smile ID, or Mono\'s Lookup API) that verifies against government databases directly, including the account-name match --- manual checking will not scale past a handful of providers a week.
+
+### Probation Period
+
+-   Even after approval, a provider\'s first two to three bookings receive closer Admin attention --- faster response to any complaint, manual check-in on completion --- before they\'re treated as a fully established provider.
 
 ### Ongoing Compliance
 
@@ -466,7 +484,7 @@ Riders register independently --- with their own bike or car, like a delivery pl
 
 -   The Payments module sits behind an internal interface (e.g. holdFunds, releaseFunds, refund) that calls out to the payment provider --- the escrow logic and data model do not assume Flutterwave specifically, so the underlying processor can be swapped without touching booking logic
 
--   Recommended stack, consistent with ERA Systems\' existing products: Next.js, TypeScript, TailwindCSS, Supabase (database, auth, RLS), Railway (hosting), Flutterwave (payments, pending confirmation of their escrow product --- see Section 20)
+-   Recommended stack: Next.js, TypeScript, TailwindCSS, Supabase (database, auth, RLS), Railway (hosting), Flutterwave (payments, pending confirmation of their escrow product --- see Section 20)
 
 -   Launch as a single-city platform (Abuja) that is structurally ready for multi-city expansion without a rebuild
 
