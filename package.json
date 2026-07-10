@@ -19,6 +19,7 @@
     "e2e:rider": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-rider.ts",
     "e2e:admin": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-admin.ts",
     "e2e:staff": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-staff.ts",
+    "seed:demo": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/seed-demo.ts",
     "e2e:purge": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-purge.ts"
   },
   "dependencies": {

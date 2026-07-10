@@ -2,104 +2,128 @@ import Link from "next/link";
 import { featuredProviders, listCategories } from "@/modules/marketplace";
 import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
-import { Card } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
 
-/** Marketplace home. PRD Section 14. */
+/** Marketplace home. PRD Section 14 + Addendum §3 (premium, image-led). */
 export default async function HomePage() {
   const session = await getSession();
   const [categories, providers, planMyEventLive] = await Promise.all([
     listCategories(),
-    featuredProviders(),
+    featuredProviders(8),
     isEnabled(FLAGS.planMyEvent, session?.profile.role),
   ]);
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
-      <header className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-ink-muted)]">Nexa</p>
-        <nav className="flex items-center gap-4 text-sm">
+    <main className="mx-auto max-w-3xl px-5 pb-16">
+      {/* Top bar */}
+      <header className="flex items-center justify-between py-5">
+        <span className="text-lg font-semibold tracking-tight">Nexa</span>
+        <nav className="flex items-center gap-5 text-sm">
           {session ? (
             <>
-              <Link href="/orders" className="underline">Orders</Link>
-              <Link href="/messages" className="underline">Messages</Link>
-              <Link href="/account" className="underline">Account</Link>
+              <Link href="/orders" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">My events</Link>
+              <Link href="/messages" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">Messages</Link>
+              <Link href="/account" className="font-medium">Account</Link>
             </>
           ) : (
-            <Link href="/login" className="underline">Sign in</Link>
+            <Link href="/login" className="rounded-full bg-[color:var(--color-accent)] px-4 py-2 font-medium text-white">Sign in</Link>
           )}
         </nav>
       </header>
 
-      <h1 className="mt-8 text-3xl font-semibold leading-tight tracking-tight">
-        Open one app. Close it knowing your event is under control.
-      </h1>
-      <p className="mt-2 text-[color:var(--color-ink-muted)]">
-        Book verified providers. Nexa holds your payment until the job is done.
-      </p>
-
-      <div className="mt-6">
-        <SearchBar />
-      </div>
-
-      <section className="mt-10">
-        <h2 className="text-sm font-medium">Categories</h2>
-        {categories.length > 0 ? (
-          <ul className="mt-3 grid grid-cols-2 gap-3">
-            {categories.map((c) => (
-              <li key={c.id}>
-                <Link href={`/search?category=${c.slug}`}>
-                  <Card className="text-sm font-medium">{c.name}</Card>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Card className="mt-3 text-sm text-[color:var(--color-ink-muted)]">
-            No categories yet. The first one goes live the day the first verified provider does.
-          </Card>
-        )}
+      {/* Hero */}
+      <section className="pt-6">
+        <h1 className="text-[2.1rem] font-semibold leading-[1.1] tracking-tight sm:text-5xl">
+          Everything your event needs,<br />
+          <span className="text-[color:var(--color-accent)]">booked with confidence.</span>
+        </h1>
+        <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[color:var(--color-ink-muted)]">
+          Book verified DJs, caterers, decorators and more. Nexa holds your payment safely until your
+          event is done — so you can relax.
+        </p>
+        <div className="mt-6">
+          <SearchBar />
+        </div>
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[color:var(--color-ink-muted)]">
+          <span>✓ Verified providers</span>
+          <span>✓ Payment held until it&rsquo;s done</span>
+          <span>✓ Real reviews</span>
+        </div>
       </section>
 
-      {providers.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="text-sm font-medium">Featured & top-rated</h2>
-          <ul className="mt-3 space-y-3">
-            {providers.map((p) => (
-              <li key={p.id}>
-                <Link href={`/p/${p.slug}`}>
-                  <Card className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{p.business_name}</p>
-                      <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
-                        {p.reviewCount > 0
-                          ? `${p.avgRating} · ${p.reviewCount} review${p.reviewCount === 1 ? "" : "s"}`
-                          : "No reviews yet"}
-                      </p>
-                    </div>
-                    {p.is_featured ? (
-                      <span className="rounded-full bg-[color:var(--color-surface-sunk)] px-2.5 py-1 text-[11px] font-medium">
-                        Featured
-                      </span>
-                    ) : null}
-                  </Card>
-                </Link>
-              </li>
+      {/* Categories */}
+      {categories.length > 0 ? (
+        <section className="mt-12">
+          <h2 className="mb-4 text-sm font-semibold text-[color:var(--color-ink-muted)]">Browse by category</h2>
+          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
+            {categories.map((c) => (
+              <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
+                <div className="flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-line)] bg-white transition group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
+                  <span className="text-2xl">{c.icon ?? "✨"}</span>
+                  <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
+                </div>
+              </Link>
             ))}
-          </ul>
+          </div>
         </section>
       ) : null}
 
-      <section className="mt-8">
-        <Card>
-          <h2 className="text-sm font-medium">Plan My Event</h2>
-          <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">
+      {/* Featured providers */}
+      {providers.length > 0 ? (
+        <section className="mt-12">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-[color:var(--color-ink-muted)]">Featured & top-rated</h2>
+            <Link href="/search" className="text-xs font-medium text-[color:var(--color-accent)]">See all</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {providers.map((p) => (
+              <Link key={p.id} href={`/p/${p.slug}`} className="group overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-card transition hover:shadow-card-hover">
+                <div className="relative aspect-[4/3] overflow-hidden bg-[color:var(--color-surface-sunk)]">
+                  {p.cover_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- external demo/provider imagery
+                    <img src={p.cover_url} alt={p.business_name} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+                  ) : null}
+                  {p.is_featured ? (
+                    <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--color-accent)] shadow-sm">Featured</span>
+                  ) : null}
+                </div>
+                <div className="p-3">
+                  <div className="flex items-center gap-1">
+                    <p className="truncate text-sm font-semibold">{p.business_name}</p>
+                    <span title="Verified" className="text-[color:var(--color-accent)]">✓</span>
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-[color:var(--color-ink-muted)]">
+                    {(p.cities as unknown as { name: string } | null)?.name ?? "Nexa provider"}
+                    {p.reviewCount > 0 ? ` · ${p.avgRating}★` : ""}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="mt-12">
+          <div className="rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-line)] p-8 text-center text-sm text-[color:var(--color-ink-muted)]">
+            No providers yet. The first one goes live the day the first verified vendor is onboarded.
+          </div>
+        </section>
+      )}
+
+      {/* Plan My Event */}
+      <section className="mt-12">
+        <div className="overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] p-6 text-white">
+          <h2 className="text-lg font-semibold">Plan My Event</h2>
+          <p className="mt-1 max-w-md text-sm text-white/80">
             {planMyEventLive
-              ? "Tell us the event. We'll assemble the providers."
-              : "Coming soon — tell us the event, and we'll assemble the providers."}
+              ? "Tell us the event, budget and guest count — we&rsquo;ll assemble a package."
+              : "Coming soon — tell us the event, and we&rsquo;ll assemble the whole package for you."}
           </p>
-        </Card>
+        </div>
       </section>
+
+      <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
+        Nexa — powered by ERA. Your payment is held securely until your event is successfully completed.
+      </footer>
     </main>
   );
 }

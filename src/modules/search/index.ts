@@ -37,6 +37,7 @@ export interface ListingResult {
   categorySlug: string;
   providerName: string;
   providerSlug: string;
+  coverUrl: string | null;
   avgRating: number | null;
   reviewCount: number;
 }
@@ -49,7 +50,7 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
     .select(
       `id, slug, title, price_kobo, price_min_kobo, price_max_kobo, price_type,
        categories!inner ( name, slug ),
-       providers!inner ( id, business_name, slug, cities ( slug ) )`,
+       providers!inner ( id, business_name, slug, logo_url, cover_url, cities ( slug ) )`,
     )
     .eq("status", "approved")
     .limit(filters.limit ?? 40);
@@ -71,7 +72,7 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
     price_max_kobo: number | null;
     price_type: "fixed" | "negotiable";
     categories: { name: string; slug: string };
-    providers: { id: string; business_name: string; slug: string };
+    providers: { id: string; business_name: string; slug: string; logo_url: string | null; cover_url: string | null };
   }>;
 
   if (rows.length === 0) return [];
@@ -99,6 +100,7 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
       categorySlug: r.categories.slug,
       providerName: r.providers.business_name,
       providerSlug: r.providers.slug,
+      coverUrl: r.providers.cover_url,
       avgRating: rating?.avg_rating ?? null,
       reviewCount: rating?.review_count ?? 0,
     };

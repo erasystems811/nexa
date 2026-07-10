@@ -31,7 +31,7 @@ export function Button({
       className={clsx(
         "inline-flex h-12 items-center justify-center rounded-full px-6 text-sm font-medium",
         "transition-opacity disabled:opacity-50",
-        variant === "primary" && "bg-[color:var(--color-ink)] text-white hover:opacity-90",
+        variant === "primary" && "bg-[color:var(--color-accent)] text-white hover:opacity-90",
         variant === "ghost" &&
           "border border-[color:var(--color-line)] bg-white hover:bg-[color:var(--color-surface-sunk)]",
         className,

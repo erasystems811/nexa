@@ -42,7 +42,7 @@ export async function featuredProviders(limit = 6) {
 
   const { data: providers } = await supabase
     .from("providers")
-    .select("id, business_name, slug, logo_url, is_featured")
+    .select("id, business_name, slug, logo_url, cover_url, is_featured, description, cities ( name )")
     .eq("status", "approved")
     .limit(limit);
 
@@ -110,7 +110,7 @@ export async function getListingBySlug(slug: string) {
       `id, slug, title, description, price_kobo, price_min_kobo, price_max_kobo,
        price_type, payment_type, caution_fee_kobo, cancellation_policy,
        categories ( id, name, slug, fulfillment_type ),
-       providers ( id, business_name, slug, logo_url )`,
+       providers ( id, business_name, slug, logo_url, cover_url )`,
     )
     .eq("slug", slug)
     .eq("status", "approved")

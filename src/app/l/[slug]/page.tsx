@@ -19,8 +19,19 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const checkpoints = checkpointsFor(category.fulfillment_type);
   const isFixed = listing.price_type === "fixed";
 
+  const cover = (provider as unknown as { cover_url: string | null }).cover_url;
+
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
+    <main className="mx-auto max-w-2xl pb-16">
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-[color:var(--color-surface-sunk)]">
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
+          <img src={cover} alt={listing.title} className="h-full w-full object-cover" />
+        ) : null}
+        <Link href={`/p/${provider.slug}`} className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium shadow-sm">← Back</Link>
+      </div>
+
+      <div className="px-5 pt-5">
       <PageHeader title={listing.title} subtitle={listing.description ?? undefined} />
 
       <Card>
@@ -28,7 +39,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
           <p className="text-sm text-[color:var(--color-ink-muted)]">
             {isFixed ? "Price" : "Price on request"}
           </p>
-          <p className="text-2xl font-semibold tabular-nums">
+          <p className="text-2xl font-semibold tabular-nums text-[color:var(--color-accent)]">
             {isFixed && listing.price_kobo !== null
               ? formatKobo(listing.price_kobo)
               : listing.price_min_kobo && listing.price_max_kobo
@@ -44,6 +55,10 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
           · {category.name}
         </p>
       </Card>
+
+      <div className="mt-4 rounded-[var(--radius-card)] bg-[color:var(--color-accent-soft)] p-4 text-sm text-[color:var(--color-accent)]">
+        🔒 Your payment is securely held by Nexa until your event is successfully completed.
+      </div>
 
       <Card className="mt-4">
         <h2 className="text-sm font-medium">How payment works</h2>
@@ -90,6 +105,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
             </p>
           </form>
         )}
+      </div>
       </div>
     </main>
   );
