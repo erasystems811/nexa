@@ -128,6 +128,7 @@ export type Database = {
           ready_for_pickup_at: string | null
           reference: string
           rejected_at: string | null
+          requires_large_vehicle: boolean
           scheduled_end: string | null
           scheduled_start: string
           stage_1_at: string | null
@@ -163,6 +164,7 @@ export type Database = {
           ready_for_pickup_at?: string | null
           reference?: string
           rejected_at?: string | null
+          requires_large_vehicle?: boolean
           scheduled_end?: string | null
           scheduled_start: string
           stage_1_at?: string | null
@@ -198,6 +200,7 @@ export type Database = {
           ready_for_pickup_at?: string | null
           reference?: string
           rejected_at?: string | null
+          requires_large_vehicle?: boolean
           scheduled_end?: string | null
           scheduled_start?: string
           stage_1_at?: string | null
@@ -908,6 +911,7 @@ export type Database = {
           price_type: Database["public"]["Enums"]["price_type"]
           provider_id: string
           rejection_reason: string | null
+          requires_large_vehicle: boolean
           slug: string
           status: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -929,6 +933,7 @@ export type Database = {
           price_type?: Database["public"]["Enums"]["price_type"]
           provider_id: string
           rejection_reason?: string | null
+          requires_large_vehicle?: boolean
           slug: string
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -950,6 +955,7 @@ export type Database = {
           price_type?: Database["public"]["Enums"]["price_type"]
           provider_id?: string
           rejection_reason?: string | null
+          requires_large_vehicle?: boolean
           slug?: string
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
@@ -2503,6 +2509,14 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: boolean
       }
+      pick_delivery_rider: {
+        Args: {
+          p_exclude?: string[]
+          p_provider_id: string
+          p_requires_large: boolean
+        }
+        Returns: string
+      }
       resolve_booking_terms: {
         Args: { p_provider_id: string }
         Returns: {
@@ -2511,6 +2525,14 @@ export type Database = {
           late_penalty_percent_per_30min: number
           stage_1_release_percent: number
         }[]
+      }
+      rider_leg_fee: {
+        Args: {
+          p_delivery_fee: number
+          p_fulfillment: Database["public"]["Enums"]["fulfillment_type"]
+          p_leg: number
+        }
+        Returns: number
       }
       scan_message_body: {
         Args: { body: string }
@@ -2583,6 +2605,7 @@ export type Database = {
         | "declined"
         | "picked_up"
         | "en_route"
+        | "arrived"
         | "delivered"
         | "returned"
         | "cancelled"
@@ -2794,6 +2817,7 @@ export const Constants = {
         "declined",
         "picked_up",
         "en_route",
+        "arrived",
         "delivered",
         "returned",
         "cancelled",

@@ -229,6 +229,167 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
   }
 }
 
+export interface PayRiderInput {
+  bookingId: string;
+  riderId: string;
+  amountKobo: Kobo;
+  stage: 1 | 2;
+  bankCode: string;
+  accountNumber: string;
+}
+
+/**
+ * Pays a rider their share of the delivery fee. PRD Section 10.
+ *
+ * A rider's money comes from the delivery fee the customer paid, NOT from the
+ * escrow held against the booking price — "it is not part of the provider's
+ * payout calculation." So this budgets against `delivery_fee_kobo` and the
+ * rider payouts already made, entirely separate from provider releases.
+ */
+export async function payRider(input: PayRiderInput): Promise<void> {
+  const gateway = getPaymentGateway();
+  const db = createAdminClient();
+
+  const { data: payment, error } = await db
+    .from("payments")
+    .select("id, gateway_reference, delivery_fee_kobo")
+    .eq("booking_id", input.bookingId)
+    .single();
+
+  if (error || !payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
+  if (!payment.gateway_reference) {
+    throw new PaymentsError(`Booking ${input.bookingId} has no gateway reference`);
+  }
+
+  const { data: prior } = await db
+    .from("payment_ledger_entries")
+    .select("amount_kobo")
+    .eq("booking_id", input.bookingId)
+    .eq("kind", "rider_payout");
+
+  const alreadyPaid = (prior ?? []).reduce((sum, r) => sum + r.amount_kobo, 0);
+  if (alreadyPaid + input.amountKobo > payment.delivery_fee_kobo) {
+    throw new PaymentsError(
+      `Rider payout of ${input.amountKobo} exceeds the remaining delivery fee on booking ${input.bookingId}`,
+    );
+  }
+
+  await gateway.releaseFunds({
+    gatewayReference: payment.gateway_reference,
+    amountKobo: input.amountKobo,
+    stage: input.stage,
+    beneficiary: {
+      kind: "rider",
+      id: input.riderId,
+      bankCode: input.bankCode,
+      accountNumber: input.accountNumber,
+    },
+    idempotencyKey: `${input.bookingId}:rider:${input.riderId}:${input.stage}`,
+  });
+
+  const { error: ledgerError } = await db.from("payment_ledger_entries").insert({
+    payment_id: payment.id,
+    booking_id: input.bookingId,
+    kind: "rider_payout",
+    amount_kobo: input.amountKobo,
+    stage: input.stage,
+    rider_id: input.riderId,
+    note: "Delivery fee",
+  });
+  if (ledgerError) {
+    throw new PaymentsError(
+      `Rider paid but the ledger write failed for booking ${input.bookingId}: ${ledgerError.message}`,
+    );
+  }
+
+  // Rider earnings land as pending until the payout schedule settles them.
+  const { data: wallet } = await db
+    .from("rider_wallets")
+    .select("pending_kobo")
+    .eq("rider_id", input.riderId)
+    .single();
+  await db
+    .from("rider_wallets")
+    .update({ pending_kobo: (wallet?.pending_kobo ?? 0) + input.amountKobo })
+    .eq("rider_id", input.riderId);
+}
+
+/**
+ * Settles the caution fee on a returned rental. PRD Section 10.
+ *
+ * Good condition → the full caution fee is refunded to the customer when the
+ * return code is confirmed. Damage reported → nothing is auto-deducted; a
+ * dispute is raised for Admin, who decides the claim by hand.
+ */
+export async function settleCaution(input: {
+  bookingId: string;
+  damaged: boolean;
+  notes?: string;
+}): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: payment, error } = await db
+    .from("payments")
+    .select("id, gateway_reference, caution_held_kobo, caution_refunded_kobo, booking_id")
+    .eq("booking_id", input.bookingId)
+    .single();
+
+  if (error || !payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
+
+  const { data: booking } = await db
+    .from("bookings")
+    .select("customer_id")
+    .eq("id", input.bookingId)
+    .single();
+
+  const outstanding = payment.caution_held_kobo - payment.caution_refunded_kobo;
+  if (outstanding <= 0) return; // nothing held, or already settled
+
+  if (input.damaged) {
+    if (!booking?.customer_id) {
+      throw new PaymentsError(`Booking ${input.bookingId} has no customer to attribute the dispute to`);
+    }
+    // Section 10: "a manual Admin decision, not an automatic deduction." The
+    // dispute is over the customer's caution deposit, so it is raised in the
+    // customer's name; Admin decides how much (if any) compensates the provider.
+    const { error: disputeError } = await db.from("disputes").insert({
+      booking_id: input.bookingId,
+      raised_by: booking.customer_id,
+      reason: "Damage reported at return",
+      description: input.notes ?? null,
+      is_damage_claim: true,
+      caution_claim_kobo: outstanding,
+    });
+    if (disputeError) {
+      throw new PaymentsError(`Could not raise the damage dispute: ${disputeError.message}`);
+    }
+    return;
+  }
+
+  if (payment.gateway_reference) {
+    await getPaymentGateway().refund({
+      gatewayReference: payment.gateway_reference,
+      amountKobo: outstanding,
+      reason: "Caution fee returned — item came back in good condition",
+      idempotencyKey: `${input.bookingId}:caution_refund`,
+    });
+  }
+
+  await db.from("payment_ledger_entries").insert({
+    payment_id: payment.id,
+    booking_id: input.bookingId,
+    kind: "caution_refund",
+    amount_kobo: -outstanding,
+    customer_id: booking?.customer_id ?? null,
+    note: "Caution fee refunded",
+  });
+
+  await db
+    .from("payments")
+    .update({ caution_refunded_kobo: payment.caution_refunded_kobo + outstanding })
+    .eq("id", payment.id);
+}
+
 export interface RefundInput {
   bookingId: string;
   amountKobo: Kobo;

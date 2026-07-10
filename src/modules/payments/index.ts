@@ -12,11 +12,14 @@
 export {
   holdFunds,
   releaseFunds,
+  payRider,
+  settleCaution,
   refund,
   PaymentsError,
   type HoldFundsInput,
   type HoldFundsOutput,
   type ReleaseFundsInput,
+  type PayRiderInput,
   type RefundInput,
 } from "./service";
 

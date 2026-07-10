@@ -13,6 +13,7 @@
     "e2e:messaging": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-messaging.ts",
     "e2e:marketplace": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-marketplace.ts",
     "e2e:studio": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-studio.ts",
+    "e2e:rider": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-rider.ts",
     "e2e:purge": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-purge.ts"
   },
   "dependencies": {

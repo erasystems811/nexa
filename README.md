@@ -6,9 +6,22 @@ Nexa holds the money until the job is done.
 The product spec is [`PRD.md`](./PRD.md). Every non-obvious decision in this
 codebase cites the section it came from.
 
-## Status: foundation + communication + marketplace + Business Studio
+## Status: foundation + communication + marketplace + Studio + Rider App
 
 Built:
+
+- **Rider App** (Section 15). Registration (name, contact, vehicle type,
+  documents) starting Pending Verification; a delivery queue of assigned jobs;
+  the flow picked up → en route → arrived → enter the customer's code; the return
+  flow for rentals (condition note, return code, caution settlement); reliability
+  (on-time rate, completed count); earnings and payout account. A provider's
+  "mark ready" auto-creates the assignment, matched by vehicle type. A rider only
+  ever gets a physical-goods booking, and a delivery completes only on the
+  customer's code — never a "done" button. Payment maps exactly to Section 10:
+  Delivery pays the rider the full fee on the drop-off code; Delivery + Return
+  pays half on drop-off and half on return, and the return code both settles the
+  caution fee (refund if sound, dispute if damaged) and releases the provider's
+  stage 2.
 
 - **Business Studio** (Section 13). Provider dashboard, business profile,
   listings (create/edit/delete/pause/duplicate — each declaring payment type and
@@ -55,8 +68,7 @@ Built:
 - **Payments behind an interface** — `holdFunds`, `releaseFunds`, `refund`.
   Nothing outside `modules/payments` can reach a processor.
 
-Not built yet, by design: listings, bookings, payments flows, the rider flow, and
-every marketplace screen.
+Not built yet: the Admin Console (next), Plan My Event, and Event Stand Mode.
 
 ### Verifying the communication layer
 
@@ -72,8 +84,17 @@ ran, which is the only reason to trust the ones that pass now.
 ```bash
 npm run e2e:marketplace   # 49 assertions across both fulfillment paths
 npm run e2e:studio        # 21 assertions on provider boundaries
+npm run e2e:rider         # 29 assertions across delivery + return + damage
 npm run e2e:purge         # remove leftover e2e-* rows afterwards
 ```
+
+The rider test runs a full plain-Delivery job and a full Delivery+Return job
+through the real payment releases, asserting who is paid what at each checkpoint:
+the rider is unpaid until the code, the provider's two stages land in order, the
+delivery-fee split is full-vs-half-and-half, the caution fee refunds on good
+condition and becomes an Admin dispute on damage. It found two real bugs on its
+first runs — a trigger type-mismatch that silently aborted assignment creation,
+and a caution dispute written against a rider id instead of a customer id.
 
 The Studio test drives a provider through their own business and hammers on
 every boundary Section 13/05/10 draw: a listing starts and re-enters pending, a

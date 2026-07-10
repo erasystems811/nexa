@@ -11,7 +11,7 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 | `users` | `profiles` | empty |
 | `admin` | verification queues, approvals, audit log | empty |
 | `provider` | `providers`, agreements, reliability, wallets, own listings/media/orders | built (Business Studio) |
-| `rider` | `riders`, `rider_assignments`, wallets | empty |
+| `rider` | `riders`, `rider_assignments`, reliability, wallets | built (Rider App) |
 | `marketplace` | public read model | built |
 | `bookings` | `bookings`, confirmation codes, `price_offers`, `event_projects` | built (Search & Book) |
 | `messaging` | `conversations`, `messages`, `call_sessions`, `moderation_flags` | built |

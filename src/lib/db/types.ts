@@ -35,6 +35,7 @@ export type PriceType = Enum<"price_type">;
 export type ModerationFlagReason = Enum<"moderation_flag_reason">;
 export type ModerationFlagStatus = Enum<"moderation_flag_status">;
 export type CallStatus = Enum<"call_status">;
+export type RiderAssignmentStatus = Enum<"rider_assignment_status">;
 
 /** Runtime lists, for iterating a <select> or validating input. */
 export const USER_ROLES = ["admin", "provider", "customer", "rider"] as const satisfies

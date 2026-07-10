@@ -13,7 +13,10 @@ import type { UserRole } from "@/lib/db/types";
 const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/admin", roles: ["admin"] },
   { prefix: "/studio", roles: ["provider"] },
-  { prefix: "/rider", roles: ["rider"] },
+  // /rider is open to any signed-in user: a pending applicant is still a
+  // customer until Admin approves them. The pages branch on rider status, and
+  // the delivery actions require an approved rider.
+  { prefix: "/rider", roles: ["customer", "provider", "rider", "admin"] },
   { prefix: "/account", roles: ["customer", "provider", "rider", "admin"] },
   // Messaging is shared by the Marketplace and Business Studio (PRD Section 08),
   // so it is not nested under either surface. RLS decides which conversations
