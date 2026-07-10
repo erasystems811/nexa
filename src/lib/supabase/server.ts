@@ -3,6 +3,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { publicEnv } from "@/lib/env";
+import { cookieDomain } from "@/lib/surfaces";
 import type { Database } from "@/lib/db/types";
 
 /**
@@ -22,8 +23,9 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
+            const domain = cookieDomain();
             for (const { name, value, options } of cookiesToSet) {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, domain ? { ...options, domain } : options);
             }
           } catch {
             // Server Components cannot set cookies. The middleware refreshes the

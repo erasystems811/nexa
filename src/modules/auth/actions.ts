@@ -1,5 +1,6 @@
 "use server";
 
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -44,7 +45,7 @@ export async function signIn(
   const role = (user?.app_metadata?.role as UserRole | undefined) ?? "customer";
 
   revalidatePath("/", "layout");
-  redirect(homePathForRole(role));
+  redirect(homePathForRole(role) as Route);
 }
 
 /**

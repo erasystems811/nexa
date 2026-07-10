@@ -3,6 +3,7 @@ import "server-only";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { homeForRole } from "@/lib/surfaces";
 import type { Profile, UserRole } from "@/lib/db/types";
 
 export interface Session {
@@ -45,21 +46,17 @@ export async function requireSession(): Promise<Session> {
 export async function requireRole(...roles: UserRole[]): Promise<Session> {
   const session = await requireSession();
   if (!roles.includes(session.profile.role)) {
-    redirect(homePathForRole(session.profile.role));
+    // homeForRole is absolute (the role's subdomain) in live mode, a path in dev.
+    redirect(homeForRole(session.profile.role) as Route);
   }
   return session;
 }
 
-/** Where a role lands after sign-in. PRD Section 02: four surfaces. */
-export function homePathForRole(role: UserRole): Route {
-  switch (role) {
-    case "admin":
-      return "/admin";
-    case "provider":
-      return "/studio";
-    case "rider":
-      return "/rider";
-    case "customer":
-      return "/";
-  }
+/**
+ * Where a role lands after sign-in. In live subdomain mode this is the role's
+ * own subdomain (vendor./rider./admin./root); in dev it is the internal path.
+ * PRD Section 02 + Addendum §2.
+ */
+export function homePathForRole(role: UserRole): string {
+  return homeForRole(role);
 }

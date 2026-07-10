@@ -72,11 +72,36 @@ kept at the bottom of this file.)
    URL Configuration** → set **Site URL** to the Vercel URL and add it under
    **Redirect URLs**. (Claude can do this for you via the Supabase API.)
 
-## A custom domain (optional, later)
+## The four subdomains (Addendum §2)
 
-To use `nexa.erasystems.com.ng` (per the addendum), add it in Vercel → Settings →
-Domains and point a CNAME from your DNS to Vercel. Update `NEXT_PUBLIC_SITE_URL`
-and the Supabase Site URL to the custom domain once it works.
+The app is built to serve each surface on its own subdomain, and this switches
+on the moment you set one variable — until then it stays single-domain on the
+Railway URL, which is why Step 1 works before any DNS.
+
+| Subdomain | Shows |
+| --- | --- |
+| `nexa.erasystems.com.ng` | Customer Marketplace |
+| `vendor.nexa.erasystems.com.ng` | Business Studio |
+| `rider.nexa.erasystems.com.ng` | Rider App |
+| `admin.nexa.erasystems.com.ng` | Admin Console |
+
+To turn it on:
+
+1. **DNS** — at wherever `erasystems.com.ng` is managed, add four CNAME records
+   (`nexa`, `vendor.nexa`, `rider.nexa`, `admin.nexa`) pointing at your Railway
+   service's domain. In Railway, add each of the four under **Settings →
+   Networking → Custom Domain**; Railway shows the exact CNAME target to use.
+2. **One variable** — set `NEXT_PUBLIC_ROOT_DOMAIN` = `nexa.erasystems.com.ng`
+   in Railway, and `NEXT_PUBLIC_SITE_URL` = `https://nexa.erasystems.com.ng`.
+   Redeploy.
+3. **Supabase** — set the Site URL to `https://nexa.erasystems.com.ng` and add
+   all four subdomains under Redirect URLs. (Claude can do this via the API.)
+
+That's it — each subdomain then shows only its own app, cross-links between them
+redirect to the right place, and your login carries across all four (the session
+cookie is scoped to the parent domain). Leave `NEXT_PUBLIC_ROOT_DOMAIN` unset and
+everything stays reachable by path on the single Railway URL, which is the right
+way to test first.
 
 ## What "live" does and does not mean
 

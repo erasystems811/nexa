@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
+import { cookieDomain } from "@/lib/surfaces";
 import type { Database } from "@/lib/db/types";
 import type { UserRole } from "@/lib/db/types";
 
@@ -33,8 +34,12 @@ export async function updateSession(request: NextRequest): Promise<SessionContex
             request.cookies.set(name, value);
           }
           response = NextResponse.next({ request });
+          // In live (subdomain) mode the session cookie is scoped to the parent
+          // domain so it spans nexa / vendor / rider / admin. In dev it stays
+          // host-only.
+          const domain = cookieDomain();
           for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, domain ? { ...options, domain } : options);
           }
         },
       },

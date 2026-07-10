@@ -1,26 +1,28 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { resolveRoute, surfaceForHost, surfaceOrigin, homeForRole } from "@/lib/surfaces";
 import type { UserRole } from "@/lib/db/types";
 
 /**
- * Which role may open which surface. PRD Section 02: four applications, one
- * backend.
+ * Two jobs, in order:
  *
- * This is routing, not security. A rider who forges a cookie past this check
- * still cannot read a provider's payouts, because RLS (0011_rls.sql) does not
- * consult the URL. Both layers exist; only one of them is load-bearing.
+ *   1. Subdomain routing (PRD Addendum §2). When a live root domain is
+ *      configured, each subdomain shows only its own app: vendor -> Studio,
+ *      rider -> Rider, admin -> Admin, bare root -> Marketplace. A path that
+ *      belongs to another surface is redirected to its subdomain. This engages
+ *      only under the real domain; on localhost or the Railway URL the app is
+ *      single-domain and every surface is reachable by path, unchanged.
+ *
+ *   2. Role gating. Which role may open which surface. This is a UX boundary,
+ *      not security — RLS (0011_rls.sql) is what actually stops a rider reading
+ *      a provider's payouts, and it does not consult the URL.
  */
+
 const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/admin", roles: ["admin"] },
   { prefix: "/studio", roles: ["provider"] },
-  // /rider is open to any signed-in user: a pending applicant is still a
-  // customer until Admin approves them. The pages branch on rider status, and
-  // the delivery actions require an approved rider.
   { prefix: "/rider", roles: ["customer", "provider", "rider", "admin"] },
   { prefix: "/account", roles: ["customer", "provider", "rider", "admin"] },
-  // Messaging is shared by the Marketplace and Business Studio (PRD Section 08),
-  // so it is not nested under either surface. RLS decides which conversations
-  // each of them can see.
   { prefix: "/messages", roles: ["customer", "provider", "admin"] },
   { prefix: "/orders", roles: ["customer", "admin"] },
   { prefix: "/book", roles: ["customer", "admin"] },
@@ -28,47 +30,80 @@ const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> =
 
 const AUTH_ROUTES = ["/login", "/register"];
 
-function homePathForRole(role: UserRole | null): string {
-  switch (role) {
-    case "admin":
-      return "/admin";
-    case "provider":
-      return "/studio";
-    case "rider":
-      return "/rider";
-    default:
-      return "/";
+/** Copy the session cookies set by updateSession onto a new response. */
+function carryCookies(from: NextResponse, to: NextResponse): NextResponse {
+  for (const c of from.cookies.getAll()) to.cookies.set(c);
+  return to;
+}
+
+/** Role gate applied to an internal path. Returns a redirect response, or null. */
+function gate(
+  internalPath: string,
+  userId: string | null,
+  role: UserRole | null,
+  request: NextRequest,
+  base: NextResponse,
+): NextResponse | null {
+  const guarded = PROTECTED_PREFIXES.find((p) => internalPath.startsWith(p.prefix));
+  if (!guarded) return null;
+
+  if (!userId) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", internalPath);
+    return carryCookies(base, NextResponse.redirect(login));
   }
+  if (!role || !guarded.roles.includes(role)) {
+    return carryCookies(base, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
+  }
+  return null;
 }
 
 export async function middleware(request: NextRequest) {
   const { response, userId, role } = await updateSession(request);
   const { pathname } = request.nextUrl;
+  const surface = surfaceForHost(request.headers.get("host"));
 
-  if (userId && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(new URL(homePathForRole(role), request.url));
+  // ----- Single-domain / dev mode (no root domain configured) --------------
+  if (!surface) {
+    if (userId && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
+      return carryCookies(response, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
+    }
+    return gate(pathname, userId, role, request, response) ?? response;
   }
 
-  const guarded = PROTECTED_PREFIXES.find((p) => pathname.startsWith(p.prefix));
-  if (!guarded) return response;
+  // ----- Live subdomain mode ----------------------------------------------
+  const action = resolveRoute(surface, pathname);
 
-  if (!userId) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("next", pathname);
-    return NextResponse.redirect(login);
+  if (action.kind === "redirect") {
+    const origin = surfaceOrigin(action.surface);
+    return carryCookies(response, NextResponse.redirect(`${origin}${action.path}`));
+  }
+  if (action.kind === "notFound") {
+    // The path is not part of this surface (e.g. /messages on the rider app).
+    // Send them to this surface's own home rather than a dead 404.
+    return carryCookies(response, NextResponse.redirect(`${surfaceOrigin(surface)}/`));
   }
 
-  if (!role || !guarded.roles.includes(role)) {
-    return NextResponse.redirect(new URL(homePathForRole(role), request.url));
+  const internalPath = action.kind === "rewrite" ? action.to : pathname;
+
+  // Already signed in and visiting a login/register page → go to your app home.
+  if (userId && AUTH_ROUTES.some((r) => internalPath.startsWith(r))) {
+    return carryCookies(response, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
   }
 
+  const blocked = gate(internalPath, userId, role, request, response);
+  if (blocked) return blocked;
+
+  if (action.kind === "rewrite") {
+    const url = request.nextUrl.clone();
+    url.pathname = internalPath;
+    return carryCookies(response, NextResponse.rewrite(url));
+  }
   return response;
 }
 
 export const config = {
   matcher: [
-    // Everything except static assets and image files. The session refresh has
-    // to run broadly or the auth cookie expires under a user mid-navigation.
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

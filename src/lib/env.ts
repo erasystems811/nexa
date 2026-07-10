@@ -7,6 +7,10 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
+  // The live customer apex, e.g. "nexa.erasystems.com.ng". When set, the app
+  // serves each surface on its own subdomain (Addendum §2). Unset in dev and on
+  // the raw Railway URL, where the app is single-domain and path-based.
+  NEXT_PUBLIC_ROOT_DOMAIN: z.string().optional(),
 });
 
 const serverSchema = z.object({
@@ -30,6 +34,7 @@ export const publicEnv = publicSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
 });
 
 let cachedServerEnv: z.infer<typeof serverSchema> | null = null;
