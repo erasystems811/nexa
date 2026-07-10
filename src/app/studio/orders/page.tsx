@@ -19,6 +19,8 @@ export default async function StudioOrders() {
         <ul className="space-y-3">
           {orders.map((o) => {
             const isGoods = ["delivery", "delivery_return"].includes(o.fulfillment_type);
+            const outbound = (o.rider_assignments ?? []).find((a) => a.leg === 1);
+            const riderCalled = !!outbound && !["declined", "cancelled"].includes(outbound.status);
             return (
               <li key={o.id}>
                 <Card>
@@ -42,7 +44,8 @@ export default async function StudioOrders() {
                     bookingId={o.id}
                     status={o.status}
                     isGoods={isGoods}
-                    readyMarked={!!o.ready_for_pickup_at}
+                    riderCalled={riderCalled}
+                    riderStatus={outbound?.status ?? null}
                     stage1Done={!!o.stage_1_at}
                   />
                 </Card>

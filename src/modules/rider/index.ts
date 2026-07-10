@@ -17,6 +17,7 @@ export { RiderError, currentRider, requireApprovedRider } from "./context";
 export { registerRider, submitDocument } from "./registration";
 export { listQueue, getAssignment } from "./queue";
 export {
+  callRider,
   acceptAssignment,
   declineAssignment,
   markPickedUp,

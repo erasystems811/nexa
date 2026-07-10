@@ -9,9 +9,10 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { checkout, acceptBooking, markReadyForPickup } from "@/modules/bookings";
+import { checkout, acceptBooking } from "@/modules/bookings";
 import {
   acceptAssignment,
+  callRider,
   confirmDelivery,
   confirmReturn,
   markArrived,
@@ -127,15 +128,23 @@ async function main() {
     const DFEE = cakePay!.delivery_fee_kobo;
     check("a delivery booking carries the platform delivery fee", DFEE === 150_000, cakePay);
 
-    // Provider marks ready -> the auto-assign trigger creates the rider job.
-    await markReadyForPickup2(cake.bookingId);
+    // A provider from another business cannot call a rider for this booking.
+    await expectThrow("only the owning provider can call a rider", () =>
+      callRider("00000000-0000-0000-0000-000000000000", cake.bookingId, "car"));
+
+    // The provider presses "Call a car" (0023). rider1 is the car; rider2 a van.
+    await callRider(providerId, cake.bookingId, "car");
     const { data: cakeAssign } = await admin.from("rider_assignments").select("id, rider_id, leg, fee_share_kobo, status").eq("booking_id", cake.bookingId).maybeSingle();
-    check("marking ready auto-creates a rider assignment (Section 13->15)", !!cakeAssign, cakeAssign);
-    check("...to an approved rider, leg 1, status assigned", cakeAssign?.status === "assigned" && cakeAssign?.leg === 1, cakeAssign);
+    check("calling a car creates a rider assignment (0023)", !!cakeAssign, cakeAssign);
+    check("...to the CAR rider, leg 1, status assigned", cakeAssign?.rider_id === riderId && cakeAssign?.status === "assigned" && cakeAssign?.leg === 1, cakeAssign);
     check("...with the full delivery fee as the rider's share", cakeAssign?.fee_share_kobo === DFEE, cakeAssign);
 
     const cakeAssignId = cakeAssign!.id;
     const cakeRider = cakeAssign!.rider_id;
+
+    // Calling again while a rider is on it is refused.
+    await expectThrow("a second call is refused while a rider is on the delivery", () =>
+      callRider(providerId, cake.bookingId, "van"));
 
     // Another rider cannot act on this assignment.
     await expectThrow("a rider CANNOT accept another rider's assignment", () =>
@@ -179,7 +188,7 @@ async function main() {
     const { data: chairPay } = await admin.from("payments").select("caution_held_kobo, delivery_fee_kobo").eq("booking_id", chair.bookingId).single();
     check("delivery+return holds the caution fee apart", chairPay?.caution_held_kobo === 3_000_000, chairPay);
 
-    await markReadyForPickup2(chair.bookingId);
+    await callRider(providerId, chair.bookingId, "car");
     const { data: outbound } = await admin.from("rider_assignments").select("id, rider_id, fee_share_kobo, leg").eq("booking_id", chair.bookingId).eq("leg", 1).single();
     check("the outbound rider share is HALF the fee (delivery+return)", outbound?.fee_share_kobo === Math.round(chairPay!.delivery_fee_kobo / 2), outbound);
 
@@ -224,7 +233,7 @@ async function main() {
     // ---- damage path: a dispute, not an auto-deduction (Section 10) --------
     const chair2 = await checkout({ listingId: chairListing!.id, scheduledStart: new Date(Date.now() + 6 * 864e5).toISOString() }, { id: custId, email: emails.cust }, customer);
     await acceptBooking(chair2.bookingId);
-    await markReadyForPickup2(chair2.bookingId);
+    await callRider(providerId, chair2.bookingId, "car");
     const { data: ob2 } = await admin.from("rider_assignments").select("id, rider_id").eq("booking_id", chair2.bookingId).eq("leg", 1).single();
     await acceptAssignment(ob2!.rider_id, ob2!.id);
     await markPickedUp(ob2!.rider_id, ob2!.id);
@@ -260,13 +269,6 @@ async function registerRiderAs(c: SupabaseClient<Database>, userId: string, name
   if (error) throw error;
   void registerRider;
   return data!.id;
-}
-// markReadyForPickup builds a request client; drive the same guarded update via admin
-// after verifying ownership, matching what the provider action does.
-async function markReadyForPickup2(bookingId: string) {
-  const { error } = await admin.from("bookings").update({ ready_for_pickup_at: new Date().toISOString() }).eq("id", bookingId);
-  if (error) throw new Error(`mark ready failed: ${error.message}`);
-  void markReadyForPickup;
 }
 
 main().catch((e) => { console.error("\nE2E ABORTED:", e.message); process.exit(1); });

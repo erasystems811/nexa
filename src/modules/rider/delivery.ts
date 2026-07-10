@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { confirmWithCode, recordStage1 } from "@/modules/bookings";
 import { payRider, settleCaution } from "@/modules/payments";
 import { RiderError } from "./context";
-import type { RiderAssignmentStatus } from "@/lib/db/types";
+import type { RiderAssignmentStatus, VehicleType } from "@/lib/db/types";
 
 /**
  * The delivery and return flows. PRD Section 15, and the payment stages of
@@ -58,6 +58,104 @@ async function setStatus(assignmentId: string, status: RiderAssignmentStatus, ex
     .update({ status, ...extra })
     .eq("id", assignmentId);
   if (error) throw new RiderError(error.message);
+}
+
+const ACTIVE: RiderAssignmentStatus[] = [
+  "assigned",
+  "accepted",
+  "picked_up",
+  "en_route",
+  "arrived",
+  "delivered",
+];
+
+const VEHICLE_LABEL: Record<VehicleType, string> = { bike: "bike", car: "car", van: "van" };
+
+/**
+ * The provider calls a rider of a chosen vehicle class. PRD model amended by the
+ * founder (0023): the provider presses "Call a bike / car / van" and books a
+ * registered rider of that class, rather than Nexa auto-assigning. The rider
+ * pool is still Nexa-verified — the provider picks the vehicle, not a stranger.
+ *
+ * Runs on the service role because it reads across providers and riders and
+ * marks the booking ready; `providerId` comes from the caller's own session
+ * (requireProvider), so it cannot be spoofed. The booking must belong to that
+ * provider, be physical goods, and be accepted.
+ */
+export async function callRider(
+  providerId: string,
+  bookingId: string,
+  vehicleType: VehicleType,
+): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: booking } = await db
+    .from("bookings")
+    .select("id, provider_id, fulfillment_type, status, delivery_fee_kobo, ready_for_pickup_at")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (!booking || booking.provider_id !== providerId) throw new RiderError("That booking is not yours");
+  if (!["delivery", "delivery_return"].includes(booking.fulfillment_type)) {
+    throw new RiderError("Only physical-goods deliveries need a rider");
+  }
+  if (!["accepted", "in_progress"].includes(booking.status)) {
+    throw new RiderError("Accept the booking before calling a rider");
+  }
+
+  // Already has a rider on the outbound leg? Don't double-book it.
+  const { data: existing } = await db
+    .from("rider_assignments")
+    .select("status")
+    .eq("booking_id", bookingId)
+    .eq("leg", 1);
+
+  if ((existing ?? []).some((a) => ACTIVE.includes(a.status))) {
+    throw new RiderError("A rider is already on this delivery");
+  }
+
+  // Skip anyone who already declined this booking.
+  const declined = (existing ?? []).length
+    ? (
+        await db
+          .from("rider_assignments")
+          .select("rider_id")
+          .eq("booking_id", bookingId)
+          .eq("leg", 1)
+          .eq("status", "declined")
+      ).data ?? []
+    : [];
+
+  const { data: chosen } = await db.rpc("pick_rider_by_vehicle", {
+    p_provider_id: providerId,
+    p_vehicle: vehicleType,
+    p_exclude: declined.map((d) => d.rider_id),
+  });
+
+  if (!chosen) {
+    throw new RiderError(`No ${VEHICLE_LABEL[vehicleType]} is available right now. Try another vehicle.`);
+  }
+
+  // Calling a rider also marks the item ready (the two are one action now).
+  if (!booking.ready_for_pickup_at) {
+    await db.from("bookings").update({ ready_for_pickup_at: new Date().toISOString() }).eq("id", bookingId);
+  }
+
+  const { data: fee } = await db.rpc("rider_leg_fee", {
+    p_delivery_fee: booking.delivery_fee_kobo,
+    p_fulfillment: booking.fulfillment_type,
+    p_leg: 1,
+  });
+
+  const { error } = await db.from("rider_assignments").insert({
+    booking_id: bookingId,
+    rider_id: chosen as unknown as string,
+    leg: 1,
+    status: "assigned",
+    fee_share_kobo: (fee as unknown as number) ?? 0,
+  });
+
+  if (error) throw new RiderError(`Could not call a rider: ${error.message}`);
 }
 
 export async function acceptAssignment(riderId: string, assignmentId: string): Promise<void> {
@@ -146,7 +244,7 @@ export async function confirmDelivery(
 
   // Delivery + Return: now schedule the return pickup as its own rider job.
   if (booking.fulfillment_type === "delivery_return") {
-    await createReturnLeg(db, booking.id, booking.delivery_fee_kobo, assignment.fee_share_kobo);
+    await createReturnLeg(db, booking.id, booking.delivery_fee_kobo, assignment.fee_share_kobo, riderId);
   }
 }
 
@@ -229,25 +327,35 @@ async function bumpReliability(riderId: string, wasOnTime: boolean): Promise<voi
 
 /**
  * Section 15: "After the event, Nexa assigns a return pickup — this is a Nexa
- * rider job." Picks an eligible rider the same way the outbound leg did; if none
- * is free, Admin assigns it manually.
+ * rider job." Unlike the outbound leg the provider does not call this one; it is
+ * scheduled automatically after drop-off, to a registered rider of the same
+ * vehicle class the outbound used (a van load needs a van back). If none is
+ * free, Admin assigns it manually.
  */
 async function createReturnLeg(
   db: ReturnType<typeof createAdminClient>,
   bookingId: string,
   deliveryFeeKobo: number,
   outboundFeeKobo: number,
+  outboundRiderId: string,
 ): Promise<void> {
   const { data: booking } = await db
     .from("bookings")
-    .select("provider_id, requires_large_vehicle")
+    .select("provider_id")
     .eq("id", bookingId)
     .single();
   if (!booking) return;
 
-  const { data: chosen } = await db.rpc("pick_delivery_rider", {
+  const { data: outboundRider } = await db
+    .from("riders")
+    .select("vehicle_type")
+    .eq("id", outboundRiderId)
+    .single();
+  if (!outboundRider) return;
+
+  const { data: chosen } = await db.rpc("pick_rider_by_vehicle", {
     p_provider_id: booking.provider_id,
-    p_requires_large: booking.requires_large_vehicle,
+    p_vehicle: outboundRider.vehicle_type,
     p_exclude: [],
   });
   if (!chosen) return; // Admin assigns the return manually.

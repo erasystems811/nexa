@@ -2517,6 +2517,14 @@ export type Database = {
         }
         Returns: string
       }
+      pick_rider_by_vehicle: {
+        Args: {
+          p_exclude?: string[]
+          p_provider_id: string
+          p_vehicle: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Returns: string
+      }
       resolve_booking_terms: {
         Args: { p_provider_id: string }
         Returns: {

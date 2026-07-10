@@ -1,13 +1,10 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import {
-  acceptBooking,
-  markReadyForPickup,
-  recordStage1,
-  rejectBooking,
-} from "@/modules/bookings";
+import { acceptBooking, recordStage1, rejectBooking } from "@/modules/bookings";
+import { callRider } from "@/modules/rider";
 import { ProviderError } from "./context";
+import type { VehicleType } from "@/lib/db/types";
 
 /**
  * The provider's orders and the actions on them. PRD Section 13.
@@ -27,7 +24,8 @@ export async function listProviderOrders(providerId: string) {
       `id, reference, status, fulfillment_type, scheduled_start,
        agreed_price_kobo, delivery_fee_kobo, ready_for_pickup_at,
        stage_1_at, accepted_at,
-       listings ( title )`,
+       listings ( title ),
+       rider_assignments ( leg, status )`,
     )
     .eq("provider_id", providerId)
     .order("scheduled_start", { ascending: false });
@@ -63,15 +61,16 @@ export async function reject(
 }
 
 /**
- * Physical goods: mark ready for a rider. PRD Section 13 — this is all the
- * provider does; they never arrange delivery.
+ * Physical goods: the provider calls a registered rider of a chosen vehicle
+ * class (0023). This marks the item ready and books the rider in one action.
  */
-export async function markReady(providerId: string, bookingId: string): Promise<void> {
-  const booking = await assertOwned(providerId, bookingId);
-  if (!["delivery", "delivery_return"].includes(booking.fulfillment_type)) {
-    throw new ProviderError("Only physical-goods bookings have a pickup");
-  }
-  await markReadyForPickup(bookingId);
+export async function callRiderForBooking(
+  providerId: string,
+  bookingId: string,
+  vehicleType: VehicleType,
+): Promise<void> {
+  await assertOwned(providerId, bookingId);
+  await callRider(providerId, bookingId, vehicleType);
 }
 
 /**

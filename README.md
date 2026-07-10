@@ -14,10 +14,12 @@ Built:
   documents) starting Pending Verification; a delivery queue of assigned jobs;
   the flow picked up → en route → arrived → enter the customer's code; the return
   flow for rentals (condition note, return code, caution settlement); reliability
-  (on-time rate, completed count); earnings and payout account. A provider's
-  "mark ready" auto-creates the assignment, matched by vehicle type. A rider only
-  ever gets a physical-goods booking, and a delivery completes only on the
-  customer's code — never a "done" button. Payment maps exactly to Section 10:
+  (on-time rate, completed count); earnings and payout account. The provider
+  calls a rider by pressing "Call a bike / car / van" (a founder change from the
+  PRD's auto-assign — the pool is still Nexa-registered and verified, the
+  provider picks the vehicle class, not a stranger); the return leg is still
+  scheduled automatically. A rider only ever gets a physical-goods booking, and a
+  delivery completes only on the customer's code — never a "done" button. Payment maps exactly to Section 10:
   Delivery pays the rider the full fee on the drop-off code; Delivery + Return
   pays half on drop-off and half on return, and the return code both settles the
   caution fee (refund if sound, dispute if damaged) and releases the provider's

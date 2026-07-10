@@ -8,12 +8,12 @@ import {
   ProviderError,
   accept,
   blockUnavailable,
+  callRiderForBooking,
   checkIn,
   createListing,
   deleteListing,
   deleteMedia,
   duplicateListing,
-  markReady,
   reject,
   removeBlock,
   replyToReview,
@@ -216,9 +216,12 @@ export async function rejectOrderAction(bookingId: string): Promise<void> {
   revalidatePath("/studio/orders");
 }
 
-export async function markReadyAction(bookingId: string): Promise<void> {
+export async function callRiderAction(
+  bookingId: string,
+  vehicleType: "bike" | "car" | "van",
+): Promise<void> {
   const p = await provider();
-  await markReady(p.id, bookingId);
+  await callRiderForBooking(p.id, bookingId, vehicleType);
   revalidatePath("/studio/orders");
 }
 
