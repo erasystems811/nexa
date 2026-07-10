@@ -14,6 +14,8 @@ export {
   releaseFunds,
   payRider,
   settleCaution,
+  applyLatePenalty,
+  resolveCautionClaim,
   refund,
   PaymentsError,
   type HoldFundsInput,

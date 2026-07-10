@@ -9,7 +9,7 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 | `settings` | `platform_settings`, `feature_flags` | built |
 | `payments` | `payments`, `payment_ledger_entries`, `payouts`, `penalty_applications` | interface + escrow math built; gateway stubbed |
 | `users` | `profiles` | empty |
-| `admin` | verification queues, approvals, audit log | empty |
+| `admin` | verification, approvals, listing queue, orders, payments, disputes, strikes, reports, audit log | built (Admin Console) |
 | `provider` | `providers`, agreements, reliability, wallets, own listings/media/orders | built (Business Studio) |
 | `rider` | `riders`, `rider_assignments`, reliability, wallets | built (Rider App) |
 | `marketplace` | public read model | built |

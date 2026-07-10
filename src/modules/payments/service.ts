@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPaymentGateway } from "./gateway";
+import { calculateLatePenalty } from "./calculations";
 import type { Kobo } from "@/lib/money";
 
 /**
@@ -388,6 +389,183 @@ export async function settleCaution(input: {
     .from("payments")
     .update({ caution_refunded_kobo: payment.caution_refunded_kobo + outstanding })
     .eq("id", payment.id);
+}
+
+/**
+ * Applies a late-arrival penalty. PRD Section 10: 1% of booking value per 30
+ * minutes late (or the provider's recorded override), split 30% to the affected
+ * customer as compensation and 70% retained by Nexa.
+ *
+ * The penalty comes off the provider: their pending earnings drop by the whole
+ * penalty, the customer is refunded their share, and Nexa keeps the rest. The
+ * per-booking percentages were frozen at creation, so this is deterministic.
+ */
+export async function applyLatePenalty(input: {
+  bookingId: string;
+  lateMinutes: number;
+}): Promise<{ penaltyKobo: Kobo; customerShareKobo: Kobo; platformShareKobo: Kobo }> {
+  const db = createAdminClient();
+
+  const { data: booking } = await db
+    .from("bookings")
+    .select("id, provider_id, customer_id, agreed_price_kobo, late_penalty_percent_per_30min")
+    .eq("id", input.bookingId)
+    .single();
+  if (!booking) throw new PaymentsError(`No such booking ${input.bookingId}`);
+
+  const { data: payment } = await db
+    .from("payments")
+    .select("id, gateway_reference, penalty_kobo")
+    .eq("booking_id", input.bookingId)
+    .single();
+  if (!payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
+
+  const customerSharePercent = await getSettingNumeric(db, "penalty_customer_share_percent", 30);
+
+  const split = calculateLatePenalty(
+    booking.agreed_price_kobo,
+    input.lateMinutes,
+    booking.late_penalty_percent_per_30min,
+    customerSharePercent,
+  );
+  if (split.penaltyKobo === 0) return split;
+
+  // Record what was applied, with both shares, so the 30/70 is auditable.
+  const { error: appError } = await db.from("penalty_applications").insert({
+    booking_id: input.bookingId,
+    payment_id: payment.id,
+    reason: `Late arrival: ${input.lateMinutes} min`,
+    late_minutes: input.lateMinutes,
+    penalty_kobo: split.penaltyKobo,
+    customer_share_kobo: split.customerShareKobo,
+    platform_share_kobo: split.platformShareKobo,
+  });
+  if (appError) throw new PaymentsError(`Could not record the penalty: ${appError.message}`);
+
+  // The customer's compensation is refunded to them; Nexa keeps its share.
+  if (split.customerShareKobo > 0 && payment.gateway_reference) {
+    await getPaymentGateway().refund({
+      gatewayReference: payment.gateway_reference,
+      amountKobo: split.customerShareKobo,
+      reason: "Late-arrival compensation",
+      idempotencyKey: `${input.bookingId}:penalty_comp`,
+    });
+  }
+
+  await db.from("payment_ledger_entries").insert([
+    {
+      payment_id: payment.id,
+      booking_id: input.bookingId,
+      kind: "penalty",
+      amount_kobo: -split.penaltyKobo,
+      provider_id: booking.provider_id,
+      note: `Late penalty (${input.lateMinutes} min)`,
+    },
+    {
+      payment_id: payment.id,
+      booking_id: input.bookingId,
+      kind: "penalty",
+      amount_kobo: split.customerShareKobo,
+      customer_id: booking.customer_id,
+      note: "Late-arrival compensation",
+    },
+  ]);
+
+  await db.from("payments").update({ penalty_kobo: payment.penalty_kobo + split.penaltyKobo }).eq("id", payment.id);
+
+  // Reduce the provider's pending earnings by the penalty.
+  const { data: wallet } = await db
+    .from("provider_wallets")
+    .select("pending_kobo")
+    .eq("provider_id", booking.provider_id)
+    .single();
+  await db
+    .from("provider_wallets")
+    .update({ pending_kobo: Math.max(0, (wallet?.pending_kobo ?? 0) - split.penaltyKobo) })
+    .eq("provider_id", booking.provider_id);
+
+  return split;
+}
+
+/**
+ * Resolves a caution-fee damage claim. PRD Section 10: Admin reviews and can
+ * deduct from the caution fee to compensate the provider, refunding any
+ * remainder to the customer. A deliberate, manual decision — never automatic.
+ */
+export async function resolveCautionClaim(input: {
+  bookingId: string;
+  claimKobo: Kobo;
+}): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: payment } = await db
+    .from("payments")
+    .select("id, gateway_reference, caution_held_kobo, caution_refunded_kobo, caution_claimed_kobo")
+    .eq("booking_id", input.bookingId)
+    .single();
+  if (!payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
+
+  const outstanding =
+    payment.caution_held_kobo - payment.caution_refunded_kobo - payment.caution_claimed_kobo;
+  if (input.claimKobo > outstanding) {
+    throw new PaymentsError(`Claim exceeds the held caution fee (${outstanding} available)`);
+  }
+
+  const { data: booking } = await db
+    .from("bookings")
+    .select("provider_id, customer_id")
+    .eq("id", input.bookingId)
+    .single();
+
+  const refundKobo = outstanding - input.claimKobo;
+
+  // The claimed portion compensates the provider.
+  if (input.claimKobo > 0) {
+    await db.from("payment_ledger_entries").insert({
+      payment_id: payment.id,
+      booking_id: input.bookingId,
+      kind: "caution_claim",
+      amount_kobo: input.claimKobo,
+      provider_id: booking?.provider_id ?? null,
+      note: "Damage claim awarded from caution fee",
+    });
+  }
+
+  // The remainder goes back to the customer.
+  if (refundKobo > 0 && payment.gateway_reference) {
+    await getPaymentGateway().refund({
+      gatewayReference: payment.gateway_reference,
+      amountKobo: refundKobo,
+      reason: "Caution fee — remainder after damage claim",
+      idempotencyKey: `${input.bookingId}:caution_claim_refund`,
+    });
+    await db.from("payment_ledger_entries").insert({
+      payment_id: payment.id,
+      booking_id: input.bookingId,
+      kind: "caution_refund",
+      amount_kobo: -refundKobo,
+      customer_id: booking?.customer_id ?? null,
+      note: "Caution fee remainder refunded",
+    });
+  }
+
+  await db
+    .from("payments")
+    .update({
+      caution_claimed_kobo: payment.caution_claimed_kobo + input.claimKobo,
+      caution_refunded_kobo: payment.caution_refunded_kobo + refundKobo,
+    })
+    .eq("id", payment.id);
+}
+
+async function getSettingNumeric(
+  db: ReturnType<typeof createAdminClient>,
+  key: string,
+  fallback: number,
+): Promise<number> {
+  const { data } = await db.from("platform_settings").select("value").eq("key", key).maybeSingle();
+  const n = Number(data?.value);
+  return Number.isFinite(n) ? n : fallback;
 }
 
 export interface RefundInput {

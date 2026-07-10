@@ -6,9 +6,21 @@ Nexa holds the money until the job is done.
 The product spec is [`PRD.md`](./PRD.md). Every non-obvious decision in this
 codebase cites the section it came from.
 
-## Status: foundation + communication + marketplace + Studio + Rider App
+## Status: V1 foundation complete (Roadmap Phase 1)
+
+All four apps and the Admin Console are built and verified against the live
+project. Not started, by design: Plan My Event, Event Stand Mode, multi-city.
 
 Built:
+
+- **Admin Console** (Section 12). Dashboard; provider management (add manually,
+  approve with terms, suspend, feature, remove); rider management (verify,
+  suspend, reassign a delivery); listing approval queue; order monitoring with
+  manual override; flagged-conversation queue with flag→strike conversion;
+  customer management; payment management (escrow, commission, penalties,
+  refunds, caution claims); the no-show → suspend → appeal → strike workflow
+  (no automatic removal — always a manual decision); disputes queue; reports.
+  Every state change is written to an audit log. Internal-only.
 
 - **Rider App** (Section 15). Registration (name, contact, vehicle type,
   documents) starting Pending Verification; a delivery queue of assigned jobs;
@@ -86,9 +98,17 @@ ran, which is the only reason to trust the ones that pass now.
 ```bash
 npm run e2e:marketplace   # 49 assertions across both fulfillment paths
 npm run e2e:studio        # 21 assertions on provider boundaries
-npm run e2e:rider         # 29 assertions across delivery + return + damage
+npm run e2e:rider         # 31 assertions across delivery + return + damage
+npm run e2e:admin         # 24 assertions on the admin workflows
 npm run e2e:purge         # remove leftover e2e-* rows afterwards
 ```
+
+The admin test drives the money-moving and lifecycle workflows end to end: a
+late penalty with the provider's override and the 30/70 split, a caution damage
+claim (award to provider, refund the rest), the no-show → suspend → appeal →
+strike chain (and that a failed appeal never auto-removes), and converting a
+confirmed contact-info flag into a strike. Full suite across all five apps is
+156 assertions.
 
 The rider test runs a full plain-Delivery job and a full Delivery+Return job
 through the real payment releases, asserting who is paid what at each checkpoint:
