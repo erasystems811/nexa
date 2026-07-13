@@ -45,7 +45,7 @@ export default async function HomePage() {
         </div>
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[color:var(--color-ink-muted)]">
           <span>Verified providers</span>
-          <span>Escrow protection</span>
+          <span>Your money stays safe until the event is done.</span>
           <span>Event-ready services</span>
         </div>
       </section>
