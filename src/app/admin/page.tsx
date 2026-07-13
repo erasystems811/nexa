@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { requireStaff } from "@/modules/admin";
-import { adminDashboard } from "@/modules/admin";
+import { redirect } from "next/navigation";
+import { currentStaff, adminDashboard } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
 /** Admin dashboard. PRD Section 12. */
 export default async function AdminDashboard() {
-  await requireStaff();
+  const staff = await currentStaff();
+  if (!staff) redirect("/login?next=/admin");
+
   const d = await adminDashboard();
 
   const queues = [
