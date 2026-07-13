@@ -25,7 +25,7 @@ export default async function HomePage() {
               <Link href="/account" className="font-medium">Account</Link>
             </>
           ) : (
-            <Link href="/login" className="rounded-full bg-[color:var(--color-accent)] px-4 py-2 font-medium text-white">Sign in</Link>
+            <Link href="/login" className="rounded-full bg-[color:var(--color-accent)] px-4 py-2 font-medium text-white">Get started</Link>
           )}
         </nav>
       </header>

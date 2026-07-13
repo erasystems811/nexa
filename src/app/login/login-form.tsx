@@ -15,9 +15,9 @@ export function LoginForm({ next }: { next: string }) {
       <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-ink-muted)]">
         Nexa
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Sign in</h1>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Welcome back</h1>
       <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-        Use the same Nexa account for booking, vendor access, and admin access.
+        Sign in once and continue planning your event.
       </p>
 
       <form action={formAction} className="mt-8 space-y-4">
