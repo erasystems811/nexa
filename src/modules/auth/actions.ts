@@ -7,7 +7,7 @@ import { z } from "zod";
 import { publicEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { sendSignupConfirmationEmail } from "@/modules/email/resend";
+import { sendSignupVerificationCode } from "@/modules/email/resend";
 import { homePathForRole } from "./session";
 import type { UserRole } from "@/lib/db/types";
 
@@ -31,6 +31,7 @@ function safeNextPath(value: FormDataEntryValue | null): string | null {
   if (value.startsWith("//")) return null;
   return value;
 }
+
 export async function signIn(
   _prev: AuthFormState,
   formData: FormData,
@@ -48,7 +49,7 @@ export async function signIn(
   if (error) {
     const message = error.message.toLowerCase();
     if (message.includes("email not confirmed")) {
-      return { error: "Your account exists, but the email has not been confirmed yet. Check your email, then sign in again." };
+      return { error: "Your account exists, but it has not been verified yet. Enter the code from your email." };
     }
     if (message.includes("invalid login credentials")) {
       return { error: "That email and password do not match. If this is your first time, create an account first." };
@@ -112,22 +113,48 @@ export async function signUp(
     return { error: error.message };
   }
 
-  const confirmationUrl = data.properties?.action_link;
-  if (!confirmationUrl) {
-    return { error: "Account created, but Nexa could not create a confirmation email link. Please contact support." };
+  const code = data.properties?.email_otp;
+  if (!code) {
+    return { error: "Account created, but Nexa could not create a verification code. Please contact support." };
   }
 
   try {
-    await sendSignupConfirmationEmail({
+    await sendSignupVerificationCode({
       to: parsed.data.email,
       name: parsed.data.fullName,
-      confirmationUrl,
+      code,
     });
   } catch {
-    return { error: "Account created, but Nexa could not send the confirmation email. Check Resend settings and try again." };
+    return { error: "Account created, but Nexa could not send the verification code. Check Resend settings and try again." };
   }
 
-  return { message: "Account created. Check your email for the Nexa confirmation link, then sign in." };
+  redirect(`/verify?email=${encodeURIComponent(parsed.data.email)}` as Route);
+}
+
+export async function verifySignupCode(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const token = String(formData.get("code") ?? "").replace(/\D/g, "");
+
+  if (!email || token.length !== 6) {
+    return { error: "Enter the 6-digit code from your email." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "signup",
+  });
+
+  if (error) {
+    return { error: "That code is not correct or has expired. Check the email and try again." };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/");
 }
 
 export async function signOut(): Promise<void> {

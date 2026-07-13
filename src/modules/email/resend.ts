@@ -37,26 +37,25 @@ export async function sendEmail(input: SendEmailInput): Promise<void> {
   }
 }
 
-export async function sendSignupConfirmationEmail(input: {
+export async function sendSignupVerificationCode(input: {
   to: string;
   name?: string;
-  confirmationUrl: string;
+  code: string;
 }): Promise<void> {
   const firstName = input.name?.trim().split(/\s+/)[0] || "there";
+  const code = input.code.trim();
 
   await sendEmail({
     to: input.to,
-    subject: "Confirm your Nexa account",
-    text: `Hi ${firstName},\n\nConfirm your Nexa account with this link:\n${input.confirmationUrl}\n\nIf you did not create a Nexa account, you can ignore this email.`,
+    subject: "Your Nexa verification code",
+    text: `Hi ${firstName},\n\nYour Nexa verification code is ${code}.\n\nEnter this code in Nexa to finish creating your account. If you did not create a Nexa account, you can ignore this email.`,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0b1524">
-        <h1 style="font-size:24px;margin-bottom:12px">Confirm your Nexa account</h1>
+        <h1 style="font-size:24px;margin-bottom:12px">Your Nexa verification code</h1>
         <p>Hi ${escapeHtml(firstName)},</p>
-        <p>Tap the button below to confirm your account and continue planning your event on Nexa.</p>
-        <p style="margin:24px 0">
-          <a href="${input.confirmationUrl}" style="background:#0f2f5f;color:#fff;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:600">Confirm account</a>
-        </p>
-        <p style="font-size:13px;color:#64748b">If the button does not work, copy this link into your browser:<br>${input.confirmationUrl}</p>
+        <p>Enter this code in Nexa to finish creating your account:</p>
+        <p style="font-size:32px;letter-spacing:8px;font-weight:700;margin:24px 0;color:#0f2f5f">${escapeHtml(code)}</p>
+        <p style="font-size:13px;color:#64748b">If you did not create a Nexa account, you can ignore this email.</p>
       </div>
     `,
   });

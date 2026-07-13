@@ -18,7 +18,7 @@ const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> =
   { prefix: "/book", roles: ["customer", "admin"] },
 ];
 
-const AUTH_ROUTES = ["/login", "/register"];
+const AUTH_ROUTES = ["/login", "/register", "/verify"];
 
 function carryCookies(from: NextResponse, to: NextResponse): NextResponse {
   for (const c of from.cookies.getAll()) to.cookies.set(c);

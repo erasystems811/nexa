@@ -46,7 +46,7 @@ export function surfaceForHost(host: string | null | undefined, root = rootDomai
   return LABEL_TO_SURFACE[label] ?? "customer";
 }
 
-const AUTH_ROUTES = ["/login", "/register", "/account"];
+const AUTH_ROUTES = ["/login", "/register", "/verify", "/account"];
 
 function isAsset(path: string): boolean {
   return (
