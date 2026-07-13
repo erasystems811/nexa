@@ -43,7 +43,14 @@ export async function signIn(
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
-    return { error: "We could not sign you in with those details. Check the email and password, or create an account first." };
+    const message = error.message.toLowerCase();
+    if (message.includes("email not confirmed")) {
+      return { error: "Your account exists, but the email has not been confirmed yet. Check your email, then sign in again." };
+    }
+    if (message.includes("invalid login credentials")) {
+      return { error: "That email and password do not match. If this is your first time, create an account first." };
+    }
+    return { error: error.message };
   }
 
   const {
@@ -91,7 +98,21 @@ export async function signUp(
       data: { full_name: parsed.data.fullName, phone: parsed.data.phone },
     },
   });
-  if (error) return { error: error.message };
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("already registered") || message.includes("already exists")) {
+      return { error: "An account already exists for this email. Sign in instead." };
+    }
+    return { error: error.message };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { message: "Account created. Check your email to confirm it, then sign in." };
+  }
 
   revalidatePath("/", "layout");
   redirect("/");

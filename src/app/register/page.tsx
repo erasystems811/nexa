@@ -31,6 +31,7 @@ export default function RegisterPage() {
         />
 
         {state.error ? <Alert>{state.error}</Alert> : null}
+        {state.message ? <Alert tone="success">{state.message}</Alert> : null}
 
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Creating account..." : "Create account"}
