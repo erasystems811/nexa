@@ -2,9 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Nexa — Event supply marketplace",
+  title: "Nexa - Event supply marketplace",
   description:
     "Open one app. Close it knowing your event is under control. Book verified providers and pay safely.",
+  icons: {
+    icon: "/nexa-logo.png",
+    apple: "/nexa-logo.png",
+  },
 };
 
 export const viewport: Viewport = {

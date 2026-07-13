@@ -2,6 +2,7 @@ import Link from "next/link";
 import { featuredProviders, listCategories } from "@/modules/marketplace";
 import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
+import { Logo } from "@/components/logo";
 import { SearchBar } from "@/components/search-bar";
 
 /** Marketplace home. PRD Section 14 + Addendum Section 3 (premium, image-led). */
@@ -17,7 +18,9 @@ export default async function HomePage() {
     <main className="mx-auto max-w-3xl px-5 pb-16">
       {/* Top bar */}
       <header className="flex items-center justify-between py-5">
-        <span className="text-lg font-semibold tracking-tight">Nexa</span>
+        <Link href="/" aria-label="Nexa home">
+          <Logo markClassName="size-10 rounded-[1.1rem]" textClassName="text-lg" />
+        </Link>
         <nav className="flex items-center gap-5 text-sm">
           {session ? (
             <>

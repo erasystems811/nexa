@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireRole, signOut } from "@/modules/auth";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
 
 /** Nexa Business Studio. PRD Section 13. Never "Vendor Portal" (Section 16). */
@@ -21,8 +22,8 @@ export default async function StudioLayout({
     <div className="min-h-dvh bg-[color:var(--color-surface-sunk)] pb-20">
       <header className="border-b border-[color:var(--color-line)] bg-white">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-4">
-          <Link href="/studio" className="text-sm font-semibold tracking-tight">
-            Business Studio
+          <Link href="/studio" aria-label="Business Studio home">
+            <Logo label="Business Studio" markClassName="size-8 rounded-xl" textClassName="text-sm" />
           </Link>
           <div className="flex items-center gap-3">
             <form action={signOut}>

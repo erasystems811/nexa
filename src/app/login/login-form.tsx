@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { signIn, type AuthFormState } from "@/modules/auth/actions";
+import { Logo } from "@/components/logo";
 import { Alert, Button, Field } from "@/components/ui";
 
 const initialState: AuthFormState = {};
@@ -12,9 +13,9 @@ export function LoginForm({ next }: { next: string }) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-ink-muted)]">
-        Nexa
-      </p>
+      <Link href="/" aria-label="Nexa home">
+        <Logo markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
+      </Link>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Welcome back</h1>
       <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
         Sign in once and continue planning your event.
@@ -48,3 +49,4 @@ export function LoginForm({ next }: { next: string }) {
     </main>
   );
 }
+

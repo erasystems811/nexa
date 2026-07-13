@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { requireSession, signOut } from "@/modules/auth";
 import { currentStaff, recordLogin, can, PERMISSIONS as P } from "@/modules/admin";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
 import type { Permission } from "@/modules/admin";
 
@@ -36,8 +37,8 @@ export default async function AdminLayout({
     <div className="min-h-dvh bg-[color:var(--color-surface-sunk)]">
       <header className="border-b border-[color:var(--color-line)] bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
-          <Link href="/admin" className="text-sm font-semibold tracking-tight">
-            Nexa Admin
+          <Link href="/admin" aria-label="Nexa Admin home">
+            <Logo label="Nexa Admin" markClassName="size-8 rounded-xl" textClassName="text-sm" />
           </Link>
           <form action={signOut}>
             <Button type="submit" variant="ghost" className="h-9 px-4 text-xs">

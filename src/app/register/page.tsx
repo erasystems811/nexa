@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { signUp, type AuthFormState } from "@/modules/auth/actions";
+import { Logo } from "@/components/logo";
 import { Alert, Button, Field } from "@/components/ui";
 
 const initialState: AuthFormState = {};
@@ -12,9 +13,9 @@ export default function RegisterPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-ink-muted)]">
-        Nexa
-      </p>
+      <Link href="/" aria-label="Nexa home">
+        <Logo markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
+      </Link>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Create your Nexa account</h1>
       <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
         Create it once, then stay signed in while you book vendors and plan your event.
