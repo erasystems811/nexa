@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-/** My Orders. PRD Section 14. RLS restricts these to the caller's own bookings. */
+/** My Events. RLS restricts these to the caller's own bookings. */
 export async function listMyOrders() {
   const supabase = await createClient();
 
@@ -10,7 +10,7 @@ export async function listMyOrders() {
     .from("bookings")
     .select(
       `id, reference, status, fulfillment_type, scheduled_start,
-       agreed_price_kobo, delivery_fee_kobo, caution_fee_kobo, created_at,
+       agreed_price_kobo, created_at,
        listings ( title, slug ),
        providers ( business_name, slug )`,
     )
@@ -20,11 +20,11 @@ export async function listMyOrders() {
 }
 
 /**
- * One order, with its confirmation codes.
+ * One booking, with the customer's completion code.
  *
- * The codes come back only because the caller is the customer:
- * `booking_codes_customer_only` (0011) has no policy for providers or riders.
- * Section 14 wants them "front and centre" — for the person who owns them.
+ * The code comes back only because the caller is the customer:
+ * `booking_codes_customer_only` has no policy for anyone else. It belongs to the
+ * person who owns it, and it is the only thing that releases the balance.
  */
 export async function getMyOrder(bookingId: string) {
   const supabase = await createClient();
@@ -33,7 +33,7 @@ export async function getMyOrder(bookingId: string) {
     .from("bookings")
     .select(
       `id, reference, status, fulfillment_type, scheduled_start, scheduled_end,
-       address, notes, agreed_price_kobo, delivery_fee_kobo, caution_fee_kobo,
+       address, notes, agreed_price_kobo,
        stage_1_release_percent, commission_percent, stage_1_at, stage_2_at,
        created_at, accepted_at, completed_at,
        listings ( title, slug ),

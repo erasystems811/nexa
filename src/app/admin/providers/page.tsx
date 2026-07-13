@@ -7,7 +7,7 @@ import { AddProvider } from "./add-provider";
 
 const STATUSES = ["pending", "approved", "suspended", "rejected", "removed"] as const;
 
-/** Provider management. PRD Section 12. */
+/** Provider management. */
 export default async function ProvidersPage({
   searchParams,
 }: {

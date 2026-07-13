@@ -4,7 +4,7 @@ import { adminDb, audit, AdminError } from "./context";
 import { refund } from "@/modules/payments";
 
 /**
- * Suspension, appeals, and strikes. PRD Section 05.
+ * Suspension, appeals, and strikes.
  *
  * The consequence chain the founder specified, exactly:
  *   no-show            -> automatic suspension pending appeal + booking refunded
@@ -18,14 +18,14 @@ import { refund } from "@/modules/payments";
 
 /**
  * Records a no-show against a provider on a booking: suspends them pending
- * appeal, and cancels + refunds the booking (Section 10 no-show consequence).
+ * appeal, and cancels + refunds the booking.
  */
 export async function recordNoShow(actorId: string, bookingId: string): Promise<void> {
   const db = adminDb();
 
   const { data: booking } = await db
     .from("bookings")
-    .select("id, provider_id, status, agreed_price_kobo, delivery_fee_kobo, caution_fee_kobo")
+    .select("id, provider_id, status, agreed_price_kobo")
     .eq("id", bookingId)
     .single();
   if (!booking) throw new AdminError("No such booking");
@@ -45,7 +45,7 @@ export async function recordNoShow(actorId: string, bookingId: string): Promise<
   if (!["cancelled", "rejected", "completed"].includes(booking.status)) {
     await refund({
       bookingId,
-      amountKobo: booking.agreed_price_kobo + booking.delivery_fee_kobo + booking.caution_fee_kobo,
+      amountKobo: booking.agreed_price_kobo,
       reason: "Provider no-show",
     });
     await db.from("bookings").update({ status: "cancelled", cancellation_reason: "Provider no-show" }).eq("id", bookingId);
@@ -97,7 +97,7 @@ export async function resolveAppeal(
 }
 
 /**
- * Permanent removal — a manual decision (Section 05). Sets the provider to
+ * Permanent removal — a manual decision. Sets the provider to
  * 'removed', which hides their listings and reverts their role.
  */
 export async function removeProvider(actorId: string, providerId: string, reason: string): Promise<void> {

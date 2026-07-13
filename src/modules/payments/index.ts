@@ -1,20 +1,18 @@
 /**
- * Payments — escrow, releases, refunds, payouts. PRD Sections 10, 17.
+ * Payments — escrow, releases, refunds, payouts.
  *
  * This barrel is the ONLY entry point. `modules/payments/gateway/*` is private:
  * eslint.config.mjs blocks importing it from anywhere else, so booking logic
  * cannot reach a processor even by accident.
  *
- *   Booking logic  ->  payments.holdFunds()  ->  PaymentGateway  ->  Flutterwave
+ *   Booking logic  ->  payments.holdFunds  ->  PaymentGateway  ->  Flutterwave
  *                                                     ^
  *                                          swappable here, only here
  */
 export {
   holdFunds,
   releaseFunds,
-  settleCaution,
   applyLatePenalty,
-  resolveCautionClaim,
   refund,
   PaymentsError,
   type HoldFundsInput,

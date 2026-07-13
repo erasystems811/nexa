@@ -2,7 +2,7 @@ import "server-only";
 
 import { adminDb } from "./context";
 
-/** Customer management. PRD Section 12. */
+/** Customer management. */
 
 export async function listCustomers() {
   const db = adminDb();

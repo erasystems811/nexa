@@ -1,5 +1,5 @@
 /**
- * Disputes — the Admin resolution queue. PRD Sections 10, 12.
+ * Disputes — the Admin resolution queue.
  *
  * Owns: disputes, dispute_evidence.
  *

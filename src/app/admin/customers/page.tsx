@@ -4,7 +4,7 @@ import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listCustomers } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 
-/** Customer management. PRD Section 12. */
+/** Customer management. */
 export default async function CustomersPage() {
   await requireView(P.customersView);
   const customers = await listCustomers();

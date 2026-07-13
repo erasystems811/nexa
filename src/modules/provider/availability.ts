@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { ProviderError } from "./context";
 
 /**
- * Availability calendar. PRD Section 13: Available / Booked / Unavailable.
+ * Availability calendar.: Available / Booked / Unavailable.
  *
  * "Booked" is not stored here — it is derived from live bookings, so the two
  * cannot disagree. This table records only the provider's manual "Unavailable"
- * blocks, which is what `reject_double_booking` (0016) consults at checkout.
+ * blocks, which is what `reject_double_booking` consults at checkout.
  */
 
 export async function listAvailability(listingId: string) {

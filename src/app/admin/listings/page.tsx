@@ -5,7 +5,7 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "../action-button";
 
-/** Listing approval queue. PRD Section 06, 12. */
+/** Listing approval queue. */
 export default async function ListingsQueuePage() {
   await requireView(P.listingsView);
   const queue = await listingQueue();
@@ -34,10 +34,10 @@ export default async function ListingsQueuePage() {
                   </p>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <ActionButton label="Approve" variant="primary" run={() => decideListingAction(l.id, "approved")} />
-                  <ActionButton label="Request changes" prompt="What needs changing?" run={(r) => decideListingAction(l.id, "changes_requested", r)} />
-                  <ActionButton label="Reject" variant="danger" prompt="Reason:" run={(r) => decideListingAction(l.id, "rejected", r)} />
-                  <ActionButton label="Hide" run={() => decideListingAction(l.id, "hidden")} />
+                  <ActionButton label="Approve" variant="primary" run={decideListingAction.bind(null, l.id, "approved")} />
+                  <ActionButton label="Request changes" prompt="What needs changing?" run={decideListingAction.bind(null, l.id, "changes_requested")} />
+                  <ActionButton label="Reject" variant="danger" prompt="Reason:" run={decideListingAction.bind(null, l.id, "rejected")} />
+                  <ActionButton label="Hide" run={decideListingAction.bind(null, l.id, "hidden")} />
                 </div>
               </Card>
             </li>

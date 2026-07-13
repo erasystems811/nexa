@@ -4,7 +4,7 @@ import { requireView, listStaff, PERMISSIONS as P, STAFF_ROLE_LABELS } from "@/m
 import { Card, PageHeader } from "@/components/ui";
 import { InviteStaff } from "./invite-staff";
 
-/** Staff & permissions. PRD Addendum v1.1 §4. */
+/** Staff & permissions. */
 export default async function StaffPage() {
   await requireView(P.staffManage);
   const staff = await listStaff();

@@ -8,7 +8,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { PermissionEditor } from "./permission-editor";
 import { StaffControls } from "./staff-controls";
 
-/** One staff member — role, per-view permissions, login history. Addendum §4. */
+/** One staff member — role, per-view permissions, login history. */
 export default async function StaffMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await requireView(P.staffManage);

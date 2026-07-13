@@ -1,5 +1,5 @@
 /**
- * Subdomain -> surface routing. PRD Addendum v1.2.
+ * Subdomain -> surface routing.
  *
  * Nexa is one app serving three primary surfaces on subdomains:
  *
@@ -53,7 +53,7 @@ export function surfaceForHost(host: string | null | undefined, root = rootDomai
   return LABEL_TO_SURFACE[label] ?? "customer";
 }
 
-const AUTH_ROUTES = ["/login", "/register", "/verify", "/account"];
+const AUTH_ROUTES = ["/login", "/register", "/verify", "/reset", "/account"];
 
 function isAsset(path: string): boolean {
   return (

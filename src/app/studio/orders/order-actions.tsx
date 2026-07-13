@@ -3,22 +3,17 @@
 import { useState, useTransition } from "react";
 import {
   acceptOrderAction,
-  checkInAction,
   rejectOrderAction,
-  startFulfillmentAction,
+  startWorkAction,
 } from "@/modules/provider/actions";
 import type { BookingStatus } from "@/lib/db/types";
 
 export function OrderActions({
   bookingId,
   status,
-  isGoods,
-  stage1Done,
 }: {
   bookingId: string;
   status: BookingStatus;
-  isGoods: boolean;
-  stage1Done: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -36,36 +31,32 @@ export function OrderActions({
   return (
     <div className="mt-4 flex flex-wrap gap-2">
       {status === "paid_held" ? (
-        <>
-          <Btn primary disabled={pending} onClick={() => run(() => acceptOrderAction(bookingId))}>
-            Accept
-          </Btn>
-          <Btn disabled={pending} onClick={() => run(() => rejectOrderAction(bookingId))}>
-            Decline
-          </Btn>
-        </>
-      ) : null}
-
-      {status === "accepted" && isGoods && !stage1Done ? (
         <div className="w-full">
           <p className="mb-2 text-xs text-[color:var(--color-ink-muted)]">
-            Arrange delivery, pickup, setup, or transport directly according to your listing terms.
+            The customer has paid and Nexa is holding the money. Accept, and your
+            deposit is sent to your bank account straight away.
           </p>
-          <Btn primary disabled={pending} onClick={() => run(() => startFulfillmentAction(bookingId))}>
-            Mark fulfillment started
-          </Btn>
+          <div className="flex gap-2">
+            <Btn primary disabled={pending} onClick={() => run(() => acceptOrderAction(bookingId))}>
+              Accept booking
+            </Btn>
+            <Btn disabled={pending} onClick={() => run(() => rejectOrderAction(bookingId))}>
+              Decline
+            </Btn>
+          </div>
         </div>
       ) : null}
 
-      {status === "accepted" && !isGoods && !stage1Done ? (
-        <Btn primary disabled={pending} onClick={() => run(() => checkInAction(bookingId))}>
-          Check in at venue
+      {status === "accepted" ? (
+        <Btn primary disabled={pending} onClick={() => run(() => startWorkAction(bookingId))}>
+          Mark work started
         </Btn>
       ) : null}
 
       {status === "in_progress" ? (
         <p className="text-xs text-[color:var(--color-ink-muted)]">
-          Waiting for the customer&rsquo;s confirmation code to complete this booking.
+          When the job is done, ask the customer for their completion code and enter
+          it to release the balance.
         </p>
       ) : null}
 

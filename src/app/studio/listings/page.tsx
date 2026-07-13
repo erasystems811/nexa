@@ -14,7 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
   hidden: "Hidden by Admin",
 };
 
-/** Listings. PRD Section 13. */
+/** Listings. */
 export default async function StudioListings() {
   const provider = await requireProvider();
   const listings = await listMyListings(provider.id);

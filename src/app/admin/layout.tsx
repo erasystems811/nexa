@@ -7,7 +7,7 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
 import type { Permission } from "@/modules/admin";
 
-/** Nexa Admin Console. Internal staff only. PRD Section 12, Addendum §4. */
+/** Nexa Admin Console. Internal staff only.endum */
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -23,6 +23,7 @@ export default async function AdminLayout({
     { href: "/listings", label: "Listings", perm: P.listingsView },
     { href: "/orders", label: "Orders", perm: P.ordersView },
     { href: "/payments", label: "Payments", perm: P.paymentsView },
+    { href: "/subscriptions", label: "Subscriptions", perm: P.subscriptionsView },
     { href: "/disputes", label: "Disputes", perm: P.disputesView },
     { href: "/moderation", label: "Flags", perm: P.moderationView },
     { href: "/customers", label: "Customers", perm: P.customersView },

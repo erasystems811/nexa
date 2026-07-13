@@ -3,7 +3,7 @@ import { requireProvider, getMyListing, listAvailability } from "@/modules/provi
 import { PageHeader } from "@/components/ui";
 import { AvailabilityManager } from "./availability-manager";
 
-/** Availability calendar. PRD Section 13: Available / Booked / Unavailable. */
+/** Availability calendar.: Available / Booked / Unavailable. */
 export default async function AvailabilityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const provider = await requireProvider();

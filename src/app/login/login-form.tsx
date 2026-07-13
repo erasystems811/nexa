@@ -72,6 +72,17 @@ export function LoginForm({ next, surface }: { next: string; surface: Surface })
           required
         />
 
+        {/* The Admin login is a fixed env username/password, so there is nothing
+            for a code to reset. Everyone else — including a vendor whose account
+            Admin created without a password — starts here. */}
+        {isAdmin ? null : (
+          <p className="text-right text-sm">
+            <Link href="/reset" className="font-medium text-[color:var(--color-ink)] underline">
+              Forgot password?
+            </Link>
+          </p>
+        )}
+
         {state.error ? <Alert>{state.error}</Alert> : null}
         {state.message ? <Alert tone="success">{state.message}</Alert> : null}
 

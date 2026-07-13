@@ -8,7 +8,7 @@ import { getSession } from "@/modules/auth";
 import { formatKobo } from "@/lib/money";
 import { Button, Card, PageHeader } from "@/components/ui";
 
-/** Listing page. PRD Section 14. */
+/** Listing page. */
 export default async function ListingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const listing = await getListingBySlug(slug);
@@ -79,12 +79,6 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
             <span>{checkpoints.stage2}</span>
           </li>
         </ol>
-        {listing.caution_fee_kobo > 0 ? (
-          <p className="mt-3 text-xs text-[color:var(--color-ink-muted)]">
-            A refundable caution fee of {formatKobo(listing.caution_fee_kobo)} is held
-            separately and returned when the items come back in good condition.
-          </p>
-        ) : null}
       </Card>
 
       <div className="mt-6">

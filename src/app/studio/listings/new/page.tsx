@@ -9,7 +9,7 @@ export default async function NewListing() {
   await requireProvider();
   const categories = await listCategories();
 
-  // No category means no admin has opened one yet (Section 01). Nothing to list.
+  // No category means no admin has opened one yet. Nothing to list.
   if (categories.length === 0) notFound();
 
   return (

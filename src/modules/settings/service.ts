@@ -6,9 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { PlatformSetting, UserRole } from "@/lib/db/types";
 
 /**
- * Platform settings. PRD Sections 10 and 20 are explicit that commission, the
- * stage-1 release percentage, and the delivery fee are Admin Console values
- * "editable at any time without a code deployment".
+ * Platform settings.re explicit that commission, the
+ * stage-1 release percentage, and the vendor subscription fee are Admin Console
+ * values "editable at any time without a code deployment".
  *
  * So there are no constants for them in this file. The defaults below exist
  * only to keep arithmetic total if a row is somehow missing; the row is the
@@ -18,7 +18,6 @@ import type { PlatformSetting, UserRole } from "@/lib/db/types";
 export const SETTINGS = {
   commissionPercent: "commission_percent",
   stage1ReleasePercent: "stage_1_release_percent",
-  deliveryFeeKobo: "delivery_fee_kobo",
   depositPercentMin: "deposit_percent_min",
   depositPercentMax: "deposit_percent_max",
   latePenaltyPercentPer30Min: "late_penalty_percent_per_30min",
@@ -26,6 +25,8 @@ export const SETTINGS = {
   payoutScheduleDays: "payout_schedule_days",
   providerProbationBookings: "provider_probation_bookings",
   cancellationFreeWindowHours: "cancellation_free_window_hours",
+  subscriptionFeeKobo: "subscription_fee_kobo",
+  subscriptionGraceDays: "subscription_grace_days",
 } as const;
 
 export type SettingKey = (typeof SETTINGS)[keyof typeof SETTINGS];
@@ -33,7 +34,6 @@ export type SettingKey = (typeof SETTINGS)[keyof typeof SETTINGS];
 const FALLBACKS: Record<SettingKey, number> = {
   commission_percent: 10,
   stage_1_release_percent: 50,
-  delivery_fee_kobo: 150_000,
   deposit_percent_min: 10,
   deposit_percent_max: 70,
   late_penalty_percent_per_30min: 1,
@@ -41,6 +41,8 @@ const FALLBACKS: Record<SettingKey, number> = {
   payout_schedule_days: 7,
   provider_probation_bookings: 3,
   cancellation_free_window_hours: 0,
+  subscription_fee_kobo: 500_000,
+  subscription_grace_days: 0,
 };
 
 export const getSettings = cache(async (): Promise<PlatformSetting[]> => {

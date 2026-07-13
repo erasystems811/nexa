@@ -21,7 +21,8 @@ export function InviteStaff() {
     <form action={action} className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-4">
       <h2 className="text-sm font-semibold">Add a staff member</h2>
       <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-        Creates their own login and starts them on the chosen role&rsquo;s views. You can grant extra views after.
+        Creates their own login and starts them on the chosen role&rsquo;s views. You can grant extra views after. They
+        are emailed a code to set their own password.
       </p>
       <div className="mt-3 space-y-2">
         <input name="full_name" placeholder="Full name" required className="h-11 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm" />
@@ -34,7 +35,14 @@ export function InviteStaff() {
         </select>
       </div>
       {state.error ? <div className="mt-2"><Alert>{state.error}</Alert></div> : null}
-      {state.ok ? <div className="mt-2"><Alert tone="success">Staff member added.</Alert></div> : null}
+      {state.ok ? (
+        <div className="mt-2 space-y-2">
+          <Alert tone="success">
+            {state.warning ? "Staff member added." : "Staff member added. A set-password email is on its way to them."}
+          </Alert>
+          {state.warning ? <Alert>{state.warning}</Alert> : null}
+        </div>
+      ) : null}
       <div className="mt-3 flex gap-2">
         <button type="submit" disabled={pending} className="h-10 rounded-full bg-[color:var(--color-ink)] px-5 text-sm font-medium text-white disabled:opacity-40">
           {pending ? "Adding…" : "Add staff"}

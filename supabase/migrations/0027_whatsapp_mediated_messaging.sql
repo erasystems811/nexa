@@ -37,7 +37,11 @@ create trigger whatsapp_contacts_set_updated_at
 create table public.whatsapp_threads (
   id                  uuid primary key default gen_random_uuid(),
   conversation_id      uuid not null unique references public.conversations (id) on delete cascade,
+  -- The customer's WhatsApp identity on this thread.
   whatsapp_contact_id  uuid not null references public.whatsapp_contacts (id) on delete cascade,
+  -- The vendor's. Nullable: a thread exists from the customer's first message,
+  -- which is before the vendor has ever replied from their own number.
+  provider_whatsapp_contact_id uuid references public.whatsapp_contacts (id) on delete set null,
   business_phone_id    text,
   status              text not null default 'active'
     check (status in ('active', 'paused', 'closed')),
@@ -103,15 +107,17 @@ as $$
   select public.scan_message_body(body);
 $$;
 
-insert into public.feature_flags (key, enabled, description)
+insert into public.feature_flags (key, enabled, label, description)
 values
   (
     'whatsapp_mediated_chat',
     false,
+    'WhatsApp mediated chat',
     'Routes customer and vendor WhatsApp messages through Nexa so neither side sees the other number and escrow records stay visible.'
   )
 on conflict (key) do update
-  set description = excluded.description;
+  set label = excluded.label,
+      description = excluded.description;
 
 grant select, insert, update, delete on public.whatsapp_contacts to authenticated;
 grant select, insert, update, delete on public.whatsapp_threads to authenticated;

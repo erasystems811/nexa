@@ -4,7 +4,7 @@ import { requireProvider, providerDashboard } from "@/modules/provider";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
-/** Studio dashboard. PRD Section 13. */
+/** Studio dashboard. */
 export default async function StudioHome() {
   const provider = await requireProvider();
   const stats = await providerDashboard(provider.id);

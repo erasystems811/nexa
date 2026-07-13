@@ -6,7 +6,7 @@ import { splitByPercent, type Kobo } from "@/lib/money";
  *
  * Every percentage arrives as an argument. None is read from a constant here;
  * they are frozen onto the booking at creation from platform settings and the
- * provider agreement (PRD Sections 10, 20).
+ * provider agreement
  */
 
 export interface BookingTerms {
@@ -30,7 +30,7 @@ export interface PayoutBreakdown {
 /**
  * Commission comes off the top; the remainder is what the provider earns, split
  * across the two checkpoints. A stage-1 percentage of 0 collapses this to a
- * single release on the confirmation code — which is what PRD Section 20's
+ * single release on the confirmation code — which is what's
  * "single full release" resolution describes, expressed as a setting rather
  * than as a different code path.
  */
@@ -56,7 +56,7 @@ export interface PenaltyBreakdown {
 }
 
 /**
- * PRD Section 10: "1% of booking value deducted from provider payout per 30
+ *: "1% of booking value deducted from provider payout per 30
  * minutes late". A 29-minute delay is not yet a penalty; 30 minutes is one
  * increment. The penalty can never exceed the booking value.
  */
@@ -80,7 +80,7 @@ export function calculateLatePenalty(
 }
 
 /**
- * PRD Section 09: before acceptance the customer always gets everything back.
+ *: before acceptance the customer always gets everything back.
  * After acceptance, the provider's own tiered policy decides — "calculated
  * automatically, never manual".
  *

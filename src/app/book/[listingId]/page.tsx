@@ -5,7 +5,7 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { BookingForm } from "./booking-form";
 
-/** Date/time, confirm, pay. Addendum v1.2: vendors own ordinary fulfillment. */
+/** Date/time, confirm, pay.: vendors own ordinary fulfillment. */
 export default async function BookPage({ params }: { params: Promise<{ listingId: string }> }) {
   const { listingId } = await params;
   const { userId } = await requireSession();
@@ -14,7 +14,7 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
   const { data: listing } = await supabase
     .from("listings")
     .select(
-      `id, title, price_kobo, price_type, payment_type, caution_fee_kobo,
+      `id, title, price_kobo, price_type, payment_type,
        categories ( name, fulfillment_type ),
        providers ( business_name )`,
     )
@@ -23,8 +23,6 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
     .maybeSingle();
 
   if (!listing) notFound();
-
-  const fulfillment = listing.categories.fulfillment_type;
 
   let priceKobo = listing.price_kobo ?? 0;
   if (listing.price_type === "negotiable") {
@@ -40,8 +38,7 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
     priceKobo = offer.amount_kobo;
   }
 
-  const cautionFee = fulfillment === "delivery_return" ? listing.caution_fee_kobo : 0;
-  const total = priceKobo + cautionFee;
+  const total = priceKobo;
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
@@ -55,12 +52,6 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
             </dt>
             <dd className="tabular-nums">{formatKobo(priceKobo)}</dd>
           </div>
-          {cautionFee > 0 ? (
-            <div className="flex justify-between">
-              <dt className="text-[color:var(--color-ink-muted)]">Caution fee (refundable)</dt>
-              <dd className="tabular-nums">{formatKobo(cautionFee)}</dd>
-            </div>
-          ) : null}
           <div className="flex justify-between border-t border-[color:var(--color-line)] pt-2 font-medium">
             <dt>Total</dt>
             <dd className="tabular-nums">{formatKobo(total)}</dd>

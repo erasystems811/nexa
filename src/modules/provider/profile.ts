@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { ProviderError } from "./context";
 
 /**
- * Business profile. PRD Section 13: name, logo, cover, description, location,
+ * Business profile.: name, logo, cover, description, location,
  * contact, social links, business hours.
  *
- * Contact phone and email live in provider_contacts (0015), unreadable by the
- * public. A provider edits their own; a customer never sees them (Section 08).
+ * Contact phone and email live in provider_contacts, unreadable by the
+ * public. A provider edits their own; a customer never sees them.
  * Deposit %, penalty overrides, verification, and featured status are Admin's,
  * enforced by guard_provider_self_approval — not editable here.
  */

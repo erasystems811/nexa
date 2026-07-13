@@ -5,17 +5,20 @@ import * as admin from ".";
 import { PERMISSIONS as P } from "./permissions";
 import type { BookingStatus } from "@/lib/db/types";
 import type { Permission, StaffRole } from "./permissions";
+import type { SubscriptionStatus } from "./subscriptions";
 
 export interface AdminActionState {
   error?: string;
   ok?: boolean;
+  /** The action succeeded, but something the person needs to know did not. */
+  warning?: string;
 }
 
 /**
  * Every action names the permission it requires and enforces it here — a Server
  * Action is a bare endpoint, so this IS the authorisation boundary, not the
  * hidden button. Returns the acting staff's user id, which every downstream
- * call threads into the audit log (Addendum §4: every action tied to an account).
+ * call threads into the audit log: every action tied to an account).
  */
 async function actor(permission: Permission): Promise<string> {
   return admin.requirePermission(permission);
@@ -54,19 +57,19 @@ export async function featureProviderAction(providerId: string, featured: boolea
   await admin.setProviderFeatured(await actor(P.providersEdit), providerId, featured);
   revalidatePath(`/admin/providers/${providerId}`);
 }
-export async function removeProviderAction(providerId: string, reason: string): Promise<void> {
-  await admin.removeProvider(await actor(P.providersRemove), providerId, reason);
+export async function removeProviderAction(providerId: string, reason?: string): Promise<void> {
+  await admin.removeProvider(await actor(P.providersRemove), providerId, reason ?? "");
   revalidatePath(`/admin/providers/${providerId}`);
 }
 export async function addProviderAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
   try {
-    await admin.addProviderManually(await actor(P.providersApprove), {
+    const result = await admin.addProviderManually(await actor(P.providersApprove), {
       email: String(formData.get("email")),
       businessName: String(formData.get("business_name")),
       depositPercent: Number(formData.get("deposit_percent") ?? 0),
     });
     revalidatePath("/admin/providers");
-    return { ok: true };
+    return { ok: true, warning: result.warning };
   } catch (e) {
     return fail(e);
   }
@@ -130,26 +133,33 @@ export async function refundAction(_prev: AdminActionState, formData: FormData):
   }
 }
 
+// ---- subscriptions (the monthly platform fee) ------------------------------
+
+/**
+ * Records a payment Admin has confirmed by hand — a transfer or cash, since
+ * Flutterwave cannot auto-bill yet. `amountNaira` comes from the ActionButton
+ * prompt; blank means "the amount this vendor is billed", the usual case.
+ */
+export async function markSubscriptionPaidAction(providerId: string, amountNaira?: string): Promise<void> {
+  const id = await actor(P.subscriptionsManage);
+  const naira = amountNaira?.trim() ? Number(amountNaira) : undefined;
+  if (naira !== undefined && !Number.isFinite(naira)) throw new Error(`"${amountNaira}" is not an amount`);
+  await admin.markSubscriptionPaid(id, providerId, naira === undefined ? undefined : Math.round(naira * 100));
+  revalidatePath("/admin/subscriptions");
+  revalidatePath(`/admin/providers/${providerId}`);
+}
+
+export async function setSubscriptionStatusAction(providerId: string, status: SubscriptionStatus): Promise<void> {
+  await admin.setSubscriptionStatus(await actor(P.subscriptionsManage), providerId, status);
+  revalidatePath("/admin/subscriptions");
+  revalidatePath(`/admin/providers/${providerId}`);
+}
+
 // ---- disputes -------------------------------------------------------------
 
 export async function resolveDisputeAction(disputeId: string, outcome: "resolved" | "rejected", note: string): Promise<void> {
   await admin.resolveDispute(await actor(P.disputesResolve), disputeId, outcome, note);
   revalidatePath("/admin/disputes");
-}
-export async function resolveCautionClaimAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
-  try {
-    const bookingId = String(formData.get("booking_id"));
-    await admin.adminResolveCautionClaim(
-      await actor(P.disputesResolve),
-      bookingId,
-      Math.round(Number(formData.get("claim") ?? 0) * 100),
-      String(formData.get("dispute_id") ?? "") || undefined,
-    );
-    revalidatePath("/admin/disputes");
-    return { ok: true };
-  } catch (e) {
-    return fail(e);
-  }
 }
 
 // ---- moderation -----------------------------------------------------------
@@ -167,14 +177,14 @@ export async function flagToStrikeAction(flagId: string): Promise<void> {
 
 export async function inviteStaffAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
   try {
-    await admin.inviteStaff(await actor(P.staffManage), {
+    const result = await admin.inviteStaff(await actor(P.staffManage), {
       email: String(formData.get("email")),
       fullName: String(formData.get("full_name")),
       role: String(formData.get("role")) as StaffRole,
       department: String(formData.get("department") ?? "") || undefined,
     });
     revalidatePath("/admin/staff");
-    return { ok: true };
+    return { ok: true, warning: result.warning };
   } catch (e) {
     return fail(e);
   }

@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { ProviderError } from "./context";
 
 /**
- * Reviews. PRD Section 13: read and reply.
+ * Reviews.: read and reply.
  *
- * A provider may reply and nothing else — guard_review_scores (0011) rejects any
+ * A provider may reply and nothing else — guard_review_scores rejects any
  * attempt to touch the four rating axes, so a provider cannot edit the numbers
  * that feed their own reputation.
  */

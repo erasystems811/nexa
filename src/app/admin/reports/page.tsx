@@ -3,7 +3,7 @@ import { reports } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
-/** Reports. PRD Section 12. */
+/** Reports. */
 export default async function ReportsPage() {
   await requireView(P.reportsView);
   const r = await reports();

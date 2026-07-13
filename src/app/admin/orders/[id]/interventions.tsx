@@ -12,7 +12,7 @@ import { Alert, Card } from "@/components/ui";
 const STATUSES = ["paid_held", "accepted", "in_progress", "completed", "cancelled", "disputed"];
 
 /**
- * The three money/state interventions Section 12 gives Admin on a booking:
+ * The three money/state interventions gives Admin on a booking:
  * a manual status override, a late-arrival penalty (1%/30min, 30/70 split), and
  * a refund. Each is audited server-side.
  */

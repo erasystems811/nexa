@@ -2,13 +2,13 @@ import "server-only";
 
 import { adminDb, audit, AdminError } from "./context";
 
-/** Disputes queue. PRD Section 12. Includes caution-fee damage claims. */
+/** Disputes queue. Includes caution-fee damage claims. */
 
 export async function listDisputes(status?: string) {
   const db = adminDb();
   let q = db
     .from("disputes")
-    .select("id, reason, status, is_damage_claim, caution_claim_kobo, created_at, bookings ( reference, providers ( business_name ) )")
+    .select("id, reason, status, created_at, bookings ( reference, providers ( business_name ) )")
     .order("created_at", { ascending: false });
   if (status) q = q.eq("status", status as never);
   else q = q.in("status", ["open", "under_review"]);

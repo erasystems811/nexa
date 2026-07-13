@@ -14,7 +14,7 @@ import type { Database } from "@/lib/db/types";
  * user-controlled input, and never in a client component.
  *
  * The guard triggers in 0011_rls.sql are written to let this client through by
- * checking `auth.uid() is null` — which is precisely what a service-role
+ * checking `auth.uid is null` — which is precisely what a service-role
  * connection looks like. Calling this from a user request thereby hands that
  * request the platform's authority. Don't.
  */

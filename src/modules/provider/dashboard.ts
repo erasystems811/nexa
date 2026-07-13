@@ -3,7 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Dashboard figures. PRD Section 13: today's and upcoming bookings, revenue,
+ * Dashboard figures.: today's and upcoming bookings, revenue,
  * rating, reviews.
  *
  * Revenue is read from the wallet's completed earnings, not summed from

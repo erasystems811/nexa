@@ -1,14 +1,17 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { requireRole, signOut } from "@/modules/auth";
+import { mySubscription } from "@/modules/provider";
+import { SubscriptionBanner } from "@/components/subscription-banner";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
 
-/** Nexa Business Studio. PRD Section 13. Never "Vendor Portal" (Section 16). */
+/** Nexa Business Studio. Never "Vendor Portal". */
 export default async function StudioLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   await requireRole("provider");
+  const subscription = await mySubscription();
 
   const tabs = [
     { href: "/", label: "Home" },
@@ -36,7 +39,12 @@ export default async function StudioLayout({
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-5 py-6">{children}</div>
+      <div className="mx-auto max-w-2xl px-5 py-6">
+        {subscription ? (
+          <SubscriptionBanner status={subscription.status} amountKobo={subscription.amount_kobo} />
+        ) : null}
+        {children}
+      </div>
 
       {/* Mobile-first: a bottom tab bar, the way Section 16 asks. */}
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-[color:var(--color-line)] bg-white">

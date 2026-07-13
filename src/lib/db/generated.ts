@@ -55,6 +55,61 @@ export type Database = {
           },
         ]
       }
+      blocked_message_attempts: {
+        Row: {
+          body: string
+          channel: Database["public"]["Enums"]["message_origin"]
+          conversation_id: string | null
+          created_at: string
+          id: string
+          reasons: Database["public"]["Enums"]["moderation_flag_reason"][]
+          sender_id: string | null
+          whatsapp_contact_id: string | null
+        }
+        Insert: {
+          body: string
+          channel: Database["public"]["Enums"]["message_origin"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
+          sender_id?: string | null
+          whatsapp_contact_id?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: Database["public"]["Enums"]["message_origin"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
+          sender_id?: string | null
+          whatsapp_contact_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_message_attempts_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_message_attempts_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_message_attempts_whatsapp_contact_id_fkey"
+            columns: ["whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_confirmation_codes: {
         Row: {
           booking_id: string
@@ -110,12 +165,10 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
-          caution_fee_kobo: number
           commission_percent: number
           completed_at: string | null
           created_at: string
           customer_id: string
-          delivery_fee_kobo: number
           event_project_id: string | null
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
           id: string
@@ -125,10 +178,8 @@ export type Database = {
           notes: string | null
           provider_arrived_at: string | null
           provider_id: string
-          ready_for_pickup_at: string | null
           reference: string
           rejected_at: string | null
-          requires_large_vehicle: boolean
           scheduled_end: string | null
           scheduled_start: string
           stage_1_at: string | null
@@ -146,12 +197,10 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
-          caution_fee_kobo?: number
           commission_percent: number
           completed_at?: string | null
           created_at?: string
           customer_id: string
-          delivery_fee_kobo?: number
           event_project_id?: string | null
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -161,10 +210,8 @@ export type Database = {
           notes?: string | null
           provider_arrived_at?: string | null
           provider_id: string
-          ready_for_pickup_at?: string | null
           reference?: string
           rejected_at?: string | null
-          requires_large_vehicle?: boolean
           scheduled_end?: string | null
           scheduled_start: string
           stage_1_at?: string | null
@@ -182,12 +229,10 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
-          caution_fee_kobo?: number
           commission_percent?: number
           completed_at?: string | null
           created_at?: string
           customer_id?: string
-          delivery_fee_kobo?: number
           event_project_id?: string | null
           fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
@@ -197,10 +242,8 @@ export type Database = {
           notes?: string | null
           provider_arrived_at?: string | null
           provider_id?: string
-          ready_for_pickup_at?: string | null
           reference?: string
           rejected_at?: string | null
-          requires_large_vehicle?: boolean
           scheduled_end?: string | null
           scheduled_start?: string
           stage_1_at?: string | null
@@ -247,79 +290,9 @@ export type Database = {
           },
         ]
       }
-      call_sessions: {
-        Row: {
-          conversation_id: string
-          created_at: string
-          customer_proxy_number: string | null
-          duration_seconds: number | null
-          ended_at: string | null
-          expires_at: string | null
-          failure_reason: string | null
-          id: string
-          initiator_id: string
-          provider_proxy_number: string | null
-          provider_ref: string | null
-          session_ref: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["call_status"]
-          telephony_provider: string | null
-        }
-        Insert: {
-          conversation_id: string
-          created_at?: string
-          customer_proxy_number?: string | null
-          duration_seconds?: number | null
-          ended_at?: string | null
-          expires_at?: string | null
-          failure_reason?: string | null
-          id?: string
-          initiator_id: string
-          provider_proxy_number?: string | null
-          provider_ref?: string | null
-          session_ref?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["call_status"]
-          telephony_provider?: string | null
-        }
-        Update: {
-          conversation_id?: string
-          created_at?: string
-          customer_proxy_number?: string | null
-          duration_seconds?: number | null
-          ended_at?: string | null
-          expires_at?: string | null
-          failure_reason?: string | null
-          id?: string
-          initiator_id?: string
-          provider_proxy_number?: string | null
-          provider_ref?: string | null
-          session_ref?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["call_status"]
-          telephony_provider?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "call_sessions_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_sessions_initiator_id_fkey"
-            columns: ["initiator_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       categories: {
         Row: {
           created_at: string
-          delivery_mode: Database["public"]["Enums"]["delivery_mode"]
           description: string | null
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
           icon: string | null
@@ -334,7 +307,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          delivery_mode?: Database["public"]["Enums"]["delivery_mode"]
           description?: string | null
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
           icon?: string | null
@@ -349,7 +321,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          delivery_mode?: Database["public"]["Enums"]["delivery_mode"]
           description?: string | null
           fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"]
           icon?: string | null
@@ -464,160 +435,6 @@ export type Database = {
           },
         ]
       }
-      blocked_message_attempts: {
-        Row: {
-          body: string
-          channel: Database["public"]["Enums"]["message_origin"]
-          conversation_id: string | null
-          created_at: string
-          id: string
-          reasons: Database["public"]["Enums"]["moderation_flag_reason"][]
-          sender_id: string | null
-          whatsapp_contact_id: string | null
-        }
-        Insert: {
-          body: string
-          channel: Database["public"]["Enums"]["message_origin"]
-          conversation_id?: string | null
-          created_at?: string
-          id?: string
-          reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
-          sender_id?: string | null
-          whatsapp_contact_id?: string | null
-        }
-        Update: {
-          body?: string
-          channel?: Database["public"]["Enums"]["message_origin"]
-          conversation_id?: string | null
-          created_at?: string
-          id?: string
-          reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
-          sender_id?: string | null
-          whatsapp_contact_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "blocked_message_attempts_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blocked_message_attempts_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blocked_message_attempts_whatsapp_contact_id_fkey"
-            columns: ["whatsapp_contact_id"]
-            isOneToOne: false
-            referencedRelation: "whatsapp_contacts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      whatsapp_contacts: {
-        Row: {
-          consent_at: string | null
-          created_at: string
-          display_name: string | null
-          id: string
-          phone_hint: string | null
-          profile_id: string | null
-          updated_at: string
-          wa_id: string
-        }
-        Insert: {
-          consent_at?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          phone_hint?: string | null
-          profile_id?: string | null
-          updated_at?: string
-          wa_id: string
-        }
-        Update: {
-          consent_at?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          phone_hint?: string | null
-          profile_id?: string | null
-          updated_at?: string
-          wa_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "whatsapp_contacts_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      whatsapp_threads: {
-        Row: {
-          business_phone_id: string | null
-          conversation_id: string
-          created_at: string
-          id: string
-          last_webhook_at: string | null
-          provider_whatsapp_contact_id: string | null
-          status: string
-          updated_at: string
-          whatsapp_contact_id: string
-        }
-        Insert: {
-          business_phone_id?: string | null
-          conversation_id: string
-          created_at?: string
-          id?: string
-          last_webhook_at?: string | null
-          provider_whatsapp_contact_id?: string | null
-          status?: string
-          updated_at?: string
-          whatsapp_contact_id: string
-        }
-        Update: {
-          business_phone_id?: string | null
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          last_webhook_at?: string | null
-          provider_whatsapp_contact_id?: string | null
-          status?: string
-          updated_at?: string
-          whatsapp_contact_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "whatsapp_threads_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: true
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whatsapp_threads_provider_whatsapp_contact_id_fkey"
-            columns: ["provider_whatsapp_contact_id"]
-            isOneToOne: false
-            referencedRelation: "whatsapp_contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whatsapp_threads_whatsapp_contact_id_fkey"
-            columns: ["whatsapp_contact_id"]
-            isOneToOne: false
-            referencedRelation: "whatsapp_contacts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       dispute_evidence: {
         Row: {
           created_at: string
@@ -663,11 +480,9 @@ export type Database = {
       disputes: {
         Row: {
           booking_id: string
-          caution_claim_kobo: number | null
           created_at: string
           description: string | null
           id: string
-          is_damage_claim: boolean
           raised_by: string
           reason: string
           resolution_note: string | null
@@ -678,11 +493,9 @@ export type Database = {
         }
         Insert: {
           booking_id: string
-          caution_claim_kobo?: number | null
           created_at?: string
           description?: string | null
           id?: string
-          is_damage_claim?: boolean
           raised_by: string
           reason: string
           resolution_note?: string | null
@@ -693,11 +506,9 @@ export type Database = {
         }
         Update: {
           booking_id?: string
-          caution_claim_kobo?: number | null
           created_at?: string
           description?: string | null
           id?: string
-          is_damage_claim?: boolean
           raised_by?: string
           reason?: string
           resolution_note?: string | null
@@ -1054,7 +865,6 @@ export type Database = {
           approved_by: string | null
           cancellation_policy: Json
           category_id: string
-          caution_fee_kobo: number
           created_at: string
           description: string | null
           id: string
@@ -1065,7 +875,6 @@ export type Database = {
           price_type: Database["public"]["Enums"]["price_type"]
           provider_id: string
           rejection_reason: string | null
-          requires_large_vehicle: boolean
           slug: string
           status: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -1076,7 +885,6 @@ export type Database = {
           approved_by?: string | null
           cancellation_policy?: Json
           category_id: string
-          caution_fee_kobo?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -1087,7 +895,6 @@ export type Database = {
           price_type?: Database["public"]["Enums"]["price_type"]
           provider_id: string
           rejection_reason?: string | null
-          requires_large_vehicle?: boolean
           slug: string
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -1098,7 +905,6 @@ export type Database = {
           approved_by?: string | null
           cancellation_policy?: Json
           category_id?: string
-          caution_fee_kobo?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -1109,7 +915,6 @@ export type Database = {
           price_type?: Database["public"]["Enums"]["price_type"]
           provider_id?: string
           rejection_reason?: string | null
-          requires_large_vehicle?: boolean
           slug?: string
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
@@ -1144,14 +949,14 @@ export type Database = {
           body: string
           conversation_id: string
           created_at: string
+          external_message_id: string | null
           flag_reason:
             | Database["public"]["Enums"]["moderation_flag_reason"]
             | null
           flag_reasons: Database["public"]["Enums"]["moderation_flag_reason"][]
-          external_message_id: string | null
           id: string
-          origin: Database["public"]["Enums"]["message_origin"]
           is_flagged: boolean
+          origin: Database["public"]["Enums"]["message_origin"]
           read_at: string | null
           sender_id: string
         }
@@ -1159,14 +964,14 @@ export type Database = {
           body: string
           conversation_id: string
           created_at?: string
+          external_message_id?: string | null
           flag_reason?:
             | Database["public"]["Enums"]["moderation_flag_reason"]
             | null
           flag_reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
-          external_message_id?: string | null
           id?: string
-          origin?: Database["public"]["Enums"]["message_origin"]
           is_flagged?: boolean
+          origin?: Database["public"]["Enums"]["message_origin"]
           read_at?: string | null
           sender_id: string
         }
@@ -1174,14 +979,14 @@ export type Database = {
           body?: string
           conversation_id?: string
           created_at?: string
+          external_message_id?: string | null
           flag_reason?:
             | Database["public"]["Enums"]["moderation_flag_reason"]
             | null
           flag_reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
-          external_message_id?: string | null
           id?: string
-          origin?: Database["public"]["Enums"]["message_origin"]
           is_flagged?: boolean
+          origin?: Database["public"]["Enums"]["message_origin"]
           read_at?: string | null
           sender_id?: string
         }
@@ -1382,7 +1187,6 @@ export type Database = {
           note: string | null
           payment_id: string
           provider_id: string | null
-          rider_id: string | null
           stage: number | null
         }
         Insert: {
@@ -1397,7 +1201,6 @@ export type Database = {
           note?: string | null
           payment_id: string
           provider_id?: string | null
-          rider_id?: string | null
           stage?: number | null
         }
         Update: {
@@ -1412,7 +1215,6 @@ export type Database = {
           note?: string | null
           payment_id?: string
           provider_id?: string | null
-          rider_id?: string | null
           stage?: number | null
         }
         Relationships: [
@@ -1449,13 +1251,6 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_ledger_entries_rider_id_fkey"
-            columns: ["rider_id"]
-            isOneToOne: false
-            referencedRelation: "riders"
             referencedColumns: ["id"]
           },
         ]
@@ -1497,13 +1292,8 @@ export type Database = {
         Row: {
           amount_kobo: number
           booking_id: string
-          caution_claimed_kobo: number
-          caution_fee_kobo: number
-          caution_held_kobo: number
-          caution_refunded_kobo: number
           commission_kobo: number
           created_at: string
-          delivery_fee_kobo: number
           gateway: string | null
           gateway_metadata: Json
           gateway_reference: string | null
@@ -1520,13 +1310,8 @@ export type Database = {
         Insert: {
           amount_kobo: number
           booking_id: string
-          caution_claimed_kobo?: number
-          caution_fee_kobo?: number
-          caution_held_kobo?: number
-          caution_refunded_kobo?: number
           commission_kobo?: number
           created_at?: string
-          delivery_fee_kobo?: number
           gateway?: string | null
           gateway_metadata?: Json
           gateway_reference?: string | null
@@ -1543,13 +1328,8 @@ export type Database = {
         Update: {
           amount_kobo?: number
           booking_id?: string
-          caution_claimed_kobo?: number
-          caution_fee_kobo?: number
-          caution_held_kobo?: number
-          caution_refunded_kobo?: number
           commission_kobo?: number
           created_at?: string
-          delivery_fee_kobo?: number
           gateway?: string | null
           gateway_metadata?: Json
           gateway_reference?: string | null
@@ -1582,8 +1362,7 @@ export type Database = {
           gateway_reference: string | null
           id: string
           paid_at: string | null
-          provider_id: string | null
-          rider_id: string | null
+          provider_id: string
           scheduled_for: string | null
           status: string
           updated_at: string
@@ -1596,8 +1375,7 @@ export type Database = {
           gateway_reference?: string | null
           id?: string
           paid_at?: string | null
-          provider_id?: string | null
-          rider_id?: string | null
+          provider_id: string
           scheduled_for?: string | null
           status?: string
           updated_at?: string
@@ -1610,8 +1388,7 @@ export type Database = {
           gateway_reference?: string | null
           id?: string
           paid_at?: string | null
-          provider_id?: string | null
-          rider_id?: string | null
+          provider_id?: string
           scheduled_for?: string | null
           status?: string
           updated_at?: string
@@ -1622,13 +1399,6 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payouts_rider_id_fkey"
-            columns: ["rider_id"]
-            isOneToOne: false
-            referencedRelation: "riders"
             referencedColumns: ["id"]
           },
         ]
@@ -2140,6 +1910,50 @@ export type Database = {
           },
         ]
       }
+      provider_subscriptions: {
+        Row: {
+          amount_kobo: number
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          last_paid_at: string | null
+          provider_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_kobo?: number
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          last_paid_at?: string | null
+          provider_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_kobo?: number
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          last_paid_at?: string | null
+          provider_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_subscriptions_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: true
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_wallets: {
         Row: {
           available_kobo: number
@@ -2348,276 +2162,6 @@ export type Database = {
           },
         ]
       }
-      rider_assignments: {
-        Row: {
-          accepted_at: string | null
-          assigned_at: string
-          assigned_by: string | null
-          booking_id: string
-          condition_notes: string | null
-          created_at: string
-          delivered_at: string | null
-          fee_share_kobo: number
-          id: string
-          leg: number
-          picked_up_at: string | null
-          rider_id: string
-          status: Database["public"]["Enums"]["rider_assignment_status"]
-        }
-        Insert: {
-          accepted_at?: string | null
-          assigned_at?: string
-          assigned_by?: string | null
-          booking_id: string
-          condition_notes?: string | null
-          created_at?: string
-          delivered_at?: string | null
-          fee_share_kobo?: number
-          id?: string
-          leg?: number
-          picked_up_at?: string | null
-          rider_id: string
-          status?: Database["public"]["Enums"]["rider_assignment_status"]
-        }
-        Update: {
-          accepted_at?: string | null
-          assigned_at?: string
-          assigned_by?: string | null
-          booking_id?: string
-          condition_notes?: string | null
-          created_at?: string
-          delivered_at?: string | null
-          fee_share_kobo?: number
-          id?: string
-          leg?: number
-          picked_up_at?: string | null
-          rider_id?: string
-          status?: Database["public"]["Enums"]["rider_assignment_status"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rider_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rider_assignments_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rider_assignments_rider_id_fkey"
-            columns: ["rider_id"]
-            isOneToOne: false
-            referencedRelation: "riders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rider_documents: {
-        Row: {
-          created_at: string
-          id: string
-          kind: string
-          notes: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          rider_id: string
-          status: Database["public"]["Enums"]["verification_status"]
-          storage_path: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind: string
-          notes?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          rider_id: string
-          status?: Database["public"]["Enums"]["verification_status"]
-          storage_path?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: string
-          notes?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          rider_id?: string
-          status?: Database["public"]["Enums"]["verification_status"]
-          storage_path?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rider_documents_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rider_documents_rider_id_fkey"
-            columns: ["rider_id"]
-            isOneToOne: false
-            referencedRelation: "riders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rider_reliability: {
-        Row: {
-          cancellation_rate: number
-          completed_deliveries: number
-          computed_at: string | null
-          is_publicly_visible: boolean
-          on_time_rate: number
-          reliability_score: number | null
-          rider_id: string
-        }
-        Insert: {
-          cancellation_rate?: number
-          completed_deliveries?: number
-          computed_at?: string | null
-          is_publicly_visible?: boolean
-          on_time_rate?: number
-          reliability_score?: number | null
-          rider_id: string
-        }
-        Update: {
-          cancellation_rate?: number
-          completed_deliveries?: number
-          computed_at?: string | null
-          is_publicly_visible?: boolean
-          on_time_rate?: number
-          reliability_score?: number | null
-          rider_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rider_reliability_rider_id_fkey"
-            columns: ["rider_id"]
-            isOneToOne: true
-            referencedRelation: "riders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rider_wallets: {
-        Row: {
-          available_kobo: number
-          bank_account_name: string | null
-          bank_account_number: string | null
-          bank_code: string | null
-          pending_kobo: number
-          rider_id: string
-          updated_at: string
-          withdrawn_kobo: number
-        }
-        Insert: {
-          available_kobo?: number
-          bank_account_name?: string | null
-          bank_account_number?: string | null
-          bank_code?: string | null
-          pending_kobo?: number
-          rider_id: string
-          updated_at?: string
-          withdrawn_kobo?: number
-        }
-        Update: {
-          available_kobo?: number
-          bank_account_name?: string | null
-          bank_account_number?: string | null
-          bank_code?: string | null
-          pending_kobo?: number
-          rider_id?: string
-          updated_at?: string
-          withdrawn_kobo?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rider_wallets_rider_id_fkey"
-            columns: ["rider_id"]
-            isOneToOne: true
-            referencedRelation: "riders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      riders: {
-        Row: {
-          approved_at: string | null
-          approved_by: string | null
-          city_id: string | null
-          created_at: string
-          full_name: string
-          id: string
-          phone: string
-          rejection_reason: string | null
-          status: Database["public"]["Enums"]["verification_status"]
-          updated_at: string
-          user_id: string
-          vehicle_plate: string | null
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
-          city_id?: string | null
-          created_at?: string
-          full_name: string
-          id?: string
-          phone: string
-          rejection_reason?: string | null
-          status?: Database["public"]["Enums"]["verification_status"]
-          updated_at?: string
-          user_id: string
-          vehicle_plate?: string | null
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Update: {
-          approved_at?: string | null
-          approved_by?: string | null
-          city_id?: string | null
-          created_at?: string
-          full_name?: string
-          id?: string
-          phone?: string
-          rejection_reason?: string | null
-          status?: Database["public"]["Enums"]["verification_status"]
-          updated_at?: string
-          user_id?: string
-          vehicle_plate?: string | null
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "riders_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "riders_city_id_fkey"
-            columns: ["city_id"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "riders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       staff_login_events: {
         Row: {
           created_at: string
@@ -2710,6 +2254,153 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount_kobo: number
+          created_at: string
+          gateway: string | null
+          gateway_reference: string | null
+          id: string
+          paid_at: string
+          provider_id: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount_kobo: number
+          created_at?: string
+          gateway?: string | null
+          gateway_reference?: string | null
+          id?: string
+          paid_at?: string
+          provider_id: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount_kobo?: number
+          created_at?: string
+          gateway?: string | null
+          gateway_reference?: string | null
+          id?: string
+          paid_at?: string
+          provider_id?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payments_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_contacts: {
+        Row: {
+          consent_at: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          phone_hint: string | null
+          profile_id: string | null
+          updated_at: string
+          wa_id: string
+        }
+        Insert: {
+          consent_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          phone_hint?: string | null
+          profile_id?: string | null
+          updated_at?: string
+          wa_id: string
+        }
+        Update: {
+          consent_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          phone_hint?: string | null
+          profile_id?: string | null
+          updated_at?: string
+          wa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_threads: {
+        Row: {
+          business_phone_id: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          last_webhook_at: string | null
+          provider_whatsapp_contact_id: string | null
+          status: string
+          updated_at: string
+          whatsapp_contact_id: string
+        }
+        Insert: {
+          business_phone_id?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_webhook_at?: string | null
+          provider_whatsapp_contact_id?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp_contact_id: string
+        }
+        Update: {
+          business_phone_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_webhook_at?: string | null
+          provider_whatsapp_contact_id?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp_contact_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_threads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_threads_provider_whatsapp_contact_id_fkey"
+            columns: ["provider_whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_threads_whatsapp_contact_id_fkey"
+            columns: ["whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       provider_ratings: {
@@ -2730,19 +2421,15 @@ export type Database = {
       }
     }
     Functions: {
-      assigned_to_booking_as_rider: {
-        Args: { p_booking_id: string }
-        Returns: boolean
+      blocking_message_reasons: {
+        Args: { body: string }
+        Returns: Database["public"]["Enums"]["moderation_flag_reason"][]
       }
       compact_digit_runs: { Args: { body: string }; Returns: string }
       compact_letter_runs: { Args: { body: string }; Returns: string }
       current_role_name: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
-      }
-      fulfillment_uses_rider: {
-        Args: { ft: Database["public"]["Enums"]["fulfillment_type"] }
-        Returns: boolean
       }
       generate_confirmation_code: { Args: never; Returns: string }
       get_setting_numeric: {
@@ -2753,7 +2440,6 @@ export type Database = {
       is_feature_enabled: { Args: { flag_key: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       my_provider_id: { Args: never; Returns: string }
-      my_rider_id: { Args: never; Returns: string }
       owns_booking_as_customer: {
         Args: { p_booking_id: string }
         Returns: boolean
@@ -2762,21 +2448,9 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: boolean
       }
-      pick_delivery_rider: {
-        Args: {
-          p_exclude?: string[]
-          p_provider_id: string
-          p_requires_large: boolean
-        }
-        Returns: string
-      }
-      pick_rider_by_vehicle: {
-        Args: {
-          p_exclude?: string[]
-          p_provider_id: string
-          p_vehicle: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Returns: string
+      provider_is_listable: {
+        Args: { p_provider_id: string }
+        Returns: boolean
       }
       resolve_booking_terms: {
         Args: { p_provider_id: string }
@@ -2786,14 +2460,6 @@ export type Database = {
           late_penalty_percent_per_30min: number
           stage_1_release_percent: number
         }[]
-      }
-      rider_leg_fee: {
-        Args: {
-          p_delivery_fee: number
-          p_fulfillment: Database["public"]["Enums"]["fulfillment_type"]
-          p_leg: number
-        }
-        Returns: number
       }
       scan_message_body: {
         Args: { body: string }
@@ -2811,22 +2477,9 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "disputed"
-      call_status:
-        | "requested"
-        | "ringing"
-        | "in_progress"
-        | "completed"
-        | "failed"
-        | "no_answer"
-        | "cancelled"
-      delivery_mode: "rider" | "provider"
       dispute_status: "open" | "under_review" | "resolved" | "rejected"
       event_project_status: "draft" | "active" | "completed" | "cancelled"
-      fulfillment_type:
-        | "delivery"
-        | "delivery_return"
-        | "onsite_service"
-        | "vendor_location_service"
+      fulfillment_type: "onsite_service" | "vendor_location_service"
       listing_status:
         | "draft"
         | "pending_approval"
@@ -2847,10 +2500,6 @@ export type Database = {
         | "commission"
         | "penalty"
         | "refund"
-        | "caution_hold"
-        | "caution_refund"
-        | "caution_claim"
-        | "rider_payout"
       payment_status:
         | "pending"
         | "held"
@@ -2862,26 +2511,14 @@ export type Database = {
       payment_type: "full" | "deposit"
       price_offer_status: "pending" | "accepted" | "withdrawn" | "superseded"
       price_type: "fixed" | "negotiable"
-      rider_assignment_status:
-        | "assigned"
-        | "accepted"
-        | "declined"
-        | "picked_up"
-        | "en_route"
-        | "arrived"
-        | "delivered"
-        | "returned"
-        | "cancelled"
       staff_role:
         | "super_admin"
-        | "rider_operations"
-        | "service_vendor_manager"
-        | "product_vendor_manager"
+        | "vendor_manager"
         | "customer_support"
         | "finance"
         | "marketing"
-      user_role: "admin" | "provider" | "customer" | "rider"
-      vehicle_type: "bike" | "car" | "van"
+      subscription_status: "trialing" | "active" | "past_due" | "cancelled"
+      user_role: "admin" | "provider" | "customer"
       verification_status:
         | "pending"
         | "approved"
@@ -3026,24 +2663,9 @@ export const Constants = {
         "cancelled",
         "disputed",
       ],
-      call_status: [
-        "requested",
-        "ringing",
-        "in_progress",
-        "completed",
-        "failed",
-        "no_answer",
-        "cancelled",
-      ],
-      delivery_mode: ["rider", "provider"],
       dispute_status: ["open", "under_review", "resolved", "rejected"],
       event_project_status: ["draft", "active", "completed", "cancelled"],
-      fulfillment_type: [
-        "delivery",
-        "delivery_return",
-        "onsite_service",
-        "vendor_location_service",
-      ],
+      fulfillment_type: ["onsite_service", "vendor_location_service"],
       listing_status: [
         "draft",
         "pending_approval",
@@ -3053,7 +2675,11 @@ export const Constants = {
         "paused",
         "hidden",
       ],
-      message_origin: ["nexa_dashboard", "whatsapp_customer", "whatsapp_vendor"],
+      message_origin: [
+        "nexa_dashboard",
+        "whatsapp_customer",
+        "whatsapp_vendor",
+      ],
       moderation_flag_reason: [
         "phone_number",
         "bank_account",
@@ -3066,10 +2692,6 @@ export const Constants = {
         "commission",
         "penalty",
         "refund",
-        "caution_hold",
-        "caution_refund",
-        "caution_claim",
-        "rider_payout",
       ],
       payment_status: [
         "pending",
@@ -3083,28 +2705,15 @@ export const Constants = {
       payment_type: ["full", "deposit"],
       price_offer_status: ["pending", "accepted", "withdrawn", "superseded"],
       price_type: ["fixed", "negotiable"],
-      rider_assignment_status: [
-        "assigned",
-        "accepted",
-        "declined",
-        "picked_up",
-        "en_route",
-        "arrived",
-        "delivered",
-        "returned",
-        "cancelled",
-      ],
       staff_role: [
         "super_admin",
-        "rider_operations",
-        "service_vendor_manager",
-        "product_vendor_manager",
+        "vendor_manager",
         "customer_support",
         "finance",
         "marketing",
       ],
-      user_role: ["admin", "provider", "customer", "rider"],
-      vehicle_type: ["bike", "car", "van"],
+      subscription_status: ["trialing", "active", "past_due", "cancelled"],
+      user_role: ["admin", "provider", "customer"],
       verification_status: [
         "pending",
         "approved",

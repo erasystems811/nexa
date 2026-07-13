@@ -2,7 +2,7 @@ import { requireView, activityFeed, PERMISSIONS as P } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 
 /**
- * The platform activity log. PRD Addendum §4 + the founder's requirement: every
+ * The platform activity log. + the founder's requirement: every
  * action tied to the account that did it, so when several people manage the same
  * view you can see exactly who did what. Each row already carries the actor's
  * name because every admin action writes an audit_log entry under their id.
@@ -18,9 +18,6 @@ const ACTION_LABELS: Record<string, string> = {
   record_no_show: "recorded a no-show",
   appeal_upheld: "upheld an appeal",
   appeal_failed: "failed an appeal",
-  verify_rider: "verified a rider",
-  reject_rider: "rejected a rider",
-  suspend_rider: "suspended a rider",
   reassign_delivery: "reassigned a delivery",
   listing_approved: "approved a listing",
   listing_rejected: "rejected a listing",

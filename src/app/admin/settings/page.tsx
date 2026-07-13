@@ -5,7 +5,7 @@ import { FlagToggle } from "./flag-toggle";
 import { SettingRow } from "./setting-row";
 
 /**
- * Admin Console → Settings. PRD Sections 10, 17, 20.
+ * Admin Console → Settings.
  *
  * Commission and stage-1 release settings are edited
  * here and nowhere else. There is no constant for any of them in the codebase.

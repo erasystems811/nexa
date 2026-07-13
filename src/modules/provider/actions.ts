@@ -9,8 +9,7 @@ import {
   ProviderError,
   accept,
   blockUnavailable,
-  startFulfillment,
-  checkIn,
+  startWork,
   createListing,
   deleteListing,
   deleteMedia,
@@ -99,7 +98,6 @@ function readListingForm(formData: FormData) {
     priceKobo: toKobo("price"),
     priceMinKobo: toKobo("price_min"),
     priceMaxKobo: toKobo("price_max"),
-    cautionFeeKobo: toKobo("caution_fee") ?? 0,
   };
 }
 
@@ -217,15 +215,13 @@ export async function rejectOrderAction(bookingId: string): Promise<void> {
   revalidatePath("/studio/orders");
 }
 
-export async function startFulfillmentAction(bookingId: string): Promise<void> {
+/**
+ * The vendor tells the customer the job is under way. Moves no money: the
+ * deposit went out on acceptance, and the balance waits on the customer's code.
+ */
+export async function startWorkAction(bookingId: string): Promise<void> {
   const p = await provider();
-  await startFulfillment(p.id, bookingId);
-  revalidatePath("/studio/orders");
-}
-
-export async function checkInAction(bookingId: string): Promise<void> {
-  const p = await provider();
-  await checkIn(p.id, bookingId);
+  await startWork(p.id, bookingId);
   revalidatePath("/studio/orders");
 }
 

@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { BookingsError } from "./service";
 
 /**
- * Price offers for Negotiable listings. PRD Section 08.
+ * Price offers for Negotiable listings.
  *
  * The provider quotes inside the conversation; the customer accepts; only then
  * can a booking exist, and only at that number. Enforced by RLS plus
- * `guard_price_offer_write` (0016) — a provider cannot accept their own quote.
+ * `guard_price_offer_write` — a provider cannot accept their own quote.
  */
 
 export async function listOffers(conversationId: string) {

@@ -5,11 +5,11 @@ import { ProviderError } from "./context";
 import type { PaymentType } from "@/lib/db/types";
 
 /**
- * Listings. PRD Section 13 (create, edit, delete, pause, duplicate) and
- * Section 06 (everything starts, and re-enters, Pending Approval).
+ * Listings.(create, edit, delete, pause, duplicate) and
+ * (everything starts, and re-enters, Pending Approval).
  *
  * The "starts pending" rule is not enforced here — it is enforced by
- * guard_listing_status_change (0011), which forces a provider insert into an
+ * guard_listing_status_change, which forces a provider insert into an
  * unapproved status and blocks a provider from ever setting 'approved'. This
  * module could forget to set the status and the database would still be right.
  */
@@ -23,7 +23,6 @@ export interface ListingInput {
   priceKobo?: number | null;
   priceMinKobo?: number | null;
   priceMaxKobo?: number | null;
-  cautionFeeKobo?: number;
   cancellationPolicy?: Array<{ min_hours_before: number; refund_percent: number }>;
 }
 
@@ -91,7 +90,6 @@ export async function createListing(providerId: string, input: ListingInput): Pr
       price_kobo: input.priceType === "fixed" ? (input.priceKobo ?? null) : null,
       price_min_kobo: input.priceMinKobo ?? null,
       price_max_kobo: input.priceMaxKobo ?? null,
-      caution_fee_kobo: input.cautionFeeKobo ?? 0,
       cancellation_policy: input.cancellationPolicy ?? [],
       status: "pending_approval",
     })
@@ -104,7 +102,7 @@ export async function createListing(providerId: string, input: ListingInput): Pr
 
 /**
  * Editing price or core details sends the listing back to Pending Approval —
- * but that is listings_reapproval's job (0006), not this function's. We just
+ * but that is listings_reapproval's job, not this function's. We just
  * write the change.
  */
 export async function updateListing(
@@ -126,7 +124,6 @@ export async function updateListing(
       price_kobo: input.priceType === "fixed" ? (input.priceKobo ?? null) : null,
       price_min_kobo: input.priceMinKobo ?? null,
       price_max_kobo: input.priceMaxKobo ?? null,
-      caution_fee_kobo: input.cautionFeeKobo ?? 0,
     })
     .eq("id", listingId)
     .eq("provider_id", providerId);
@@ -134,7 +131,7 @@ export async function updateListing(
   if (error) throw new ProviderError(error.message);
 }
 
-/** Pause hides an approved listing without deleting it. Section 13. */
+/** Pause hides an approved listing without deleting it.. */
 export async function setListingPaused(
   providerId: string,
   listingId: string,
@@ -164,7 +161,7 @@ export async function deleteListing(providerId: string, listingId: string): Prom
   if (error) throw new ProviderError(error.message);
 }
 
-/** Duplicate. Section 13. The copy is a fresh draft, pending like any new listing. */
+/** Duplicate.. The copy is a fresh draft, pending like any new listing. */
 export async function duplicateListing(providerId: string, listingId: string): Promise<string> {
   const source = await getMyListing(providerId, listingId);
   if (!source) throw new ProviderError("That listing does not exist");
@@ -178,7 +175,6 @@ export async function duplicateListing(providerId: string, listingId: string): P
     priceKobo: source.price_kobo,
     priceMinKobo: source.price_min_kobo,
     priceMaxKobo: source.price_max_kobo,
-    cautionFeeKobo: source.caution_fee_kobo,
     cancellationPolicy: Array.isArray(source.cancellation_policy)
       ? (source.cancellation_policy as Array<{ min_hours_before: number; refund_percent: number }>)
       : [],

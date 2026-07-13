@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculatePayout, holdFunds, refund, releaseFunds } from "@/modules/payments";
 import { publicEnv } from "@/lib/env";
-import { assertTransition, checkpointsFor } from "./state";
+import { assertTransition } from "./state";
 import type { BookingStatus, Database } from "@/lib/db/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -16,14 +16,24 @@ export class BookingsError extends Error {
 }
 
 /**
- * The booking engine. PRD Sections 07, 09, 10.
+ * The booking engine.
  *
  * It never calls a payment processor. It calls `@/modules/payments`, which is
- * the only thing that knows one exists (Section 17). ESLint enforces that.
+ * the only thing that knows one exists. ESLint enforces that.
  *
- * It never decides a price either — `price_booking_from_listing` (0016) does,
+ * It never decides a price either — `price_booking_from_listing` does,
  * inside the database, from the listing or from an accepted offer. A client can
  * post whatever it likes into `agreed_price_kobo`; the trigger overwrites it.
+ *
+ * The money, end to end:
+ *
+ *   checkout         the customer pays the FULL agreed price into Nexa
+ *   acceptBooking    the vendor says yes  ->  the deposit share goes to their
+ *                      bank, so they can buy materials before the job
+ *   confirmWithCode  the customer hands over their one code at the end  ->
+ *                      the balance, less commission, goes to the vendor
+ *
+ * A vendor can never be paid by tapping "done". That is the whole platform.
  */
 
 export interface CheckoutInput {
@@ -41,11 +51,15 @@ export interface CheckoutResult {
 }
 
 /**
- * Creates the booking, holds the money, mints the confirmation codes.
+ * Creates the booking, holds the whole price, mints the confirmation code.
  *
  * The row is inserted with the *caller's* client so RLS and the pricing trigger
  * both apply. Everything after the hold runs on the service role, because a
  * customer must not be able to mark their own booking paid.
+ *
+ * A listing with payment_type 'deposit' is ordinary now, and needs no second
+ * collection: the customer still pays 100% up front. "Deposit" describes what
+ * the VENDOR receives on acceptance, not what the customer pays at checkout.
  */
 export async function checkout(
   input: CheckoutInput,
@@ -70,16 +84,6 @@ export async function checkout(
     throw new BookingsError("That listing is not available");
   }
 
-  // Deposit listings need a second collection before stage 1, which is not
-  // built. Failing loudly beats holding the wrong amount and discovering it at
-  // payout time.
-  if (listing.payment_type === "deposit") {
-    throw new BookingsError(
-      "Deposit checkout is not implemented yet. This listing takes a deposit, " +
-        "which needs a balance-collection step before the provider is paid.",
-    );
-  }
-
   const { data: booking, error: bookingError } = await supabase
     .from("bookings")
     .insert({
@@ -97,7 +101,7 @@ export async function checkout(
       commission_percent: 0,
       stage_1_release_percent: 0,
     })
-    .select("id, reference, agreed_price_kobo, delivery_fee_kobo, caution_fee_kobo, commission_percent")
+    .select("id, reference, agreed_price_kobo, commission_percent")
     .single();
 
   if (bookingError || !booking) {
@@ -116,15 +120,14 @@ export async function checkout(
       bookingId: booking.id,
       reference: booking.reference,
       amountKobo: booking.agreed_price_kobo,
-      deliveryFeeKobo: booking.delivery_fee_kobo,
-      cautionFeeKobo: booking.caution_fee_kobo,
       commissionKobo,
       customer,
       redirectUrl: `${publicEnv.NEXT_PUBLIC_SITE_URL}/orders/${booking.id}`,
     });
 
-    // Codes are minted by a trigger on this transition (0007). Nothing mints
-    // them earlier, because a booking nobody has paid for has nothing to confirm.
+    // The code is minted by a trigger on this transition: exactly one,
+    // stage 2. Nothing mints it earlier, because a booking nobody has paid for
+    // has nothing to confirm.
     await transition(booking.id, "paid_held");
 
     return { bookingId: booking.id, reference: booking.reference, checkoutUrl };
@@ -142,7 +145,7 @@ export async function checkout(
   }
 }
 
-/** Moves a booking through the Section 09 state machine, or refuses to. */
+/** Moves a booking through the state machine, or refuses to. */
 async function transition(bookingId: string, to: BookingStatus) {
   const db = createAdminClient();
 
@@ -171,75 +174,39 @@ async function transition(bookingId: string, to: BookingStatus) {
 }
 
 /**
- * Legacy compatibility helper. Addendum v1.2 moves ordinary delivery/setup
- * responsibility to the provider; new code should use provider-owned
- * fulfillment actions instead of Nexa rider pickup.
- */
-export async function markReadyForPickup(bookingId: string): Promise<void> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("bookings")
-    .update({ ready_for_pickup_at: new Date().toISOString() })
-    .eq("id", bookingId);
-
-  if (error) throw new BookingsError(error.message);
-}
-
-/** Provider confirms. PRD Section 09: the customer's free-cancellation window closes. */
-export async function acceptBooking(bookingId: string): Promise<void> {
-  await transition(bookingId, "accepted");
-}
-
-/**
- * Provider declines. "Customer refunded automatically, no admin needed."
- * Section 09.
- */
-export async function rejectBooking(bookingId: string, reason?: string): Promise<void> {
-  const db = createAdminClient();
-  const { data: booking } = await db
-    .from("bookings")
-    .select("agreed_price_kobo, delivery_fee_kobo, caution_fee_kobo")
-    .eq("id", bookingId)
-    .single();
-
-  if (!booking) throw new BookingsError("No such booking");
-
-  await refund({
-    bookingId,
-    amountKobo:
-      booking.agreed_price_kobo + booking.delivery_fee_kobo + booking.caution_fee_kobo,
-    reason: reason ?? "Provider rejected the booking",
-  });
-
-  await transition(bookingId, "rejected");
-}
-
-/**
- * Stage 1. PRD Section 10 — the checkpoint differs per fulfillment type, and
- * for Delivery + Return it is the customer's first code.
+ * STAGE 1. The vendor confirms — and that acceptance is itself the checkpoint
+ * that releases the deposit.
  *
- * Nobody "marks it done": for the code-bearing type the code is verified here,
- * and for the others the caller is a provider-owned operational checkpoint.
+ * A vendor cannot buy the flowers, hire the extra hands or fuel the generator on
+ * a promise. So the moment they commit to the job, their deposit share — the
+ * booking's frozen stage_1_release_percent of the provider's gross — leaves
+ * Nexa's escrow for their bank account. The customer's free-cancellation window
+ * closes at the same instant, which is exactly what makes it safe
+ * to send.
+ *
+ * The release comes before the status write on purpose. If the transfer fails,
+ * the booking stays at paid_held, nothing has moved, and the vendor can simply
+ * tap accept again. Reading stage_1_released_at first makes that retry safe in
+ * the other direction too: a transfer that landed but whose status write did not
+ * is not sent twice.
  */
-export async function recordStage1(
-  bookingId: string,
-  options: { code?: string } = {},
-): Promise<void> {
+export async function acceptBooking(bookingId: string): Promise<void> {
   const db = createAdminClient();
 
   const { data: booking } = await db
     .from("bookings")
-    .select("id, status, provider_id, fulfillment_type, agreed_price_kobo, commission_percent, stage_1_release_percent")
+    .select("id, status, provider_id, agreed_price_kobo, commission_percent, stage_1_release_percent")
     .eq("id", bookingId)
     .single();
 
   if (!booking) throw new BookingsError("No such booking");
-  assertTransition(booking.status, "in_progress");
+  assertTransition(booking.status, "accepted");
 
-  const checkpoint = checkpointsFor(booking.fulfillment_type);
-  if (checkpoint.stage1NeedsCode) {
-    await consumeCode(bookingId, 1, options.code);
-  }
+  const { data: payment } = await db
+    .from("payments")
+    .select("stage_1_released_at")
+    .eq("booking_id", bookingId)
+    .maybeSingle();
 
   const { stage1Kobo } = calculatePayout({
     agreedPriceKobo: booking.agreed_price_kobo,
@@ -248,7 +215,7 @@ export async function recordStage1(
     latePenaltyPercentPer30Min: 0,
   });
 
-  if (stage1Kobo > 0) {
+  if (stage1Kobo > 0 && !payment?.stage_1_released_at) {
     await releaseFunds({
       bookingId,
       stage: 1,
@@ -257,24 +224,61 @@ export async function recordStage1(
     });
   }
 
+  await transition(bookingId, "accepted");
+
   await db
     .from("bookings")
-    .update({ status: "in_progress", stage_1_at: new Date().toISOString() })
+    .update({ stage_1_at: new Date().toISOString() })
     .eq("id", bookingId);
 }
 
 /**
- * Stage 2, and the end of the booking. Always gated on the customer's code —
- * this is the sentence in Section 10 that the whole platform rests on: money
+ * Provider declines. "Customer refunded automatically, no admin needed."
+ *. Nothing has been released yet — a rejection can only reach a
+ * booking that was never accepted — so the whole price goes back.
+ */
+export async function rejectBooking(bookingId: string, reason?: string): Promise<void> {
+  const db = createAdminClient();
+  const { data: booking } = await db
+    .from("bookings")
+    .select("agreed_price_kobo")
+    .eq("id", bookingId)
+    .single();
+
+  if (!booking) throw new BookingsError("No such booking");
+
+  await refund({
+    bookingId,
+    amountKobo: booking.agreed_price_kobo,
+    reason: reason ?? "Provider rejected the booking",
+  });
+
+  await transition(bookingId, "rejected");
+}
+
+/**
+ * The vendor has started the job. A courtesy signal to the customer and nothing
+ * more: it moves no money, and the booking can complete without it.
+ */
+export async function startWork(bookingId: string): Promise<void> {
+  await transition(bookingId, "in_progress");
+}
+
+/**
+ * STAGE 2, and the end of the booking. Always gated on the customer's code —
+ * this is the sentence in that the whole platform rests on: money
  * moves "only when a real, verifiable checkpoint has passed", "never on a
- * provider simply tapping "done" without the required checkpoint."
+ * provider simply tapping 'done' without the required checkpoint."
+ *
+ * What is released is the balance: the provider's gross less whatever went out
+ * as the deposit. Commission never leaves escrow at all — it is Nexa's.
  */
 export async function confirmWithCode(bookingId: string, code: string): Promise<void> {
   const db = createAdminClient();
 
   const { data: booking } = await db
     .from("bookings")
-    .select("id, status, provider_id, fulfillment_type, agreed_price_kobo, commission_percent, stage_1_release_percent")
+    .select("id, status, provider_id, agreed_price_kobo, commission_percent, stage_1_release_percent")
     .eq("id", bookingId)
     .single();
 
@@ -301,7 +305,11 @@ export async function confirmWithCode(bookingId: string, code: string): Promise<
 
   await db
     .from("bookings")
-    .update({ status: "completed", stage_2_at: new Date().toISOString(), completed_at: new Date().toISOString() })
+    .update({
+      status: "completed",
+      stage_2_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+    })
     .eq("id", bookingId);
 }
 
@@ -309,7 +317,7 @@ export async function confirmWithCode(bookingId: string, code: string): Promise<
  * A code is single-use. Verifying it and marking it consumed has to be one
  * statement, or the same code could be reused.
  */
-async function consumeCode(bookingId: string, stage: 1 | 2, code?: string): Promise<void> {
+async function consumeCode(bookingId: string, stage: 2, code?: string): Promise<void> {
   if (!code) throw new BookingsError("A confirmation code is required");
 
   const db = createAdminClient();

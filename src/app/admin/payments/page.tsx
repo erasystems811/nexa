@@ -4,11 +4,11 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
 const KIND: Record<string, string> = {
-  hold: "Held", stage_release: "Released", rider_payout: "Legacy delivery", commission: "Commission",
+  hold: "Held", stage_release: "Released", commission: "Commission",
   penalty: "Penalty", refund: "Refund", caution_hold: "Caution held", caution_refund: "Caution refund", caution_claim: "Caution claim",
 };
 
-/** Payment management. PRD Sections 10, 12. */
+/** Payment management. */
 export default async function PaymentsPage() {
   await requireView(P.paymentsView);
   const [o, ledger, payouts] = await Promise.all([paymentOverview(), recentLedger(60), pendingPayouts()]);
@@ -23,7 +23,6 @@ export default async function PaymentsPage() {
         <Stat label="Released" value={formatKobo(o.released)} />
         <Stat label="Refunded" value={formatKobo(o.refunded)} />
         <Stat label="Penalties" value={formatKobo(o.penalties)} />
-        <Stat label="Caution held" value={formatKobo(o.cautionHeld)} />
       </section>
 
       {payouts.length > 0 ? (

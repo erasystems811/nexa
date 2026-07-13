@@ -6,7 +6,7 @@ import { formatKobo } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
 
-/** Search & category browse. PRD Section 07 + Addendum §3. */
+/** Search & category browse.+ */
 export default async function SearchPage({
   searchParams,
 }: {

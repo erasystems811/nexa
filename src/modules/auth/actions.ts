@@ -8,12 +8,22 @@ import { publicEnv, serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendSignupVerificationCode } from "@/modules/email/resend";
+import { sendPasswordCode } from "./provisioning";
 import { homePathForRole } from "./session";
 import type { UserRole } from "@/lib/db/types";
 
 export interface AuthFormState {
   error?: string;
   message?: string;
+}
+
+/**
+ * `sent` is what moves the /reset form from "enter email" to "enter code";
+ * `email` carries the address across that step so it is not re-typed.
+ */
+export interface PasswordResetState extends AuthFormState {
+  sent?: boolean;
+  email?: string;
 }
 
 const loginCredentials = z.object({
@@ -259,6 +269,97 @@ export async function verifySignupCode(
 
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+const resetRequest = z.object({
+  email: z.string().email("Enter a valid email address"),
+});
+
+const resetCompletion = z.object({
+  email: z.string().email("Enter a valid email address"),
+  // Supabase OTPs are 6 digits today but the length is configurable; the signup
+  // flow already accepts up to 8, so this one does too.
+  code: z.string().regex(/^\d{6,8}$/, "Enter the code from your email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+/**
+ * Step 1 of a password reset — and the way anyone Admin created (vendors, staff)
+ * gets into an account that was made without a password.
+ *
+ * The response is identical whether or not the email has an account: an
+ * unauthenticated form that says "no such user" is an account enumerator.
+ * Failures to generate or send are swallowed for the same reason.
+ */
+export async function requestPasswordReset(
+  _prev: PasswordResetState,
+  formData: FormData,
+): Promise<PasswordResetState> {
+  const parsed = resetRequest.safeParse({ email: formData.get("email") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Enter a valid email address" };
+  }
+
+  try {
+    await sendPasswordCode({ email: parsed.data.email, purpose: "reset" });
+  } catch {
+    // Deliberate: no account, or email is down. Both look like success here.
+  }
+
+  return {
+    sent: true,
+    email: parsed.data.email,
+    message: `If ${parsed.data.email} has a Nexa account, a reset code is on its way. Enter it below.`,
+  };
+}
+
+/**
+ * Step 2 — the recovery OTP is verified, which signs the person in, and only
+ * then is the new password written. Verifying is what proves they own the
+ * mailbox, so this is also how a never-signed-in vendor or staff member gets
+ * their first password.
+ */
+export async function completePasswordReset(
+  _prev: PasswordResetState,
+  formData: FormData,
+): Promise<PasswordResetState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const parsed = resetCompletion.safeParse({
+    email,
+    code: String(formData.get("code") ?? "").replace(/\D/g, ""),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) {
+    return { sent: true, email, error: parsed.error.issues[0]?.message ?? "Check your details" };
+  }
+
+  const supabase = await createClient();
+  const { error: otpError } = await supabase.auth.verifyOtp({
+    email: parsed.data.email,
+    token: parsed.data.code,
+    type: "recovery",
+  });
+  if (otpError) {
+    return { sent: true, email, error: "That code is not correct or has expired. Request a new one and try again." };
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (updateError) {
+    return { sent: true, email, error: updateError.message };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let role = (user?.app_metadata?.role as UserRole | undefined) ?? null;
+
+  if (user && !role) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    role = profile?.role ?? null;
+  }
+
+  revalidatePath("/", "layout");
+  redirect(homePathForRole(role ?? "customer") as Route);
 }
 
 export async function signOut(): Promise<void> {

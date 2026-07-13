@@ -57,7 +57,6 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
             price: listing.price_kobo ? koboToNaira(listing.price_kobo) : undefined,
             price_min: listing.price_min_kobo ? koboToNaira(listing.price_min_kobo) : undefined,
             price_max: listing.price_max_kobo ? koboToNaira(listing.price_max_kobo) : undefined,
-            caution_fee: listing.caution_fee_kobo ? koboToNaira(listing.caution_fee_kobo) : undefined,
           }}
         />
       </Card>

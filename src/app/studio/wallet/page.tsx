@@ -5,14 +5,13 @@ import { BankForm } from "./bank-form";
 
 const KIND_LABEL: Record<string, string> = {
   stage_release: "Payment released",
-  rider_payout: "Legacy delivery payout",
   refund: "Refund",
   penalty: "Penalty",
   commission: "Commission",
   hold: "Held",
 };
 
-/** Wallet & payouts. PRD Sections 10, 13. */
+/** Wallet & payouts. */
 export default async function StudioWallet() {
   const provider = await requireProvider();
   const [{ wallet, payouts, ledger }, agreement] = await Promise.all([

@@ -5,7 +5,7 @@ import { MessagingError, type ConversationSummary } from "./types";
 
 /**
  * Conversations are between a customer and a provider, optionally about a
- * specific listing or booking (PRD Section 08). Nothing here is aware of the
+ * specific listing or booking Nothing here is aware of the
  * Marketplace or Business Studio — both call the same functions, and each
  * caller's own row-level policies decide what they can see.
  */

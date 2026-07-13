@@ -9,9 +9,11 @@ import { ActionButton } from "../../action-button";
 import { OrderInterventions } from "./interventions";
 
 const KIND: Record<string, string> = {
-  hold: "Held", stage_release: "Released to provider", rider_payout: "Legacy delivery payout",
-  commission: "Commission", penalty: "Penalty", refund: "Refund",
-  caution_hold: "Caution held", caution_refund: "Caution refunded", caution_claim: "Caution claim",
+  hold: "Held from customer",
+  stage_release: "Paid to vendor",
+  commission: "Nexa commission",
+  penalty: "Late penalty",
+  refund: "Refunded to customer",
 };
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +22,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const d = await getOrderDetail(id);
   if (!d) notFound();
 
-  const { booking, payment, codes, assignments, ledger } = d;
+  const { booking, payment, codes, ledger } = d;
 
   return (
     <>
@@ -32,7 +34,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       <div className="mb-4 flex items-center gap-2">
         <StatusPill status={booking.status} />
         {["paid_held", "accepted", "in_progress"].includes(booking.status) ? (
-          <ActionButton label="Record no-show" variant="danger" confirm="Record a no-show? The provider is suspended pending appeal and the booking is refunded." run={() => noShowAction(booking.id)} />
+          <ActionButton label="Record no-show" variant="danger" confirm="Record a no-show? The provider is suspended pending appeal and the booking is refunded." run={noShowAction.bind(null, booking.id)} />
         ) : null}
       </div>
 
@@ -44,8 +46,6 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             <Row k="When" v={new Date(booking.scheduled_start).toLocaleString("en-NG")} />
             <Row k="Fulfillment" v={booking.fulfillment_type.replace(/_/g, " ")} />
             <Row k="Price" v={formatKobo(booking.agreed_price_kobo)} />
-            {booking.delivery_fee_kobo > 0 ? <Row k="Delivery" v={formatKobo(booking.delivery_fee_kobo)} /> : null}
-            {booking.caution_fee_kobo > 0 ? <Row k="Caution" v={formatKobo(booking.caution_fee_kobo)} /> : null}
           </dl>
         </Card>
         <Card>
@@ -63,20 +63,6 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           )}
         </Card>
       </div>
-
-      {assignments.length > 0 ? (
-        <Card className="mt-3">
-          <h2 className="text-sm font-semibold">Legacy delivery assignments</h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            {assignments.map((a) => (
-              <li key={a.id} className="flex justify-between">
-                <span>Leg {a.leg} · {formatKobo(a.fee_share_kobo)}</span>
-                <span className="text-[color:var(--color-ink-muted)]">{a.status}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
 
       {codes.length > 0 ? (
         <Card className="mt-3">

@@ -1,20 +1,20 @@
 /**
- * Bookings — the lifecycle state machine. PRD Sections 07, 09, 10.
+ * Bookings — the lifecycle state machine.
  *
  * Owns: bookings, booking_confirmation_codes, price_offers, event_projects.
  *
  * Calls `@/modules/payments` for every movement of money, and never a payment
  * processor. It does not know Flutterwave exists.
  *
- * The rule this module exists to enforce: a stage advances when the customer's
- * confirmation code is entered, never when a provider or rider taps "done".
+ * The rule this module exists to enforce: the booking completes, and the vendor
+ * gets the balance, only when the CUSTOMER's confirmation code is entered —
+ * never when a vendor taps "done".
  */
 export {
   checkout,
   acceptBooking,
   rejectBooking,
-  markReadyForPickup,
-  recordStage1,
+  startWork,
   confirmWithCode,
   BookingsError,
   type CheckoutInput,

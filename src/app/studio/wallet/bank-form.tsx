@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { saveBankAction, type FormState } from "@/modules/provider/actions";
 import { Alert, Button, Field } from "@/components/ui";
 
-/** PRD Section 13: manage bank details. Balances are not the provider's to touch. */
+/**: manage bank details. Balances are not the provider's to touch. */
 export function BankForm({
   defaults,
 }: {

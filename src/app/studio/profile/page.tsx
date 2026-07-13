@@ -2,7 +2,7 @@ import { requireProvider, getContact } from "@/modules/provider";
 import { PageHeader } from "@/components/ui";
 import { ProfileForm } from "./profile-form";
 
-/** Business profile. PRD Section 13. */
+/** Business profile. */
 export default async function StudioProfile() {
   const provider = await requireProvider();
   const contact = await getContact(provider.id);

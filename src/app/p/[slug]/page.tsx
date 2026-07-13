@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getProviderBySlug } from "@/modules/marketplace";
 import { formatKobo } from "@/lib/money";
 
-/** Provider profile. PRD Section 14 + Addendum §3/§5. */
+/** Provider profile.+/ */
 export default async function ProviderPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const result = await getProviderBySlug(slug);

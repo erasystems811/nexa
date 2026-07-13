@@ -11,8 +11,8 @@ const REASON: Record<string, string> = {
 };
 
 /**
- * Flagged-conversation queue. PRD Section 08. The message was delivered —
- * flagging never blocks. Confirming records it; converting to a strike is the
+ * Flagged-conversation queue. The message was delivered — flagging never
+ * blocks. Confirming records it; converting to a strike is the
  * anti-poaching consequence, the same structure as a no-show.
  */
 export default async function ModerationPage() {
@@ -36,8 +36,8 @@ export default async function ModerationPage() {
                 </p>
                 <p className="mt-2 text-sm">&ldquo;{f.excerpt}&rdquo;</p>
                 <div className="mt-3 flex gap-2">
-                  <ActionButton label="Confirm breach" variant="primary" run={() => resolveFlagAction(f.id, "confirmed")} />
-                  <ActionButton label="False positive" run={() => resolveFlagAction(f.id, "dismissed")} />
+                  <ActionButton label="Confirm breach" variant="primary" run={resolveFlagAction.bind(null, f.id, "confirmed")} />
+                  <ActionButton label="False positive" run={resolveFlagAction.bind(null, f.id, "dismissed")} />
                 </div>
               </Card>
             </li>
@@ -55,7 +55,7 @@ export default async function ModerationPage() {
                   <p className="text-sm">&ldquo;{f.excerpt}&rdquo;</p>
                   <div className="mt-3">
                     {f.strike_id || f.status === "confirmed" ? (
-                      <ActionButton label="Record as a strike" variant="danger" confirm="Log this as a strike on the account?" run={() => flagToStrikeAction(f.id)} />
+                      <ActionButton label="Record as a strike" variant="danger" confirm="Log this as a strike on the account?" run={flagToStrikeAction.bind(null, f.id)} />
                     ) : null}
                   </div>
                 </Card>

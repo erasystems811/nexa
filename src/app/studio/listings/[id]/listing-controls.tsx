@@ -8,7 +8,7 @@ import {
 } from "@/modules/provider/actions";
 import type { ListingStatus } from "@/lib/db/types";
 
-/** Pause, duplicate, delete. PRD Section 13. */
+/** Pause, duplicate, delete. */
 export function ListingControls({
   listingId,
   status,

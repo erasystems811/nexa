@@ -5,7 +5,7 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 
-/** My Orders. PRD Section 14. */
+/** My Orders. */
 export default async function OrdersPage() {
   await requireSession();
   const orders = await listMyOrders();
@@ -38,7 +38,7 @@ export default async function OrdersPage() {
                     <div className="shrink-0 text-right">
                       <StatusPill status={o.status} />
                       <p className="mt-1 text-sm tabular-nums">
-                        {formatKobo(o.agreed_price_kobo + o.delivery_fee_kobo + o.caution_fee_kobo)}
+                        {formatKobo(o.agreed_price_kobo)}
                       </p>
                     </div>
                   </div>

@@ -1,8 +1,8 @@
 /**
- * Settings — platform settings and feature flags (PRD Sections 10, 17, 20).
+ * Settings — platform settings and feature flags
  *
  * Nothing else in the codebase should hardcode a commission, a release
- * percentage, a delivery fee, or a "is this feature live" boolean.
+ * percentage, a subscription fee, or a "is this feature live" boolean.
  */
 export {
   FLAGS,

@@ -72,7 +72,7 @@ kept at the bottom of this file.)
    URL Configuration** → set **Site URL** to the Vercel URL and add it under
    **Redirect URLs**. (Claude can do this for you via the Supabase API.)
 
-## The four subdomains (Addendum §2)
+## The three subdomains
 
 The app is built to serve each surface on its own subdomain, and this switches
 on the moment you set one variable — until then it stays single-domain on the
@@ -82,35 +82,37 @@ Railway URL, which is why Step 1 works before any DNS.
 | --- | --- |
 | `nexa.erasystems.com.ng` | Customer Marketplace |
 | `vendor.nexa.erasystems.com.ng` | Business Studio |
-| `rider.nexa.erasystems.com.ng` | Rider App |
 | `admin.nexa.erasystems.com.ng` | Admin Console |
 
 To turn it on:
 
-1. **DNS** — at wherever `erasystems.com.ng` is managed, add four CNAME records
-   (`nexa`, `vendor.nexa`, `rider.nexa`, `admin.nexa`) pointing at your Railway
-   service's domain. In Railway, add each of the four under **Settings →
-   Networking → Custom Domain**; Railway shows the exact CNAME target to use.
+1. **DNS** — at wherever `erasystems.com.ng` is managed, add three CNAME records
+   (`nexa`, `vendor.nexa`, `admin.nexa`) pointing at your Railway service's
+   domain. In Railway, add each of the three under **Settings → Networking →
+   Custom Domain**; Railway shows the exact CNAME target to use.
 2. **One variable** — set `NEXT_PUBLIC_ROOT_DOMAIN` = `nexa.erasystems.com.ng`
    in Railway, and `NEXT_PUBLIC_SITE_URL` = `https://nexa.erasystems.com.ng`.
    Redeploy.
 3. **Supabase** — set the Site URL to `https://nexa.erasystems.com.ng` and add
-   all four subdomains under Redirect URLs. (Claude can do this via the API.)
+   all three subdomains under Redirect URLs.
 
 That's it — each subdomain then shows only its own app, cross-links between them
-redirect to the right place, and your login carries across all four (the session
+redirect to the right place, and your login carries across all three (the session
 cookie is scoped to the parent domain). Leave `NEXT_PUBLIC_ROOT_DOMAIN` unset and
 everything stays reachable by path on the single Railway URL, which is the right
 way to test first.
 
 ## What "live" does and does not mean
 
-- **Works:** every screen, sign-up and login, the four role apps, the whole
-  booking and admin flow — end to end, with test money.
-- **Not real money yet:** `PAYMENT_GATEWAY=mock`. Section 20 of the PRD requires
-  Flutterwave's escrow product and the Nigerian rules on holding customer funds
-  to be confirmed before a single real naira moves. That is a business/legal
-  step, not a code change — the code already routes through a swappable
-  interface, so switching to Flutterwave later is one adapter and one env var.
+- **Works:** every screen, sign-up and login, the three surfaces, the whole
+  booking and admin flow — end to end.
+- **Real money:** set `PAYMENT_GATEWAY=flutterwave` with `FLUTTERWAVE_SECRET_KEY`
+  and `FLUTTERWAVE_WEBHOOK_SECRET`. Nexa is its own escrow — customers pay into
+  Nexa's Flutterwave balance, and vendors are paid out by Transfer once the
+  customer confirms with their code. Leave it on `mock` to click through the
+  flows without moving money.
+- **Worth knowing:** holding customers' funds between payment and payout carries
+  regulatory weight in Nigeria. That is a business conversation, not a code
+  change.
 - **Empty on purpose:** no cities, categories, or providers. Create the first
   ones from the Admin Console the day you onboard the first real vendor.

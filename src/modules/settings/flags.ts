@@ -6,29 +6,31 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { FeatureFlag, UserRole } from "@/lib/db/types";
 
 /**
- * Feature flags. PRD Section 17: "Architecture and exposure are different
+ * Feature flags.: "Architecture and exposure are different
  * decisions." Event Project and Reliability Score can exist before they are
  * publicly exposed; these rows decide who can see them.
  *
  * Turning a feature on is an UPDATE. It is never a migration and never a redeploy.
  */
 
-/** Flags the app knows by name. Adding one here does not create it - the row does. */
+/**
+ * Flags the app knows by name. Adding one here does not create it - the row does,
+ * so this list must match the rows exactly: a name with no row is permanently OFF
+ * and silently hides whatever it guards.
+ */
 export const FLAGS = {
-  planMyEvent: "plan_my_event",
-  publicReliabilityScore: "public_reliability_score",
-  eventStandMode: "event_stand_mode",
-  negotiablePricing: "negotiable_pricing",
-  legacyRiderDelivery: "rider_delivery",
-  cautionFee: "caution_fee",
   contactInfoFlagging: "contact_info_flagging",
   coupons: "coupons",
+  negotiablePricing: "negotiable_pricing",
+  planMyEvent: "plan_my_event",
+  publicReliabilityScore: "public_reliability_score",
   referrals: "referrals",
+  whatsappMediatedChat: "whatsapp_mediated_chat",
 } as const;
 
 export type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];
 
-/** Deduped per request by React's cache(), so a page may ask freely. */
+/** Deduped per request by React's cache, so a page may ask freely. */
 export const getFlags = cache(async (): Promise<FeatureFlag[]> => {
   const supabase = await createClient();
   const { data } = await supabase.from("feature_flags").select("*").order("key");
@@ -48,7 +50,7 @@ export async function isEnabled(key: FlagKey, role?: UserRole): Promise<boolean>
 
 /**
  * Admin-only write. Goes through the service-role client because RLS on
- * feature_flags admits only `is_admin()`, and the caller has already been
+ * feature_flags admits only `is_admin`, and the caller has already been
  * checked by the Admin Console layout - but see the explicit re-check below:
  * a service-role write with no authorisation check of its own is a hole.
  */

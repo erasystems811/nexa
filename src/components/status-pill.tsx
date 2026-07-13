@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import type { BookingStatus } from "@/lib/db/types";
 
-/** PRD Section 09, in the customer's language rather than the schema's. */
+/**in the customer's language rather than the schema's. */
 const LABEL: Record<BookingStatus, string> = {
   pending: "Awaiting payment",
   paid_held: "Paid — held by Nexa",

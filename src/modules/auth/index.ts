@@ -11,4 +11,12 @@ export {
   homePathForRole,
   type Session,
 } from "./session";
-export { signIn, signUp, signOut, type AuthFormState } from "./actions";
+export {
+  signIn, signUp, signOut,
+  requestPasswordReset, completePasswordReset,
+  type AuthFormState, type PasswordResetState,
+} from "./actions";
+export {
+  findAuthUserByEmail, ensureAuthUser, sendPasswordCode, trySendPasswordSetupCode,
+  type EnsuredUser,
+} from "./provisioning";

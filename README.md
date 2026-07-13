@@ -1,66 +1,87 @@
 # Nexa
 
-*Powered by ERA.* Nexa is an event vendor access marketplace: customers discover,
-contact, compare, and book verified event vendors and service providers.
+*Powered by ERA.* Nexa is an **event services marketplace**. Customers find, compare,
+contact, and book verified vendors for the services an event needs — catering, DJs,
+photography, decor, sound, venues, security, transport, and the rest.
 
-The product spec starts with [`PRD.md`](./PRD.md), then
-[`PRD_ADDENDUM_v1.1.md`](./PRD_ADDENDUM_v1.1.md), and now
-[`PRD_ADDENDUM_v1.2.md`](./PRD_ADDENDUM_v1.2.md). Where the documents disagree,
-the newest addendum wins.
+This README is the spec. There is no separate PRD; the code and this document are
+the source of truth.
 
-## Product Direction
+## What Nexa sells
 
-Addendum v1.2 supersedes the old Nexa-operated rider network. Nexa no longer has
-registered riders as a separate operational pool. Car, van, bus, truck, dispatch,
-and logistics companies are ordinary providers on the marketplace, listed under
-transport/logistics categories.
+**Services, not products.** A caterer is not selling food, they are selling the
+catering *service* — showing up, cooking, serving, clearing. A transport company is
+selling the moving *service*. Every vendor owns their own fulfillment: they turn up
+and do the job they listed.
 
-The core marketplace is now an access space for event vendors. Customers and
-vendors discover each other, communicate, negotiate, and book where enabled. The
-vendor owns ordinary fulfillment. **Plan Your Event** is the managed-service
-layer where Nexa can take responsibility for planning, coordination, vendor
-selection, and event execution support.
+There is no Nexa rider network. **Transport & logistics companies are ordinary
+vendors** in their own category, like every other vendor.
 
-## Current Implementation Status
+## How Nexa makes money
 
-The codebase was originally built against the older four-surface model. This
-branch is pivoting it toward the v1.2 model.
+Two revenue lines, and only two:
 
-Already updated on this branch:
+1. **Commission** — a percentage of each booking, taken automatically because Nexa
+   holds the customer's payment and pays the vendor out. Set in Admin → Settings
+   (`commission_percent`), changeable without a deploy.
+2. **Monthly platform fee** — vendors pay a recurring fee to stay listed. If the fee
+   lapses, their listings are hidden from the marketplace and they stop getting
+   leads. They keep Business Studio access so they can see existing bookings and pay up.
 
-- Added the v1.2 product addendum.
-- Removed the Rider App and Admin Riders pages from live app routes.
-- Reduced subdomain routing to three primary surfaces: Marketplace, Business Studio, Admin.
-- Redirected `/rider` paths back to Marketplace while legacy data is migrated.
-- Removed rider applications from the Admin dashboard and navigation.
-- Renamed Rider Operations staff role copy toward Transport & Logistics Vendor Manager.
-- Changed Business Studio order actions from "Call a bike/car/van" to provider-owned fulfillment.
-- Removed platform delivery-fee presentation from checkout copy.
-- Added a migration that disables/deprecates legacy rider delivery feature flags.
+## How the money moves
 
-Still intentionally legacy pending the next phase:
+Nexa *is* the escrow — there is no third-party escrow product.
 
-- Rider tables and generated database types remain in the schema for data/history.
-- Rider-specific payment ledger kinds and payout helpers remain until booking/payment is redesigned.
-- Old e2e rider tests are no longer representative of the product direction.
-- Plan Your Event still needs to be built as the managed coordination layer.
+1. **Collect** — the customer pays through Flutterwave's hosted checkout. The money
+   lands in Nexa's own Flutterwave balance.
+2. **Hold** — Nexa simply doesn't pay it out yet. That is the hold.
+3. **Deposit release** — when the vendor accepts the booking, their deposit share is
+   transferred to their bank account, so they can buy materials. The deposit
+   percentage is negotiated per vendor and recorded on their agreement.
+4. **Balance release** — the customer receives a confirmation code at booking. When
+   the service is done, they give it to the vendor. Entering that code releases the
+   balance, minus commission. **A vendor cannot get paid by simply tapping "done".**
+5. **Refund** — before the vendor accepts, cancellation is a full automatic refund.
+   After that it follows the vendor's own tiered cancellation policy.
+
+Money is stored in kobo as `bigint` throughout.
+
+## Communication
+
+Customers and vendors **never exchange phone numbers.** They both message Nexa's
+WhatsApp business number, and Nexa relays between them — neither side sees the
+other's number. Messages are scanned for phone numbers and bank details; attempts
+to move off-platform are blocked and flagged for Admin.
 
 ## Surfaces
 
-| Surface | Purpose |
-| --- | --- |
-| Marketplace | Customers discover, contact, compare, and book event vendors. |
-| Business Studio | Providers manage profiles, listings, leads, bookings, media, reviews, and payout details. |
-| Admin Console | Nexa staff verify providers, approve listings, support customers, manage disputes, settings, staff, and Plan Your Event operations. |
+One app, three surfaces, split by subdomain.
 
-Transport/logistics providers use Business Studio like every other provider.
-There is no standalone Rider App in the v1.2 product model.
+| Surface | Domain | Purpose |
+| --- | --- | --- |
+| Marketplace | `nexa.erasystems.com.ng` | Customers discover, compare, contact, and book vendors. |
+| Business Studio | `vendor.nexa.erasystems.com.ng` | Vendors manage their profile, listings, availability, bookings, reviews, payouts, and subscription. |
+| Admin Console | `admin.nexa.erasystems.com.ng` | Nexa staff verify vendors, approve listings, monitor bookings and money, handle disputes and support, manage subscriptions and settings. |
 
-## Getting Started
+Locally (and on the raw Railway URL) `NEXT_PUBLIC_ROOT_DOMAIN` is unset and every
+surface is reachable by path instead: `/`, `/studio`, `/admin`.
+
+## Trust
+
+No vendor appears publicly without manual review. Verification covers business
+details, ID (NIN), bank account, sample media, and references. Talent categories
+require video, not photos. Suspension hides a vendor's listings immediately.
+
+## Stack
+
+Next.js App Router, TypeScript, TailwindCSS, Supabase (Postgres / Auth / RLS),
+Flutterwave (payments), Resend (email), Railway (hosting).
+
+## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local
+cp .env.example .env.local   # then fill it in
 npm run dev
 ```
 
@@ -71,28 +92,25 @@ npm run typecheck
 npm run lint
 ```
 
-### Applying The Schema
+### Applying the schema
 
-The migrations in `supabase/migrations/` are numbered and must run in order.
+Migrations in `supabase/migrations/` are numbered and run in order.
 
 ```bash
-npx supabase link --project-ref <your-project-ref>
+npx supabase link --project-ref <project-ref>
 npx supabase db push
 npm run db:types
 ```
 
-## Creating The First Admin
+## Admin access
 
-Sign up through `/register`, then promote the account in Supabase SQL editor:
+Admin is a fixed login set by environment variables — `NEXA_SUPER_ADMIN_USERNAME`,
+`NEXA_SUPER_ADMIN_EMAIL`, and `NEXA_SUPER_ADMIN_PASSWORD`. Change the password by
+changing the variable and redeploying. Sign in on the `admin.` subdomain.
 
-```sql
-update public.profiles set role = 'admin' where id = '<the auth user id>';
-```
+## Onboarding a vendor
 
-Sign out and back in. The role is carried on the JWT, so it takes effect on the
-next token.
-
-## Stack
-
-Next.js App Router, TypeScript, TailwindCSS, Supabase Postgres/Auth/RLS. Money is
-stored in kobo as `bigint`.
+Admin → Providers → Add Provider. Nexa creates the account and emails the vendor a
+link to set their password. Once they set it they can sign in to Business Studio,
+build their profile, and submit listings — which enter the approval queue before
+they go live.

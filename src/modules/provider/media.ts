@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { ProviderError } from "./context";
 
 /**
- * Listing media. PRD Section 06/13: every upload enters Pending Approval.
+ * Listing media./13: every upload enters Pending Approval.
  *
  * The file lands in the private provider-media bucket under the provider's own
  * id prefix (0018 storage policies). The row that points at it is forced to
- * pending_approval by guard_listing_media_status (0011). Neither the file nor
+ * pending_approval by guard_listing_media_status. Neither the file nor
  * the row is publicly visible until an Admin approves it.
  */
 

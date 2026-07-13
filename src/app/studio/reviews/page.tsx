@@ -2,7 +2,7 @@ import { requireProvider, listMyReviews } from "@/modules/provider";
 import { Card, PageHeader } from "@/components/ui";
 import { ReplyForm } from "./reply-form";
 
-/** Reviews. PRD Section 13: read and reply. */
+/** Reviews.: read and reply. */
 export default async function StudioReviews() {
   const provider = await requireProvider();
   const reviews = await listMyReviews(provider.id);

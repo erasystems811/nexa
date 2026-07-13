@@ -6,16 +6,32 @@ import { calculateLatePenalty } from "./calculations";
 import type { Kobo } from "@/lib/money";
 
 /**
- * The Payments module's public face. PRD Section 17.
+ * The Payments module's public face.
  *
  * Booking logic calls holdFunds / releaseFunds / refund and nothing else. It
  * never sees a gateway, a checkout URL, or a Flutterwave reference. If a future
  * phase swaps the processor, every caller of this file keeps compiling.
  *
+ * THE MONEY MODEL (services-only, migration 0028)
+ * ---------------------------------------------------------------------------
+ * Nexa IS the escrow. The customer pays 100% of the agreed price up front, into
+ * Nexa's own balance. It leaves again in exactly two movements:
+ *
+ *   stage 1  the vendor ACCEPTS  ->  the deposit share (the booking's frozen
+ *            stage_1_release_percent) goes to their bank account, so they can
+ *            buy materials before the job.
+ *   stage 2  the customer hands over their ONE confirmation code at the end ->
+ *            the balance, less Nexa's commission, goes to the vendor and the
+ *            booking completes.
+ *
+ * There is no third thing. No delivery fee, no caution fee —
+ * a service is not rented out and does not come back damaged.
+ *
  * The write path runs on the service-role client on purpose: RLS grants nobody
- * INSERT on payment_ledger_entries, and the ledger's append-only trigger
- * refuses UPDATE and DELETE from every role including this one. Money is
- * recorded once, by this module, or not at all.
+ * INSERT on payment_ledger_entries, the ledger's append-only trigger refuses
+ * UPDATE and DELETE from every role including this one, and
+ * `guard_wallet_balance_write` rejects a wallet-balance write from
+ * anyone but this module. Money is recorded once, by this file, or not at all.
  */
 
 export class PaymentsError extends Error {
@@ -28,9 +44,8 @@ export class PaymentsError extends Error {
 export interface HoldFundsInput {
   bookingId: string;
   reference: string;
+  /** The whole agreed price. There is no other charge on a service booking. */
   amountKobo: Kobo;
-  deliveryFeeKobo?: Kobo;
-  cautionFeeKobo?: Kobo;
   /** Nexa's cut, computed from the percentage frozen onto the booking. */
   commissionKobo?: Kobo;
   customer: { id: string; email: string; name?: string };
@@ -44,17 +59,21 @@ export interface HoldFundsOutput {
 
 /**
  * Takes the customer's money into escrow. Nothing reaches the provider here —
- * that is the entire premise of the platform (PRD Section 10).
+ * that is the entire premise of the platform
+ *
+ * The provider's gross (price less commission) lands in their wallet as
+ * *pending*: earned, sitting in Nexa's balance, not theirs yet. releaseFunds is
+ * what turns pending into money in their bank account.
  */
 export async function holdFunds(input: HoldFundsInput): Promise<HoldFundsOutput> {
   const gateway = getPaymentGateway();
   const db = createAdminClient();
 
+  const commissionKobo = input.commissionKobo ?? 0;
+
   const result = await gateway.holdFunds({
     reference: input.reference,
     amountKobo: input.amountKobo,
-    deliveryFeeKobo: input.deliveryFeeKobo,
-    cautionFeeKobo: input.cautionFeeKobo,
     customer: {
       id: input.customer.id,
       email: input.customer.email,
@@ -69,12 +88,9 @@ export async function holdFunds(input: HoldFundsInput): Promise<HoldFundsOutput>
     .insert({
       booking_id: input.bookingId,
       amount_kobo: input.amountKobo,
-      delivery_fee_kobo: input.deliveryFeeKobo ?? 0,
-      caution_fee_kobo: input.cautionFeeKobo ?? 0,
-      commission_kobo: input.commissionKobo ?? 0,
+      commission_kobo: commissionKobo,
       status: result.status === "held" ? "held" : "pending",
       held_kobo: result.status === "held" ? input.amountKobo : 0,
-      caution_held_kobo: result.status === "held" ? (input.cautionFeeKobo ?? 0) : 0,
       gateway: gateway.name,
       gateway_reference: result.gatewayReference,
     })
@@ -88,34 +104,26 @@ export async function holdFunds(input: HoldFundsInput): Promise<HoldFundsOutput>
   // The hold itself is a ledger event. Every kobo that moves gets a row, and
   // the customer's escrow balance is derived from these, never from a column
   // somebody remembered to update.
-  await db.from("payment_ledger_entries").insert([
-    {
-      payment_id: data.id,
-      booking_id: input.bookingId,
-      kind: "hold",
-      amount_kobo: input.amountKobo,
-      customer_id: input.customer.id,
-      note: "Escrow hold",
-    },
-    ...(input.cautionFeeKobo
-      ? [
-          {
-            payment_id: data.id,
-            booking_id: input.bookingId,
-            kind: "caution_hold" as const,
-            amount_kobo: input.cautionFeeKobo,
-            customer_id: input.customer.id,
-            note: "Caution fee held apart from escrow",
-          },
-        ]
-      : []),
-  ]);
+  await db.from("payment_ledger_entries").insert({
+    payment_id: data.id,
+    booking_id: input.bookingId,
+    kind: "hold",
+    amount_kobo: input.amountKobo,
+    customer_id: input.customer.id,
+    note: "Escrow hold",
+  });
+
+  // What the vendor has earned but cannot touch. Nothing credited this before —
+  // every wallet in the system read zero pending, forever.
+  const providerId = await providerIdFor(db, input.bookingId);
+  await adjustWallet(db, providerId, { pendingKobo: input.amountKobo - commissionKobo });
 
   return { paymentId: data.id, checkoutUrl: result.checkoutUrl };
 }
 
 export interface ReleaseFundsInput {
   bookingId: string;
+  /** 1 = the deposit, on acceptance. 2 = the balance, on the customer's code. */
   stage: 1 | 2;
   amountKobo: Kobo;
   beneficiary: {
@@ -127,11 +135,12 @@ export interface ReleaseFundsInput {
 }
 
 /**
- * Releases one stage's share to a provider.
+ * Releases one stage's share to a provider's bank account.
  *
- * The caller is responsible for having verified the checkpoint — a confirmation
- * code entered by the customer, not a provider tapping "done" (PRD Section 10).
- * This function does not know what a confirmation code is, and should not.
+ * The caller is responsible for having verified the checkpoint — the vendor's
+ * acceptance at stage 1, and at stage 2 a confirmation code entered by the
+ * customer, never a provider tapping "done" This function
+ * does not know what a confirmation code is, and should not.
  *
  * `idempotencyKey` is derived, not random: the same (booking, stage,
  * beneficiary) can be submitted twice by a retried webhook and pay once.
@@ -222,86 +231,31 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
       `Funds released but the payment row was not updated for booking ${input.bookingId}: ${updateError.message}`,
     );
   }
-}
 
-/**
- * Settles the caution fee on a returned rental. PRD Section 10.
- *
- * Good condition → the full caution fee is refunded to the customer when the
- * return code is confirmed. Damage reported → nothing is auto-deducted; a
- * dispute is raised for Admin, who decides the claim by hand.
- */
-export async function settleCaution(input: {
-  bookingId: string;
-  damaged: boolean;
-  notes?: string;
-}): Promise<void> {
-  const db = createAdminClient();
-
-  const { data: payment, error } = await db
-    .from("payments")
-    .select("id, gateway_reference, caution_held_kobo, caution_refunded_kobo, booking_id")
-    .eq("booking_id", input.bookingId)
-    .single();
-
-  if (error || !payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
-
-  const { data: booking } = await db
-    .from("bookings")
-    .select("customer_id")
-    .eq("id", input.bookingId)
-    .single();
-
-  const outstanding = payment.caution_held_kobo - payment.caution_refunded_kobo;
-  if (outstanding <= 0) return; // nothing held, or already settled
-
-  if (input.damaged) {
-    if (!booking?.customer_id) {
-      throw new PaymentsError(`Booking ${input.bookingId} has no customer to attribute the dispute to`);
-    }
-    // Section 10: "a manual Admin decision, not an automatic deduction." The
-    // dispute is over the customer's caution deposit, so it is raised in the
-    // customer's name; Admin decides how much (if any) compensates the provider.
-    const { error: disputeError } = await db.from("disputes").insert({
-      booking_id: input.bookingId,
-      raised_by: booking.customer_id,
-      reason: "Damage reported at return",
-      description: input.notes ?? null,
-      is_damage_claim: true,
-      caution_claim_kobo: outstanding,
-    });
-    if (disputeError) {
-      throw new PaymentsError(`Could not raise the damage dispute: ${disputeError.message}`);
-    }
-    return;
-  }
-
-  if (payment.gateway_reference) {
-    await getPaymentGateway().refund({
-      gatewayReference: payment.gateway_reference,
-      amountKobo: outstanding,
-      reason: "Caution fee returned — item came back in good condition",
-      idempotencyKey: `${input.bookingId}:caution_refund`,
-    });
-  }
-
-  await db.from("payment_ledger_entries").insert({
-    payment_id: payment.id,
-    booking_id: input.bookingId,
-    kind: "caution_refund",
-    amount_kobo: -outstanding,
-    customer_id: booking?.customer_id ?? null,
-    note: "Caution fee refunded",
+  // The wallet follows the money. A release is a bank transfer straight out of
+  // Nexa's balance into the vendor's account, so it leaves `pending` and lands
+  // in `withdrawn` — it has been paid, not parked. `available` is the
+  // released-but-not-yet-transferred bucket, and in a direct-transfer model
+  // nothing ever sits in it.
+  await adjustWallet(db, input.beneficiary.id, {
+    pendingKobo: -input.amountKobo,
+    withdrawnKobo: input.amountKobo,
   });
 
-  await db
-    .from("payments")
-    .update({ caution_refunded_kobo: payment.caution_refunded_kobo + outstanding })
-    .eq("id", payment.id);
+  // A payout row is the vendor's withdrawal history (Studio,, and
+  // the record that this much money left Nexa for this provider.
+  await db.from("payouts").insert({
+    provider_id: input.beneficiary.id,
+    amount_kobo: input.amountKobo,
+    status: "paid",
+    gateway: gateway.name,
+    gateway_reference: row.gateway_reference,
+    paid_at: new Date().toISOString(),
+  });
 }
 
 /**
- * Applies a late-arrival penalty. PRD Section 10: 1% of booking value per 30
+ * Applies a late-arrival penalty.: 1% of booking value per 30
  * minutes late (or the provider's recorded override), split 30% to the affected
  * customer as compensation and 70% retained by Nexa.
  *
@@ -383,98 +337,9 @@ export async function applyLatePenalty(input: {
   await db.from("payments").update({ penalty_kobo: payment.penalty_kobo + split.penaltyKobo }).eq("id", payment.id);
 
   // Reduce the provider's pending earnings by the penalty.
-  const { data: wallet } = await db
-    .from("provider_wallets")
-    .select("pending_kobo")
-    .eq("provider_id", booking.provider_id)
-    .single();
-  await db
-    .from("provider_wallets")
-    .update({ pending_kobo: Math.max(0, (wallet?.pending_kobo ?? 0) - split.penaltyKobo) })
-    .eq("provider_id", booking.provider_id);
+  await adjustWallet(db, booking.provider_id, { pendingKobo: -split.penaltyKobo });
 
   return split;
-}
-
-/**
- * Resolves a caution-fee damage claim. PRD Section 10: Admin reviews and can
- * deduct from the caution fee to compensate the provider, refunding any
- * remainder to the customer. A deliberate, manual decision — never automatic.
- */
-export async function resolveCautionClaim(input: {
-  bookingId: string;
-  claimKobo: Kobo;
-}): Promise<void> {
-  const db = createAdminClient();
-
-  const { data: payment } = await db
-    .from("payments")
-    .select("id, gateway_reference, caution_held_kobo, caution_refunded_kobo, caution_claimed_kobo")
-    .eq("booking_id", input.bookingId)
-    .single();
-  if (!payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
-
-  const outstanding =
-    payment.caution_held_kobo - payment.caution_refunded_kobo - payment.caution_claimed_kobo;
-  if (input.claimKobo > outstanding) {
-    throw new PaymentsError(`Claim exceeds the held caution fee (${outstanding} available)`);
-  }
-
-  const { data: booking } = await db
-    .from("bookings")
-    .select("provider_id, customer_id")
-    .eq("id", input.bookingId)
-    .single();
-
-  const refundKobo = outstanding - input.claimKobo;
-
-  // The claimed portion compensates the provider.
-  if (input.claimKobo > 0) {
-    await db.from("payment_ledger_entries").insert({
-      payment_id: payment.id,
-      booking_id: input.bookingId,
-      kind: "caution_claim",
-      amount_kobo: input.claimKobo,
-      provider_id: booking?.provider_id ?? null,
-      note: "Damage claim awarded from caution fee",
-    });
-  }
-
-  // The remainder goes back to the customer.
-  if (refundKobo > 0 && payment.gateway_reference) {
-    await getPaymentGateway().refund({
-      gatewayReference: payment.gateway_reference,
-      amountKobo: refundKobo,
-      reason: "Caution fee — remainder after damage claim",
-      idempotencyKey: `${input.bookingId}:caution_claim_refund`,
-    });
-    await db.from("payment_ledger_entries").insert({
-      payment_id: payment.id,
-      booking_id: input.bookingId,
-      kind: "caution_refund",
-      amount_kobo: -refundKobo,
-      customer_id: booking?.customer_id ?? null,
-      note: "Caution fee remainder refunded",
-    });
-  }
-
-  await db
-    .from("payments")
-    .update({
-      caution_claimed_kobo: payment.caution_claimed_kobo + input.claimKobo,
-      caution_refunded_kobo: payment.caution_refunded_kobo + refundKobo,
-    })
-    .eq("id", payment.id);
-}
-
-async function getSettingNumeric(
-  db: ReturnType<typeof createAdminClient>,
-  key: string,
-  fallback: number,
-): Promise<number> {
-  const { data } = await db.from("platform_settings").select("value").eq("key", key).maybeSingle();
-  const n = Number(data?.value);
-  return Number.isFinite(n) ? n : fallback;
 }
 
 export interface RefundInput {
@@ -483,14 +348,14 @@ export interface RefundInput {
   reason: string;
 }
 
-/** Returns money to the customer, in whole or in part. PRD Sections 09, 10. */
+/** Returns money to the customer, in whole or in part. */
 export async function refund(input: RefundInput): Promise<void> {
   const gateway = getPaymentGateway();
   const db = createAdminClient();
 
   const { data: payment, error } = await db
     .from("payments")
-    .select("id, gateway_reference, booking_id")
+    .select("id, gateway_reference, booking_id, amount_kobo, commission_kobo")
     .eq("booking_id", input.bookingId)
     .single();
 
@@ -523,6 +388,82 @@ export async function refund(input: RefundInput): Promise<void> {
   if (ledgerError) {
     throw new PaymentsError(
       `Refund issued but the ledger write failed for booking ${input.bookingId}: ${ledgerError.message}`,
+    );
+  }
+
+  // Money going back to the customer is money the vendor is no longer owed. The
+  // refund is a share of the price, so the vendor's pending share of it comes
+  // off — capped at zero, because a stage already released is gone from pending
+  // and cannot be taken out of it twice.
+  const providerId = await providerIdFor(db, input.bookingId);
+  const providerShareKobo =
+    row.amount_kobo > 0
+      ? Math.round(
+          (input.amountKobo * (row.amount_kobo - row.commission_kobo)) / row.amount_kobo,
+        )
+      : 0;
+  if (providerShareKobo > 0) {
+    await adjustWallet(db, providerId, { pendingKobo: -providerShareKobo });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+type Db = ReturnType<typeof createAdminClient>;
+
+async function getSettingNumeric(db: Db, key: string, fallback: number): Promise<number> {
+  const { data } = await db.from("platform_settings").select("value").eq("key", key).maybeSingle();
+  const n = Number(data?.value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+async function providerIdFor(db: Db, bookingId: string): Promise<string> {
+  const { data } = await db
+    .from("bookings")
+    .select("provider_id")
+    .eq("id", bookingId)
+    .single();
+
+  if (!data) throw new PaymentsError(`No such booking ${bookingId}`);
+  return data.provider_id;
+}
+
+/**
+ * The only writer of a provider's balances. `guard_wallet_balance_write`
+ * lets this through because it runs on the service role; a provider editing
+ * their own wallet row is rejected by the same trigger.
+ *
+ * Balances are clamped at zero. A negative wallet is never a true statement
+ * about money, and the check constraints on the table would reject it anyway.
+ */
+async function adjustWallet(
+  db: Db,
+  providerId: string,
+  delta: { pendingKobo?: number; availableKobo?: number; withdrawnKobo?: number },
+): Promise<void> {
+  const { data: wallet } = await db
+    .from("provider_wallets")
+    .select("pending_kobo, available_kobo, withdrawn_kobo")
+    .eq("provider_id", providerId)
+    .maybeSingle();
+
+  const next = {
+    provider_id: providerId,
+    pending_kobo: Math.max(0, (wallet?.pending_kobo ?? 0) + (delta.pendingKobo ?? 0)),
+    available_kobo: Math.max(0, (wallet?.available_kobo ?? 0) + (delta.availableKobo ?? 0)),
+    withdrawn_kobo: Math.max(0, (wallet?.withdrawn_kobo ?? 0) + (delta.withdrawnKobo ?? 0)),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await db
+    .from("provider_wallets")
+    .upsert(next, { onConflict: "provider_id" });
+
+  if (error) {
+    throw new PaymentsError(
+      `Could not update the wallet for provider ${providerId}: ${error.message}`,
     );
   }
 }

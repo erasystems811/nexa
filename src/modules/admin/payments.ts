@@ -1,15 +1,20 @@
 import "server-only";
 
 import { adminDb, audit } from "./context";
-import { applyLatePenalty, refund, resolveCautionClaim } from "@/modules/payments";
+import { applyLatePenalty, refund } from "@/modules/payments";
 
 /**
- * Payment management. PRD Sections 10, 12.
+ * Payment management — the Admin lens over the money.
  *
  * The money itself is moved by the payments module (gateway + ledger); this file
- * is the Admin lens over it and the thin authorised wrappers that record who
- * did what. Escrow balances, commission, penalties, and refunds all read from
- * the ledger, which is the single source of truth.
+ * is the read side and the thin authorised wrappers that record who did what.
+ * Escrow balances, commission, penalties, and refunds all read from the ledger,
+ * which is the single source of truth.
+ *
+ * Nexa is its own escrow: a customer's payment sits in Nexa's Flutterwave
+ * balance until the vendor's deposit is released on acceptance and the balance
+ * on the customer's completion code. "In escrow" is simply what has been held
+ * and not yet released.
  */
 
 export async function paymentOverview() {
@@ -17,7 +22,7 @@ export async function paymentOverview() {
 
   const { data: payments } = await db
     .from("payments")
-    .select("held_kobo, released_kobo, refunded_kobo, penalty_kobo, commission_kobo, caution_held_kobo, caution_refunded_kobo, caution_claimed_kobo, status");
+    .select("held_kobo, released_kobo, refunded_kobo, penalty_kobo, commission_kobo, status");
 
   const rows = payments ?? [];
   const sum = (f: (p: (typeof rows)[number]) => number) => rows.reduce((a, p) => a + f(p), 0);
@@ -28,7 +33,6 @@ export async function paymentOverview() {
     commission: sum((p) => p.commission_kobo),
     refunded: sum((p) => p.refunded_kobo),
     penalties: sum((p) => p.penalty_kobo),
-    cautionHeld: sum((p) => p.caution_held_kobo - p.caution_refunded_kobo - p.caution_claimed_kobo),
     count: rows.length,
   };
 }
@@ -43,11 +47,12 @@ export async function recentLedger(limit = 100) {
   return data ?? [];
 }
 
+/** Payouts only ever go to a vendor. */
 export async function pendingPayouts() {
   const db = adminDb();
   const { data } = await db
     .from("payouts")
-    .select("id, provider_id, rider_id, amount_kobo, status, scheduled_for, created_at")
+    .select("id, provider_id, amount_kobo, status, scheduled_for, created_at")
     .in("status", ["pending", "processing"])
     .order("created_at", { ascending: true });
   return data ?? [];
@@ -65,12 +70,4 @@ export async function adminApplyPenalty(actorId: string, bookingId: string, late
 export async function adminRefund(actorId: string, bookingId: string, amountKobo: number, reason: string) {
   await refund({ bookingId, amountKobo, reason });
   await audit(actorId, "refund", "booking", bookingId, null, { amountKobo, reason });
-}
-
-export async function adminResolveCautionClaim(actorId: string, bookingId: string, claimKobo: number, disputeId?: string) {
-  await resolveCautionClaim({ bookingId, claimKobo });
-  if (disputeId) {
-    await adminDb().from("disputes").update({ status: "resolved", resolved_by: actorId, resolved_at: new Date().toISOString(), resolution_note: `Caution claim: ${claimKobo} kobo to provider` }).eq("id", disputeId);
-  }
-  await audit(actorId, "resolve_caution_claim", "booking", bookingId, null, { claimKobo });
 }

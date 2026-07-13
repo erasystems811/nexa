@@ -1,10 +1,9 @@
 import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listDisputes } from "@/modules/admin";
-import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { DisputeActions } from "./dispute-actions";
 
-/** Disputes queue. PRD Sections 10, 12. Includes caution-fee damage claims. */
+/** Disputes queue. Includes caution-fee damage claims. */
 export default async function DisputesPage() {
   await requireView(P.disputesView);
   const disputes = await listDisputes();
@@ -29,18 +28,8 @@ export default async function DisputesPage() {
                         {booking?.reference} · {booking?.providers?.business_name ?? "—"}
                       </p>
                     </div>
-                    {dp.is_damage_claim ? (
-                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-900">
-                        Damage claim {dp.caution_claim_kobo ? formatKobo(dp.caution_claim_kobo) : ""}
-                      </span>
-                    ) : null}
                   </div>
-                  <DisputeActions
-                    disputeId={dp.id}
-                    bookingId={(dp.bookings as unknown as { id?: string })?.id ?? ""}
-                    isDamageClaim={dp.is_damage_claim}
-                    cautionKobo={dp.caution_claim_kobo ?? 0}
-                  />
+                  <DisputeActions disputeId={dp.id} />
                 </Card>
               </li>
             );

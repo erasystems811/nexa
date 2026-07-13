@@ -5,7 +5,7 @@ import { approveProviderAction, type AdminActionState } from "@/modules/admin/ac
 import { Alert } from "@/components/ui";
 
 /**
- * Approve with terms. PRD Section 05: the deposit % (and any override) is set
+ * Approve with terms.: the deposit % (and any override) is set
  * here, by Admin, on the agreement — the only place these are ever written.
  */
 export function ApproveProvider({ providerId }: { providerId: string }) {

@@ -5,14 +5,14 @@ import { MessagingError } from "./types";
 import type { ModerationFlagReason, UserRole } from "@/lib/db/types";
 
 /**
- * The Admin review queue for contact-info flags. PRD Section 08.
+ * The Admin review queue for contact-info flags.
  *
  * A flag is raised automatically. Confirming one is a human decision, because
  * the scanner has false positives by design — "0803 456 7890" and "we need 803
  * chairs, 456 plates, 7890 napkins" are the same digits to a regular expression.
  *
  * Confirming increments the subject's `confirmed_solicitation_count`. It does
- * NOT create a strike. PRD Section 05: "there is no fixed strike count that
+ * NOT create a strike.: "there is no fixed strike count that
  * triggers automatic removal — permanent removal is an Admin judgment call."
  * The strike itself is raised from Provider Management, which is a later phase.
  */

@@ -11,7 +11,7 @@ export interface CheckoutState {
   error?: string;
 }
 
-/** Fixed-price flow: date/time -> confirm -> pay. PRD Section 07. */
+/** Fixed-price flow: date/time -> confirm -> pay. */
 export async function checkoutAction(
   _prev: CheckoutState,
   formData: FormData,
@@ -52,7 +52,7 @@ export async function checkoutAction(
 
 /**
  * Negotiable flow: no booking yet. Open the conversation, and let the two of
- * them agree a number first (PRD Section 08).
+ * them agree a number first
  */
 export async function discussListingAction(formData: FormData): Promise<void> {
   const { userId } = await requireSession();

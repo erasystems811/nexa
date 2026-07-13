@@ -31,17 +31,17 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {provider.status === "pending" ? <ApproveProvider providerId={provider.id} /> : null}
         {provider.status === "approved" ? (
-          <ActionButton label="Suspend" variant="danger" confirm="Suspend this provider? Their listings hide immediately." run={() => suspendProviderAction(provider.id, true)} />
+          <ActionButton label="Suspend" variant="danger" confirm="Suspend this provider? Their listings hide immediately." run={suspendProviderAction.bind(null, provider.id, true)} />
         ) : null}
         {provider.status === "suspended" ? (
-          <ActionButton label="Reinstate" variant="primary" run={() => suspendProviderAction(provider.id, false)} />
+          <ActionButton label="Reinstate" variant="primary" run={suspendProviderAction.bind(null, provider.id, false)} />
         ) : null}
         {provider.status !== "removed" ? (
-          <ActionButton label="Remove permanently" variant="danger" prompt="Reason for permanent removal:" run={(r) => removeProviderAction(provider.id, r ?? "")} />
+          <ActionButton label="Remove permanently" variant="danger" prompt="Reason for permanent removal:" run={removeProviderAction.bind(null, provider.id)} />
         ) : null}
         <ActionButton
           label={provider.is_featured ? "Unfeature" : "Feature"}
-          run={() => featureProviderAction(provider.id, !provider.is_featured)}
+          run={featureProviderAction.bind(null, provider.id, !provider.is_featured)}
         />
       </div>
 
@@ -92,8 +92,8 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
                 </span>
                 {!s.appealed_at ? (
                   <span className="flex gap-2">
-                    <ActionButton label="Uphold appeal" variant="primary" run={() => resolveAppealAction(s.id, true, provider.id)} />
-                    <ActionButton label="Fail appeal" variant="danger" run={() => resolveAppealAction(s.id, false, provider.id)} />
+                    <ActionButton label="Uphold appeal" variant="primary" run={resolveAppealAction.bind(null, s.id, true, provider.id)} />
+                    <ActionButton label="Fail appeal" variant="danger" run={resolveAppealAction.bind(null, s.id, false, provider.id)} />
                   </span>
                 ) : null}
               </li>

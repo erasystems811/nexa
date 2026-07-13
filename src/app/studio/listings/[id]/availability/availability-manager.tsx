@@ -15,7 +15,7 @@ interface Block {
 /**
  * "Booked" is derived from live bookings and shown read-only — the provider
  * cannot un-book a paid slot from here. Only "Unavailable" blocks are theirs to
- * add and remove. PRD Section 13.
+ * add and remove.
  */
 export function AvailabilityManager({
   listingId,

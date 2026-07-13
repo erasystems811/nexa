@@ -3,7 +3,7 @@ import "server-only";
 import { adminDb, audit, AdminError } from "./context";
 import type { BookingStatus } from "@/lib/db/types";
 
-/** Order monitoring. PRD Section 12: every booking, with a manual override. */
+/** Order monitoring.: every booking, with a manual override. */
 
 export async function listOrders(status?: string) {
   const db = adminDb();
@@ -21,11 +21,10 @@ export async function listOrders(status?: string) {
 
 export async function getOrderDetail(bookingId: string) {
   const db = adminDb();
-  const [booking, payment, codes, assignments, ledger] = await Promise.all([
+  const [booking, payment, codes, ledger] = await Promise.all([
     db.from("bookings").select("*, listings ( title ), providers ( business_name ), profiles!bookings_customer_id_fkey ( full_name )").eq("id", bookingId).maybeSingle(),
     db.from("payments").select("*").eq("booking_id", bookingId).maybeSingle(),
     db.from("booking_confirmation_codes").select("stage, code, consumed_at").eq("booking_id", bookingId).order("stage"),
-    db.from("rider_assignments").select("id, leg, status, rider_id, fee_share_kobo, condition_notes").eq("booking_id", bookingId),
     db.from("payment_ledger_entries").select("kind, amount_kobo, stage, note, created_at").eq("booking_id", bookingId).order("created_at"),
   ]);
   if (!booking.data) return null;
@@ -33,13 +32,12 @@ export async function getOrderDetail(bookingId: string) {
     booking: booking.data,
     payment: payment.data,
     codes: codes.data ?? [],
-    assignments: assignments.data ?? [],
     ledger: ledger.data ?? [],
   };
 }
 
 /**
- * Manual status override (Section 12). A blunt instrument, used sparingly and
+ * Manual status override. A blunt instrument, used sparingly and
  * always audited — it does not move money, only the booking's state, so an
  * override that skips a checkpoint leaves the payment where it was on purpose.
  */

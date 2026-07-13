@@ -14,7 +14,7 @@ export interface Session {
 }
 
 function roleFromMetadata(value: unknown): UserRole {
-  return value === "admin" || value === "provider" || value === "rider" || value === "customer"
+  return value === "admin" || value === "provider" || value === "customer"
     ? value
     : "customer";
 }
@@ -62,7 +62,7 @@ export async function requireSession(): Promise<Session> {
 
 /**
  * Gate a page on role. This is a UX boundary, not a security one - RLS is what
- * actually stops a rider reading a provider's payouts. Both exist on purpose.
+ * actually stops a customer reading a vendor’s payouts. Both exist on purpose.
  */
 export async function requireRole(...roles: UserRole[]): Promise<Session> {
   const session = await requireSession();
@@ -75,8 +75,8 @@ export async function requireRole(...roles: UserRole[]): Promise<Session> {
 
 /**
  * Where a role lands after sign-in. In live subdomain mode this is the role's
- * own subdomain (vendor./rider./admin./root); in dev it is the internal path.
- * PRD Section 02 + Addendum Section 2.
+ * own subdomain (vendor./admin./root); in dev it is the internal path.
+ *+
  */
 export function homePathForRole(role: UserRole): string {
   return homeForRole(role);

@@ -5,7 +5,7 @@ import { currentStaff, adminDashboard } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
-/** Admin dashboard. PRD Section 12. */
+/** Admin dashboard. */
 export default async function AdminDashboard() {
   const staff = await currentStaff();
   if (!staff) redirect("/login");

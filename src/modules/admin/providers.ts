@@ -1,12 +1,13 @@
 import "server-only";
 
+import { ensureAuthUser, trySendPasswordSetupCode } from "@/modules/auth/provisioning";
 import { adminDb, audit, AdminError } from "./context";
 
 /**
- * Provider management. PRD Sections 05, 12.
+ * Provider management.
  *
  * Approval is where a provider's deposit percentage and any penalty override are
- * set — by Admin, on the agreement, never by the provider (Section 05, 10). This
+ * set — by Admin, on the agreement, never by the provider. This
  * is the only place those values are written.
  */
 
@@ -107,7 +108,7 @@ export async function rejectProvider(actorId: string, providerId: string, reason
   await audit(actorId, "reject_provider", "provider", providerId, null, { reason });
 }
 
-/** Suspension immediately hides all of the provider's listings (Section 05). */
+/** Suspension immediately hides all of the provider's listings. */
 export async function setProviderSuspended(
   actorId: string,
   providerId: string,
@@ -129,34 +130,58 @@ export async function setProviderFeatured(actorId: string, providerId: string, f
   await audit(actorId, "set_featured", "provider", providerId, null, { featured });
 }
 
+export interface ManualProviderResult {
+  providerId: string;
+  /** Set when the provider exists but could not be told how to sign in. */
+  warning?: string;
+}
+
 /**
- * Add a provider manually (Section 12). Creates the auth user (or reuses one by
- * email), then the provider row and its agreement. The provider is created
- * already approved, since Admin is doing the vetting in person.
+ * Add a provider manually. Reuses the auth user when the email
+ * already has one — a vendor who first signed up as a customer is the common
+ * case, and creating a second account for that email is impossible — then the
+ * provider row and its agreement. The provider is created already approved,
+ * since Admin is doing the vetting in person.
+ *
+ * The account never gets a password from us: the vendor is emailed a code and
+ * sets their own at /reset. Without that email the login exists but is unusable,
+ * so a send failure comes back as a warning Admin can act on.
  */
 export async function addProviderManually(
   actorId: string,
   input: { email: string; businessName: string; depositPercent: number; cityId?: string | null },
-): Promise<string> {
+): Promise<ManualProviderResult> {
   const db = adminDb();
 
-  const { data: created, error: userErr } = await db.auth.admin.createUser({
-    email: input.email,
-    email_confirm: true,
-    user_metadata: { full_name: input.businessName },
-  });
-  if (userErr || !created.user) throw new AdminError(`Could not create the account: ${userErr?.message}`);
+  let user;
+  try {
+    user = (await ensureAuthUser({ email: input.email, fullName: input.businessName })).user;
+  } catch (e) {
+    throw new AdminError(`Could not create the account: ${e instanceof Error ? e.message : "unknown error"}`);
+  }
+
+  // providers.user_id is unique — one business per login.
+  const { data: alreadyProvider } = await db
+    .from("providers")
+    .select("id, business_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (alreadyProvider) {
+    throw new AdminError(`${input.email} already runs "${alreadyProvider.business_name}" on Nexa. Open that provider instead.`);
+  }
 
   const slug = input.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Math.random().toString(36).slice(2, 6);
 
   const { data: provider, error: provErr } = await db
     .from("providers")
-    .insert({ user_id: created.user.id, business_name: input.businessName, slug, city_id: input.cityId ?? null, status: "pending" })
+    .insert({ user_id: user.id, business_name: input.businessName, slug, city_id: input.cityId ?? null, status: "pending" })
     .select("id")
     .single();
   if (provErr || !provider) throw new AdminError(`Could not create the provider: ${provErr?.message}`);
 
   await approveProvider(actorId, provider.id, { depositPercent: input.depositPercent });
   await audit(actorId, "add_provider_manually", "provider", provider.id, null, { email: input.email });
-  return provider.id;
+
+  const warning = await trySendPasswordSetupCode({ email: input.email, name: input.businessName });
+  return { providerId: provider.id, warning };
 }

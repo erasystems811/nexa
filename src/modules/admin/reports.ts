@@ -2,7 +2,7 @@ import "server-only";
 
 import { adminDb } from "./context";
 
-/** Reports. PRD Section 12: top providers, most-booked categories, revenue, growth. */
+/** Reports.: top providers, most-booked categories, revenue, growth. */
 
 export async function reports() {
   const db = adminDb();

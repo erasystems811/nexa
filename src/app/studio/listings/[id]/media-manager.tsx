@@ -11,7 +11,7 @@ interface Media {
   url: string | null;
 }
 
-/** Media upload. PRD Section 06/13: every upload enters Pending Approval. */
+/** Media upload./13: every upload enters Pending Approval. */
 export function MediaManager({ listingId, media }: { listingId: string; media: Media[] }) {
   const [state, action, pending] = useActionState(
     uploadMediaAction.bind(null, listingId),

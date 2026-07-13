@@ -1,5 +1,5 @@
 /**
- * Provider — Business Studio's server logic. PRD Sections 05, 13.
+ * Provider — Business Studio's server logic.
  *
  * Owns: providers, provider_categories, provider_documents, provider_agreements,
  * provider_strikes, provider_reliability, provider_wallets, and the provider's
@@ -10,7 +10,7 @@
  * query here is written provider-scoped anyway, as defence in depth.
  *
  * What a provider CANNOT do, by database rule: approve their own listing or
- * media, set their deposit % or penalty terms (Admin's, Section 05), feature
+ * media, set their deposit % or penalty terms (Admin's,, feature
  * their own business, write their own wallet balance, or edit a review's scores.
  */
 export { ProviderError, currentProvider, requireProvider } from "./context";
@@ -28,6 +28,7 @@ export {
 } from "./listings";
 export { listMedia, uploadMedia, deleteMedia } from "./media";
 export { listAvailability, blockUnavailable, removeBlock } from "./availability";
-export { listProviderOrders, accept, reject, startFulfillment, checkIn } from "./orders";
+export { listProviderOrders, accept, reject, startWork } from "./orders";
 export { getWallet, updateBankDetails } from "./wallet";
 export { listMyReviews, replyToReview } from "./reviews";
+export { mySubscription, isListable } from "./subscription";

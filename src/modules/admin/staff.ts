@@ -2,11 +2,12 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ensureAuthUser, trySendPasswordSetupCode } from "@/modules/auth/provisioning";
 import { adminDb, audit, AdminError } from "./context";
 import { bundleFor, ALL_PERMISSIONS, type Permission, type StaffRole } from "./permissions";
 
 /**
- * Staff accounts, roles, and permissions. PRD Addendum v1.1 §4.
+ * Staff accounts, roles, and permissions.
  *
  * The gate for the whole Admin Console: a staff member is a profile with
  * role='admin' AND an active staff_members row. `requireStaff` establishes that;
@@ -126,30 +127,52 @@ export async function getStaffMember(staffId: string) {
   return { ...data, email: u.user?.email ?? null, logins: logins ?? [] };
 }
 
+export interface StaffInviteResult {
+  staffId: string;
+  /** Set when the staff record exists but they could not be told how to sign in. */
+  warning?: string;
+}
+
 /**
- * Invite a staff member. Creates the login (or reuses an account by email),
- * marks the profile as internal staff, and seeds their permissions from the
- * role's default bundle — which the Super Admin can then adjust per person.
+ * Invite a staff member. Reuses the login when the email already has one
+ * (createUser on an existing email fails outright, which used to make inviting
+ * an existing user impossible), marks the profile as internal staff, and seeds
+ * their permissions from the role's default bundle — which the Super Admin can
+ * then adjust per person.
+ *
+ * The login is created with no password: the invitee gets a code and sets their
+ * own at /reset. If that email cannot be sent, the invite still stands and the
+ * caller surfaces the warning — Forgot password is the same door.
  */
 export async function inviteStaff(
   actorId: string,
   input: { email: string; fullName: string; role: StaffRole; department?: string },
-): Promise<string> {
+): Promise<StaffInviteResult> {
   const db = adminDb();
 
-  const { data: created, error } = await db.auth.admin.createUser({
-    email: input.email,
-    email_confirm: true,
-    user_metadata: { full_name: input.fullName },
-  });
-  if (error || !created.user) throw new AdminError(`Could not create the login: ${error?.message}`);
+  let user;
+  try {
+    user = (await ensureAuthUser({ email: input.email, fullName: input.fullName })).user;
+  } catch (e) {
+    throw new AdminError(`Could not create the login: ${e instanceof Error ? e.message : "unknown error"}`);
+  }
 
-  await db.from("profiles").update({ role: "admin", full_name: input.fullName }).eq("id", created.user.id);
+  // staff_members.user_id is unique — an existing staffer is edited, not re-invited.
+  const { data: alreadyStaff } = await db
+    .from("staff_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (alreadyStaff) {
+    throw new AdminError(`${input.email} is already a staff member. Open their staff page to change their role.`);
+  }
+
+  await db.from("profiles").update({ role: "admin", full_name: input.fullName }).eq("id", user.id);
 
   const { data: staff, error: staffErr } = await db
     .from("staff_members")
     .insert({
-      user_id: created.user.id,
+      user_id: user.id,
       staff_role: input.role,
       department: input.department ?? null,
       permissions: input.role === "super_admin" ? [] : bundleFor(input.role),
@@ -160,7 +183,9 @@ export async function inviteStaff(
   if (staffErr || !staff) throw new AdminError(`Could not create the staff record: ${staffErr?.message}`);
 
   await audit(actorId, "invite_staff", "staff_member", staff.id, null, { email: input.email, role: input.role });
-  return staff.id;
+
+  const warning = await trySendPasswordSetupCode({ email: input.email, name: input.fullName });
+  return { staffId: staff.id, warning };
 }
 
 /** Change someone's role — which resets their permissions to that role's bundle. */
@@ -202,7 +227,7 @@ export async function setStaffStatus(actorId: string, staffId: string, status: "
   await audit(actorId, status === "suspended" ? "suspend_staff" : "reactivate_staff", "staff_member", staffId);
 }
 
-/** Records a login for the account's visible history (Addendum §4). */
+/** Records a login for the account's visible history */
 export async function recordLogin(userId: string): Promise<void> {
   const db = adminDb();
   const { data: staff } = await db.from("staff_members").select("id").eq("user_id", userId).maybeSingle();

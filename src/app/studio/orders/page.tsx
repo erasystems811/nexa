@@ -4,7 +4,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 import { OrderActions } from "./order-actions";
 
-/** Orders. Addendum v1.2: providers own ordinary fulfillment. */
+/** Orders.: providers own ordinary fulfillment. */
 export default async function StudioOrders() {
   const provider = await requireProvider();
   const orders = await listProviderOrders(provider.id);
@@ -18,7 +18,6 @@ export default async function StudioOrders() {
       ) : (
         <ul className="space-y-3">
           {orders.map((o) => {
-            const isGoods = ["delivery", "delivery_return"].includes(o.fulfillment_type);
             return (
               <li key={o.id}>
                 <Card>
@@ -41,8 +40,6 @@ export default async function StudioOrders() {
                   <OrderActions
                     bookingId={o.id}
                     status={o.status}
-                    isGoods={isGoods}
-                    stage1Done={!!o.stage_1_at}
                   />
                 </Card>
               </li>

@@ -4,9 +4,8 @@ import { resolveRoute, surfaceForHost, surfaceOrigin, homeForRole } from "@/lib/
 import type { UserRole } from "@/lib/db/types";
 
 /**
- * Subdomain routing and role gating. Addendum v1.2 removes the Rider App as a
- * surface; /rider now redirects back to the marketplace while the legacy module
- * is being retired.
+ * Subdomain routing and role gating. Nexa has three surfaces: the customer
+ * marketplace, Business Studio (vendor.), and the Admin Console (admin.).
  */
 
 const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> = [
@@ -18,7 +17,7 @@ const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> =
   { prefix: "/book", roles: ["customer", "admin"] },
 ];
 
-const AUTH_ROUTES = ["/login", "/register", "/verify"];
+const AUTH_ROUTES = ["/login", "/register", "/verify", "/reset"];
 
 function carryCookies(from: NextResponse, to: NextResponse): NextResponse {
   for (const c of from.cookies.getAll()) to.cookies.set(c);

@@ -23,11 +23,11 @@ interface Defaults {
 }
 
 /**
- * Create and edit share this form. PRD Section 06/08: a listing declares both a
+ * Create and edit share this form./08: a listing declares both a
  * payment type (full or deposit) and a price type (Fixed or Negotiable).
  *
  * The deposit *percentage* is not here — it is set per provider by Admin on the
- * agreement (Section 05, 10). A "deposit" listing uses that agreed percentage.
+ * agreement. A "deposit" listing uses that agreed percentage.
  */
 export function ListingForm({
   categories,

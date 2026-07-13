@@ -2,7 +2,7 @@ import "server-only";
 
 import { adminDb, audit, AdminError } from "./context";
 
-/** Listing approval queue. PRD Section 06, 12. */
+/** Listing approval queue. */
 
 export async function listingQueue() {
   const db = adminDb();

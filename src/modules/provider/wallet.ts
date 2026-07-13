@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { ProviderError } from "./context";
 
 /**
- * Wallet and payouts. PRD Section 10, 13: balance, pending earnings, completed
+ * Wallet and payouts.: balance, pending earnings, completed
  * earnings, withdrawal history.
  *
  * The balances are read-only to the provider — the payments service writes them,
- * and guard_wallet_balance_write (0011) rejects any attempt by the provider to
+ * and guard_wallet_balance_write rejects any attempt by the provider to
  * change them. Only the bank details are theirs to set.
  */
 

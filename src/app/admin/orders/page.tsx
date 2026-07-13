@@ -8,7 +8,7 @@ import { StatusPill } from "@/components/status-pill";
 
 const STATUSES = ["paid_held", "accepted", "in_progress", "completed", "cancelled", "disputed"] as const;
 
-/** Order monitoring. PRD Section 12. */
+/** Order monitoring. */
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   await requireView(P.ordersView);
   const { status } = await searchParams;

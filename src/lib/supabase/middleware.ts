@@ -14,7 +14,7 @@ export interface SessionContext {
 /**
  * Refreshes the auth cookie and reports who the caller is.
  *
- * `getUser()` — not `getSession()` — because getSession trusts whatever is in
+ * `getUser` — not `getSession` — because getSession trusts whatever is in
  * the cookie, and the cookie is attacker-controlled. getUser revalidates the
  * JWT against Supabase.
  */

@@ -1,5 +1,5 @@
 /**
- * The permission catalogue and role bundles. PRD Addendum v1.1 §4.
+ * The permission catalogue and role bundles.
  *
  * Authorisation is permission-based, not role-based: a staff member holds a set
  * of permission keys, and every privileged action checks for a specific key.
@@ -12,17 +12,12 @@
  */
 
 export const PERMISSIONS = {
-  // Providers (both Service and Product vendors are Provider records).
+  // Vendors. Every vendor on Nexa sells a service; there is no product vendor.
   providersView: "providers.view",
   providersApprove: "providers.approve",
   providersEdit: "providers.edit",
   providersSuspend: "providers.suspend",
   providersRemove: "providers.remove",
-  // Legacy rider permissions, now used only during migration away from the old Rider App.
-  ridersView: "riders.view",
-  ridersVerify: "riders.verify",
-  ridersSuspend: "riders.suspend",
-  ridersReassign: "riders.reassign",
   // Listings.
   listingsView: "listings.view",
   listingsApprove: "listings.approve",
@@ -42,6 +37,9 @@ export const PERMISSIONS = {
   paymentsRefund: "payments.refund",
   paymentsPayout: "payments.payout",
   paymentsPenalty: "payments.penalty",
+  // The monthly platform fee — Nexa's second revenue line beside commission.
+  subscriptionsView: "subscriptions.view",
+  subscriptionsManage: "subscriptions.manage",
   // Settings.
   settingsManage: "settings.manage",
   settingsCommission: "settings.commission",
@@ -55,7 +53,7 @@ export const PERMISSIONS = {
   // Staff administration.
   staffManage: "staff.manage",
   // Flagged-off features (Marketing) — the permission exists now; the features
-  // stay behind their flags (PRD Section 17/18).
+  // stay behind their flags/18).
   promotionsManage: "promotions.manage",
   couponsManage: "coupons.manage",
   featuredManage: "featured.manage",
@@ -68,29 +66,27 @@ export const ALL_PERMISSIONS: Permission[] = Object.values(PERMISSIONS);
 
 /** Human labels, for the staff-editor UI. */
 export const PERMISSION_LABELS: Record<Permission, string> = {
-  "providers.view": "View providers",
-  "providers.approve": "Approve / reject providers",
-  "providers.edit": "Edit providers, feature",
+  "providers.view": "View vendors",
+  "providers.approve": "Approve / reject vendors",
+  "providers.edit": "Edit vendors, feature",
   "providers.suspend": "Suspend, discipline, appeals",
-  "providers.remove": "Remove providers permanently",
-  "riders.view": "View legacy rider records",
-  "riders.verify": "Verify legacy rider documents",
-  "riders.suspend": "Suspend legacy rider records",
-  "riders.reassign": "Reassign legacy deliveries",
-  "listings.view": "View listings",
-  "listings.approve": "Approve / reject listings",
-  "orders.view": "View orders",
+  "providers.remove": "Remove vendors permanently",
+  "listings.view": "View services",
+  "listings.approve": "Approve / reject services",
+  "orders.view": "View bookings",
   "orders.override": "Override booking status",
   "customers.view": "View customers",
   "support.handle": "Handle support & complaints",
   "disputes.view": "View disputes",
-  "disputes.resolve": "Resolve disputes & damage claims",
+  "disputes.resolve": "Resolve disputes",
   "reviews.view": "View reviews",
   "payments.view": "View escrow & revenue",
   "payments.refund": "Issue refunds",
   "payments.payout": "Approve payouts",
   "payments.penalty": "Apply penalties",
-  "settings.manage": "Change platform settings & flags",
+  "subscriptions.view": "View vendor subscriptions",
+  "subscriptions.manage": "Record subscription payments, cancel & reactivate",
+  "settings.manage": "Change platform settings & features",
   "settings.commission": "Change commission",
   "moderation.view": "View flagged messages",
   "moderation.resolve": "Confirm / dismiss flags",
@@ -104,11 +100,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "notifications.send": "Send notifications",
 };
 
+/** Mirrors the staff_role enum exactly (migration 0028). */
 export const STAFF_ROLES = [
   "super_admin",
-  "rider_operations",
-  "service_vendor_manager",
-  "product_vendor_manager",
+  "vendor_manager",
   "customer_support",
   "finance",
   "marketing",
@@ -118,9 +113,7 @@ export type StaffRole = (typeof STAFF_ROLES)[number];
 
 export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
   super_admin: "Super Admin",
-  rider_operations: "Transport & Logistics Vendor Manager",
-  service_vendor_manager: "Service Vendor Manager",
-  product_vendor_manager: "Product Vendor Manager",
+  vendor_manager: "Vendor Manager",
   customer_support: "Customer Support",
   finance: "Finance",
   marketing: "Marketing",
@@ -129,25 +122,27 @@ export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
 const P = PERMISSIONS;
 
 /**
- * The default permission bundle per role (Addendum §4). Super Admin is handled
+ * The default permission bundle per role Super Admin is handled
  * specially — it holds every permission, present and future, so it is not
  * enumerated here.
  */
 export const ROLE_BUNDLES: Record<Exclude<StaffRole, "super_admin">, Permission[]> = {
-  rider_operations: [P.providersView, P.providersApprove, P.providersEdit, P.providersSuspend, P.listingsView, P.listingsApprove, P.ordersView],
-  service_vendor_manager: [
+  vendor_manager: [
     P.providersView, P.providersApprove, P.providersEdit, P.providersSuspend,
     P.listingsView, P.listingsApprove, P.ordersView, P.reviewsView,
-  ],
-  product_vendor_manager: [
-    P.providersView, P.providersApprove, P.providersEdit, P.providersSuspend,
-    P.listingsView, P.listingsApprove, P.ordersView,
+    // A vendor manager fields "why am I not showing up?" — they need to see the
+    // subscription that answers it, but not to change it.
+    P.subscriptionsView,
   ],
   customer_support: [
     P.customersView, P.supportHandle, P.disputesView, P.disputesResolve,
     P.paymentsRefund, P.moderationView, P.moderationResolve, P.ordersView,
   ],
-  finance: [P.paymentsView, P.paymentsRefund, P.paymentsPayout, P.paymentsPenalty, P.reportsView, P.reportsExport],
+  finance: [
+    P.paymentsView, P.paymentsRefund, P.paymentsPayout, P.paymentsPenalty,
+    P.subscriptionsView, P.subscriptionsManage,
+    P.reportsView, P.reportsExport,
+  ],
   marketing: [P.promotionsManage, P.couponsManage, P.featuredManage, P.notificationsSend],
 };
 

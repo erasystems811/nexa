@@ -3,7 +3,14 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Marketplace — the customer read model. PRD Sections 07, 14.
+ * Marketplace — the customer read model.
+ *
+ * Every listing here is an event SERVICE, and every vendor fulfils their own.
+ *
+ * A vendor whose subscription has lapsed is hidden from all of this by
+ * `listings_public_read`, which calls provider_is_listable. That is
+ * deliberately not a filter in these queries: RLS covers search, category pages,
+ * the vendor profile and a direct link at once, and cannot be forgotten.
  *
  * Plan My Event is a curation layer over Bookings, not a second engine, and
  * stays behind the `plan_my_event` flag until Phase 2 of the roadmap. Nothing
@@ -35,7 +42,7 @@ export async function listCities() {
  *
  * Featured is an Admin switch. Top-rated is computed from structured reviews —
  * never from the reliability score, which stays hidden until Admin turns on
- * `public_reliability_score` (Section 18).
+ * `public_reliability_score`.
  */
 export async function featuredProviders(limit = 6) {
   const supabase = await createClient();
@@ -108,7 +115,7 @@ export async function getListingBySlug(slug: string) {
     .from("listings")
     .select(
       `id, slug, title, description, price_kobo, price_min_kobo, price_max_kobo,
-       price_type, payment_type, caution_fee_kobo, cancellation_policy,
+       price_type, payment_type, cancellation_policy,
        categories ( id, name, slug, fulfillment_type ),
        providers ( id, business_name, slug, logo_url, cover_url )`,
     )

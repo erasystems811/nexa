@@ -5,8 +5,8 @@ import { saveProfileAction, type FormState } from "@/modules/provider/actions";
 import { Alert, Button, Field } from "@/components/ui";
 
 /**
- * PRD Section 08/16: contact details are collected but never shown to customers
- * — Nexa masks them. That is why the phone/email fields carry the note they do.
+ * Contact details are collected but never shown to customers — Nexa masks them.
+ * That is why the phone and email fields carry the note they do.
  */
 export function ProfileForm({
   defaults,

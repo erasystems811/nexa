@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { togglePermissionAction } from "@/modules/admin/actions";
 import type { Permission } from "@/modules/admin/permissions";
 
-/** Per-person view toggles. PRD Addendum §4: permission-based, not role-only. */
+/** Per-person view toggles.: permission-based, not role-only. */
 export function PermissionEditor({
   staffId,
   permissions,

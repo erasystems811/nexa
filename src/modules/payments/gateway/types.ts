@@ -1,5 +1,5 @@
 /**
- * The payment gateway boundary. PRD Section 17:
+ * The payment gateway boundary.:
  *
  *   "The Payments module sits behind an internal interface (e.g. holdFunds,
  *    releaseFunds, refund) that calls out to the payment provider — the escrow
@@ -8,7 +8,7 @@
  *
  * Nothing in this file names a processor. Nothing outside `modules/payments`
  * imports this file — eslint.config.mjs enforces that, so the rule survives
- * people who have not read the PRD.
+ * people who have not read the
  */
 
 export type Kobo = number;
@@ -23,10 +23,8 @@ export interface GatewayCustomer {
 export interface HoldFundsRequest {
   /** Nexa's booking reference. Passed through so a gateway dashboard is legible. */
   reference: string;
+  /** The whole agreed price. A service booking has no other charge on it. */
   amountKobo: Kobo;
-  /** Held apart from escrow and never part of the provider payout (PRD Section 10). */
-  cautionFeeKobo?: Kobo;
-  deliveryFeeKobo?: Kobo;
   customer: GatewayCustomer;
   /** Where the customer returns after an off-site checkout page. */
   redirectUrl: string;
@@ -43,7 +41,7 @@ export interface HoldFundsResult {
 export interface ReleaseFundsRequest {
   gatewayReference: string;
   amountKobo: Kobo;
-  /** 1 = the partial checkpoint release, 2 = the remainder (PRD Section 10). */
+  /** 1 = the deposit, released on acceptance. 2 = the balance, released on the code. */
   stage: 1 | 2;
   beneficiary: {
     kind: "provider";

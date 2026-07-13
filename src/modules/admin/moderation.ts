@@ -3,10 +3,10 @@ import "server-only";
 import { adminDb, audit, AdminError } from "./context";
 
 /**
- * The contact-info flag queue and its consequences. PRD Section 08.
+ * The contact-info flag queue and its consequences.
  *
  * Confirming a flag already increments the subject's solicitation count (a DB
- * trigger). This adds the step Section 08 calls for: converting a confirmed
+ * trigger). This adds the step calls for: converting a confirmed
  * off-platform solicitation into a strike, "the same consequence structure as a
  * no-show" — a strike recorded against the offending account.
  */
@@ -43,7 +43,7 @@ export async function resolveFlag(
 
 /**
  * Convert a confirmed flag into a strike on the relevant account. If the subject
- * is a provider, the strike lands on their provider record (Section 08); a
+ * is a provider, the strike lands on their provider record; a
  * customer's breach is recorded on the flag itself. The link back to the flag is
  * kept so the history is traceable.
  */

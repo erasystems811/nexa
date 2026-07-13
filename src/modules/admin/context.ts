@@ -30,7 +30,7 @@ export async function readDb() {
 }
 
 /**
- * Every state-changing admin action leaves a row here — Section 12 admins
+ * Every state-changing admin action leaves a row here — admins
  * intervene on payments, statuses, and assignments, and each intervention needs
  * a name attached to it.
  */

@@ -2,7 +2,7 @@ import "server-only";
 
 import { adminDb } from "./context";
 
-/** Dashboard figures. PRD Section 12, updated by Addendum v1.2. */
+/** Dashboard figures. */
 export async function adminDashboard() {
   const db = adminDb();
 
@@ -37,19 +37,14 @@ export async function adminDashboard() {
     db.from("payment_ledger_entries").select("amount_kobo").eq("kind", "stage_release"),
     db
       .from("payments")
-      .select("held_kobo, released_kobo, caution_held_kobo, caution_refunded_kobo, caution_claimed_kobo")
+      .select("held_kobo, released_kobo")
       .in("status", ["held", "partially_released"]),
   ]);
 
   const commissionKobo = (commissionRows ?? []).reduce((a, b) => a + b.amount_kobo, 0);
   const releasedKobo = (releaseRows ?? []).reduce((a, b) => a + b.amount_kobo, 0);
-  const heldKobo = (escrow ?? []).reduce(
-    (a, p) =>
-      a +
-      (p.held_kobo - p.released_kobo) +
-      (p.caution_held_kobo - p.caution_refunded_kobo - p.caution_claimed_kobo),
-    0,
-  );
+  // What Nexa is still holding: taken from the customer, not yet paid out.
+  const heldKobo = (escrow ?? []).reduce((a, p) => a + (p.held_kobo - p.released_kobo), 0);
 
   return {
     providers: providers.count ?? 0,

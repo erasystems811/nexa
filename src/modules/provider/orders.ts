@@ -1,12 +1,12 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import { acceptBooking, recordStage1, rejectBooking } from "@/modules/bookings";
+import { acceptBooking, startWork as startBooking, rejectBooking } from "@/modules/bookings";
 import { ProviderError } from "./context";
 
 /**
- * The provider's orders and the actions on them. Addendum v1.2 removes the
- * Nexa-operated rider pool: vendors own ordinary fulfillment for their listings.
+ * The vendor's bookings and the actions on them. Vendors own their own
+ * fulfillment: they turn up and perform the service they listed.
  */
 
 export async function listProviderOrders(providerId: string) {
@@ -15,7 +15,7 @@ export async function listProviderOrders(providerId: string) {
     .from("bookings")
     .select(
       `id, reference, status, fulfillment_type, scheduled_start,
-       agreed_price_kobo, delivery_fee_kobo, ready_for_pickup_at,
+       agreed_price_kobo,
        stage_1_at, accepted_at,
        listings ( title )`,
     )
@@ -52,22 +52,14 @@ export async function reject(
 }
 
 /**
- * Goods and services are fulfilled by the provider under Addendum v1.2. This
- * marks provider-owned fulfillment as started without booking a Nexa rider.
+ * The vendor has started the job. This moves no money — the deposit already
+ * went out when they accepted, and the balance waits on the customer's code.
+ * It exists so the customer can see that work is under way.
  */
-export async function startFulfillment(providerId: string, bookingId: string): Promise<void> {
+export async function startWork(providerId: string, bookingId: string): Promise<void> {
   const booking = await assertOwned(providerId, bookingId);
   if (booking.status !== "accepted") {
-    throw new ProviderError("Accept the booking before starting fulfillment");
+    throw new ProviderError("Accept the booking before starting work");
   }
-  await recordStage1(bookingId);
-}
-
-/** Service providers check in on arrival. */
-export async function checkIn(providerId: string, bookingId: string): Promise<void> {
-  const booking = await assertOwned(providerId, bookingId);
-  if (booking.status !== "accepted") {
-    throw new ProviderError("Accept the booking before checking in");
-  }
-  await recordStage1(bookingId);
+  await startBooking(bookingId);
 }

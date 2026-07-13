@@ -3,11 +3,11 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Search — discovery over listings and providers. PRD Section 07.
+ * Search — discovery over listings and providers.
  *
  * Owns no tables. Every query here relies on RLS for its safety: an unapproved
  * listing, or a listing belonging to a suspended provider, is filtered out by
- * `listings_public_read` (0011). Nothing in this file has to remember to check.
+ * `listings_public_read`. Nothing in this file has to remember to check.
  *
  * Section 07: "Only available listings are shown — no messaging ten providers
  * to find one who is free."
