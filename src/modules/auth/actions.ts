@@ -4,7 +4,10 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { publicEnv } from "@/lib/env";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { sendSignupConfirmationEmail } from "@/modules/email/resend";
 import { homePathForRole } from "./session";
 import type { UserRole } from "@/lib/db/types";
 
@@ -90,32 +93,41 @@ export async function signUp(
     return { error: parsed.error.issues[0]?.message ?? "Check your details" };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "signup",
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
       data: { full_name: parsed.data.fullName, phone: parsed.data.phone },
+      redirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/login`,
     },
   });
+
   if (error) {
     const message = error.message.toLowerCase();
-    if (message.includes("already registered") || message.includes("already exists")) {
+    if (message.includes("already registered") || message.includes("already exists") || message.includes("user already")) {
       return { error: "An account already exists for this email. Sign in instead." };
     }
     return { error: error.message };
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { message: "Account created. Check your email to confirm it, then sign in." };
+  const confirmationUrl = data.properties?.action_link;
+  if (!confirmationUrl) {
+    return { error: "Account created, but Nexa could not create a confirmation email link. Please contact support." };
   }
 
-  revalidatePath("/", "layout");
-  redirect("/");
+  try {
+    await sendSignupConfirmationEmail({
+      to: parsed.data.email,
+      name: parsed.data.fullName,
+      confirmationUrl,
+    });
+  } catch {
+    return { error: "Account created, but Nexa could not send the confirmation email. Check Resend settings and try again." };
+  }
+
+  return { message: "Account created. Check your email for the Nexa confirmation link, then sign in." };
 }
 
 export async function signOut(): Promise<void> {

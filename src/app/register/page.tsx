@@ -17,9 +17,6 @@ export default function RegisterPage() {
         <Logo markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
       </Link>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Create your Nexa account</h1>
-      <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-        Create it once, then stay signed in while you book vendors and plan your event.
-      </p>
 
       <form action={formAction} className="mt-8 space-y-4">
         <Field label="Full name" name="fullName" autoComplete="name" required />

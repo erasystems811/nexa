@@ -21,6 +21,10 @@ const serverSchema = z.object({
   FLUTTERWAVE_ENCRYPTION_KEY: z.string().optional(),
   FLUTTERWAVE_WEBHOOK_SECRET: z.string().optional(),
 
+  // Transactional email via Resend.
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+
 
   // WhatsApp Business Platform. Optional until Nexa has a Meta business number.
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
