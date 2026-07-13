@@ -66,7 +66,6 @@ export async function approveProvider(
   terms: {
     depositPercent: number;
     commissionOverride?: number | null;
-    stage1Override?: number | null;
     latePenaltyOverride?: number | null;
   },
 ): Promise<void> {
@@ -82,7 +81,6 @@ export async function approveProvider(
     provider_id: providerId,
     deposit_percent: terms.depositPercent,
     commission_percent_override: terms.commissionOverride ?? null,
-    stage_1_release_percent_override: terms.stage1Override ?? null,
     late_penalty_percent_per_30min_override: terms.latePenaltyOverride ?? null,
     signed_at: new Date().toISOString(),
     recorded_by: actorId,

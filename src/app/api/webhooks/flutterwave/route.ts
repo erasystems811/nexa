@@ -8,6 +8,7 @@ import { serverEnv } from "@/lib/env";
 // to rows the sender was authenticated against.
 // eslint-disable-next-line no-restricted-imports -- see above
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordHold } from "@/modules/payments";
 import type { Json } from "@/lib/db/generated";
 
 /**
@@ -153,7 +154,7 @@ async function recordCompletedCharge(
   const { data: payment, error } = await db
     .from("payments")
     .select(
-      "id, booking_id, status, amount_kobo, held_kobo, gateway_reference",
+      "id, booking_id, status, amount_kobo, commission_kobo, held_kobo, gateway_reference, bookings ( customer_id )",
     )
     .eq("gateway", GATEWAY)
     .eq("gateway_reference", txRef)
@@ -217,16 +218,35 @@ async function recordCompletedCharge(
     throw new Error(`Could not mark ${txRef} as held: ${updateError.message}`);
   }
 
-  // The booking is normally already `paid_held` — checkout transitions it as
-  // soon as the link is issued. This is the backstop for the paths where it is
-  // not, and it refuses to drag a booking that has moved on back to paid_held.
+  // NOW the escrow is real, so now it goes in the ledger and the vendor's
+  // pending earnings. `holdFunds` deliberately did not write these when it
+  // issued the payment link — at that point the customer had paid nothing, and
+  // a hold row would have invented escrow that did not exist.
+  //
+  // The status guard on the UPDATE above is what makes this safe to run once:
+  // a concurrent redelivery of the same charge updates zero rows and never
+  // reaches here, so the append-only ledger cannot get a second hold.
+  const customerId = (payment.bookings as unknown as { customer_id: string } | null)?.customer_id;
+  if (customerId) {
+    await recordHold(db, {
+      paymentId: payment.id,
+      bookingId: payment.booking_id,
+      amountKobo: payment.amount_kobo,
+      commissionKobo: payment.commission_kobo,
+      customerId,
+    });
+  }
+
+  // The customer has paid, so the booking becomes bookable: this transition is
+  // what mints their completion code. Refuses to drag a booking that has already
+  // moved on backwards.
   const { data: booking } = await db
     .from("bookings")
     .select("status")
     .eq("id", payment.booking_id)
     .maybeSingle();
 
-  if (booking && (booking.status === "pending" || booking.status === "accepted")) {
+  if (booking && booking.status === "pending") {
     await db.from("bookings").update({ status: "paid_held" }).eq("id", payment.booking_id);
   }
 }

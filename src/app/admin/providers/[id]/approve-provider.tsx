@@ -34,10 +34,6 @@ export function ApproveProvider({ providerId }: { providerId: string }) {
           <input name="commission_override" type="number" min="0" max="100" step="any" className="mt-1 h-10 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm" />
         </label>
         <label className="text-xs">
-          Stage-1 release override % (optional)
-          <input name="stage1_override" type="number" min="0" max="100" step="any" className="mt-1 h-10 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm" />
-        </label>
-        <label className="text-xs">
           Late-penalty override %/30min (optional)
           <input name="late_penalty_override" type="number" min="0" max="100" step="any" className="mt-1 h-10 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm" />
         </label>

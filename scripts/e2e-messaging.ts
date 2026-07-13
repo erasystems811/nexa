@@ -8,7 +8,6 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { startMaskedCall } from "@/modules/messaging";
 import type { Database } from "@/lib/db/types";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -248,34 +247,53 @@ async function main() {
       provSelect.data,
     );
 
-    // ---- masked calling --------------------------------------------------
-    const ticket = await startMaskedCall({ conversationId, callerId: customerId });
-    check("customer can start a masked call", !!ticket.dialNumber, ticket);
-    check("the number to dial is NOT the provider's real number", ticket.dialNumber.replace(/\D/g, "") !== PROVIDER_PHONE.replace(/\D/g, ""), ticket.dialNumber);
-    check("the number to dial is NOT the customer's own number", ticket.dialNumber.replace(/\D/g, "") !== CUSTOMER_PHONE.replace(/\D/g, ""));
-
-    const { data: session } = await admin
-      .from("call_sessions")
-      .select("*")
-      .eq("id", ticket.callSessionId)
+    // ---- WhatsApp-mediated contact ---------------------------------------
+    // Customers and vendors both message NEXA's WhatsApp number, and Nexa relays
+    // between them. Neither side ever holds the other's number. The guarantee is
+    // not politeness — it is RLS: `whatsapp_contacts` has no policy for a
+    // participant at all, so there is no query either of them can write that
+    // returns the other's WhatsApp identity.
+    const { data: custWa } = await admin
+      .from("whatsapp_contacts")
+      .insert({ wa_id: `2348031112222-${stamp}`, profile_id: customerId, display_name: "Customer", phone_hint: "2222" })
+      .select("id")
       .single();
-    const serialised = JSON.stringify(session);
-    check("no real number is stored on the call session row", !serialised.includes("8031112222") && !serialised.includes("8039994444"), serialised);
+    const { data: provWa } = await admin
+      .from("whatsapp_contacts")
+      .insert({ wa_id: `2348039994444-${stamp}`, profile_id: providerUserId, display_name: "Provider", phone_hint: "4444" })
+      .select("id")
+      .single();
 
-    const providerCall = await provider.from("call_sessions").select("id").eq("id", ticket.callSessionId);
-    check("the provider can see the call session exists", providerCall.data?.length === 1);
+    const { data: thread } = await admin
+      .from("whatsapp_threads")
+      .insert({
+        conversation_id: conversationId,
+        whatsapp_contact_id: custWa!.id,
+        provider_whatsapp_contact_id: provWa!.id,
+      })
+      .select("id")
+      .single();
+    check("a conversation can be bound to a WhatsApp thread", !!thread, thread);
 
-    const strangerCall = await stranger.from("call_sessions").select("id");
-    check("an unrelated user sees ZERO call sessions", strangerCall.data?.length === 0);
+    const provReadsContacts = await provider.from("whatsapp_contacts").select("wa_id");
+    check(
+      "the VENDOR cannot read any WhatsApp identity — including the customer's",
+      (provReadsContacts.data?.length ?? 0) === 0,
+      provReadsContacts.data,
+    );
 
-    await (async () => {
-      try {
-        await startMaskedCall({ conversationId, callerId: strangerId });
-        check("an unrelated user CANNOT open a call bridge", false, "no error thrown");
-      } catch {
-        check("an unrelated user CANNOT open a call bridge", true);
-      }
-    })();
+    const custReadsContacts = await customer.from("whatsapp_contacts").select("wa_id");
+    check(
+      "the CUSTOMER cannot read any WhatsApp identity either",
+      (custReadsContacts.data?.length ?? 0) === 0,
+      custReadsContacts.data,
+    );
+
+    const provThread = await provider.from("whatsapp_threads").select("id").eq("id", thread!.id);
+    check("...but a participant can see that the thread exists", provThread.data?.length === 1, provThread.data);
+
+    const strangerThread = await stranger.from("whatsapp_threads").select("id");
+    check("an unrelated user sees ZERO threads", (strangerThread.data?.length ?? 0) === 0, strangerThread.data);
 
     // ---- admin confirms the flag ----------------------------------------
     const flagId = flags![0]!.id;

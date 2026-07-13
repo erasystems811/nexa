@@ -61,7 +61,7 @@ export async function getAgreement(providerId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("provider_agreements")
-    .select("deposit_percent, commission_percent_override, stage_1_release_percent_override, late_penalty_percent_per_30min_override, signed_at")
+    .select("deposit_percent, commission_percent_override, late_penalty_percent_per_30min_override, signed_at")
     .eq("provider_id", providerId)
     .eq("is_active", true)
     .maybeSingle();

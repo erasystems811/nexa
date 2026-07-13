@@ -36,7 +36,6 @@ export async function approveProviderAction(_prev: AdminActionState, formData: F
     await admin.approveProvider(id, String(formData.get("provider_id")), {
       depositPercent: Number(formData.get("deposit_percent") ?? 0),
       commissionOverride: formData.get("commission_override") ? Number(formData.get("commission_override")) : null,
-      stage1Override: formData.get("stage1_override") ? Number(formData.get("stage1_override")) : null,
       latePenaltyOverride: formData.get("late_penalty_override") ? Number(formData.get("late_penalty_override")) : null,
     });
     revalidatePath("/admin/providers");

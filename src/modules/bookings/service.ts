@@ -116,7 +116,7 @@ export async function checkout(
   });
 
   try {
-    const { checkoutUrl } = await holdFunds({
+    const { checkoutUrl, status } = await holdFunds({
       bookingId: booking.id,
       reference: booking.reference,
       amountKobo: booking.agreed_price_kobo,
@@ -125,10 +125,22 @@ export async function checkout(
       redirectUrl: `${publicEnv.NEXT_PUBLIC_SITE_URL}/orders/${booking.id}`,
     });
 
-    // The code is minted by a trigger on this transition: exactly one,
+    // Only say a booking is paid when it IS paid.
+    //
+    // A real gateway has, at this point, done nothing but hand the customer a
+    // link. Marking the booking paid_held here would be a lie with teeth: the
+    // trigger would mint a completion code for money nobody has paid, and the
+    // vendor would see a booking to accept — and the deposit release would then
+    // fail against an empty escrow. The webhook advances the booking when the
+    // charge actually completes. The mock gateway settles inline, so it lands
+    // here immediately.
+    //
+    // The code is minted by a trigger on the paid_held transition: exactly one,
     // stage 2. Nothing mints it earlier, because a booking nobody has paid for
     // has nothing to confirm.
-    await transition(booking.id, "paid_held");
+    if (status === "held") {
+      await transition(booking.id, "paid_held");
+    }
 
     return { bookingId: booking.id, reference: booking.reference, checkoutUrl };
   } catch (error) {

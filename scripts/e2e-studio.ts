@@ -16,8 +16,11 @@
  * be replied to but not rescored.
  */
 
+// An end-to-end test must never touch the live payment gateway.
+process.env.PAYMENT_GATEWAY = "mock";
+
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { acceptBooking, checkout, recordStage1 } from "@/modules/bookings";
+import { acceptBooking, checkout, startWork } from "@/modules/bookings";
 import type { Database } from "@/lib/db/types";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -79,8 +82,8 @@ async function main() {
     const { data: city } = await admin.from("cities").insert({ slug: `e2e-ab-${s}`, name: "Abuja" }).select("id").single();
     cityId = city!.id;
     const { data: djCat } = await admin.from("categories").insert({ slug: `e2e-dj-${s}`, name: "DJs", fulfillment_type: "onsite_service" }).select("id").single();
-    const { data: chairCat } = await admin.from("categories").insert({ slug: `e2e-ch-${s}`, name: "Chairs", fulfillment_type: "delivery_return", delivery_mode: "rider" }).select("id").single();
-    catIds.push(djCat!.id, chairCat!.id);
+    const { data: secondCat } = await admin.from("categories").insert({ slug: `e2e-decor-${s}`, name: "Decor", fulfillment_type: "onsite_service" }).select("id").single();
+    catIds.push(djCat!.id, secondCat!.id);
 
     const mkProvider = async (userId: string, slug: string) => {
       const { data } = await admin.from("providers").insert({ user_id: userId, business_name: slug, slug, city_id: cityId, status: "pending" }).select("id").single();
@@ -167,45 +170,32 @@ async function main() {
     }).select("status").single();
     check("a media row is forced to pending_approval, even if the client says approved", mediaRow?.status === "pending_approval", mediaRow);
 
-    // ---- orders: goods vs service (Section 13) ----------------------------
+    // ---- orders: accept releases the deposit, and nothing else -------------
     await admin.from("listings").update({ status: "approved" }).eq("id", listingId);
     const start = new Date(Date.now() + 9 * 864e5).toISOString();
     const dj = await checkout({ listingId, scheduledStart: start }, { id: custId, email: custEmail }, customer);
+
+    const { data: beforeAccept } = await admin.from("payments").select("released_kobo").eq("booking_id", dj.bookingId).single();
+    check("a paid booking has released nothing to the vendor yet", beforeAccept?.released_kobo === 0, beforeAccept);
+
     await acceptBooking(dj.bookingId);
 
-    // The provider's action on a service booking is check-in = stage 1.
-    await recordStage1(dj.bookingId);
-    const { data: ci } = await admin.from("bookings").select("status, stage_1_at").eq("id", dj.bookingId).single();
-    check("provider check-in advances a service booking to in_progress", ci?.status === "in_progress" && !!ci?.stage_1_at, ci);
+    const { data: afterAccept } = await admin.from("payments").select("released_kobo, status").eq("booking_id", dj.bookingId).single();
+    check("accepting releases the vendor's deposit", (afterAccept?.released_kobo ?? 0) > 0, afterAccept);
+    check("...but not the whole booking", afterAccept?.status === "partially_released", afterAccept);
 
-    // A goods booking: mark ready. Test the guard directly via the provider client.
-    const { data: chairListing } = await admin.from("listings").insert({
-      provider_id: providerId, category_id: chairCat!.id, title: "200 chairs",
-      slug: `e2e-chairs-${s}`, price_kobo: 8_000_000, price_type: "fixed", payment_type: "full", status: "approved",
-    }).select("id").single();
-    const chairStart = new Date(Date.now() + 10 * 864e5).toISOString();
-    const chair = await checkout({ listingId: chairListing!.id, scheduledStart: chairStart }, { id: custId, email: custEmail }, customer);
-    await acceptBooking(chair.bookingId);
+    // Starting work is a signal to the customer. It must never move money — the
+    // balance belongs to the customer until they hand over their code.
+    await startWork(dj.bookingId);
+    const { data: afterStart } = await admin.from("bookings").select("status, stage_1_at").eq("id", dj.bookingId).single();
+    check("marking work started advances the booking to in_progress", afterStart?.status === "in_progress", afterStart);
+    const { data: moneyAfterStart } = await admin.from("payments").select("released_kobo").eq("booking_id", dj.bookingId).single();
+    check("...and moves NO money", moneyAfterStart?.released_kobo === afterAccept?.released_kobo, moneyAfterStart);
 
-    // Provider marks their own goods booking ready — allowed by the guard.
-    const markOwn = await provider.from("bookings").update({ ready_for_pickup_at: new Date().toISOString() }).eq("id", chair.bookingId);
-    const { data: ready } = await admin.from("bookings").select("ready_for_pickup_at, stage_1_at, status").eq("id", chair.bookingId).single();
-    check("a provider can mark their own goods booking ready", !markOwn.error && !!ready?.ready_for_pickup_at, markOwn.error?.message);
-    check("...and marking ready releases NO money (rider pickup does, Phase 5)", ready?.stage_1_at === null && ready?.status === "accepted", ready);
-
-    // Another provider cannot mark a booking ready. Use a FRESH unmarked goods
-    // booking and confirm it is still unmarked afterwards — an RLS-filtered
-    // UPDATE reports neither an error nor a row count, so the stored state is
-    // the only reliable witness.
-    const chair2 = await checkout({ listingId: chairListing!.id, scheduledStart: new Date(Date.now() + 12 * 864e5).toISOString() }, { id: custId, email: custEmail }, customer);
-    await acceptBooking(chair2.bookingId);
-    await provider2.from("bookings").update({ ready_for_pickup_at: new Date().toISOString() }).eq("id", chair2.bookingId);
-    const { data: untouched } = await admin.from("bookings").select("ready_for_pickup_at").eq("id", chair2.bookingId).single();
-    check("another provider CANNOT mark this booking ready", untouched?.ready_for_pickup_at === null, untouched);
-
-    // A service booking has no pickup: the guard rejects a ready-mark on it.
-    const markService = await provider.from("bookings").update({ ready_for_pickup_at: new Date().toISOString() }).eq("id", dj.bookingId);
-    check("a service booking CANNOT be marked ready for pickup", !!markService.error, markService.error?.message);
+    // A vendor cannot reach into another vendor's bookings.
+    const poach = await provider2.from("bookings").update({ status: "completed" }).eq("id", dj.bookingId);
+    const { data: untouched } = await admin.from("bookings").select("status").eq("id", dj.bookingId).single();
+    check("another vendor CANNOT touch this booking", untouched?.status === "in_progress", { poach: poach.error?.message, untouched });
 
     // ---- review reply ------------------------------------------------------
     await admin.from("bookings").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", dj.bookingId);

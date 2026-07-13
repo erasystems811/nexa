@@ -6,8 +6,11 @@
  * Drives the admin workflows that move money or change lifecycle state:
  * provider approval with terms, listing approval, the no-show ->
  * suspend -> appeal -> strike chain, a late penalty (30/70 split), a
- * caution damage claim, a flag -> strike conversion, and the dashboard totals.
+ * subscription lifecycle, a flag -> strike conversion, and the dashboard totals.
  */
+
+// An end-to-end test must never touch the live payment gateway.
+process.env.PAYMENT_GATEWAY = "mock";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import * as admin from "@/modules/admin";
@@ -18,6 +21,8 @@ const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const db = createClient<Database>(URL, SERVICE, { auth: { persistSession: false } });
+/** A logged-out customer browsing the marketplace. RLS is all that protects this. */
+const anonClient = createClient<Database>(URL, ANON, { auth: { persistSession: false } });
 
 let passed = 0, failed = 0;
 function check(label: string, ok: boolean, detail: unknown = "") {
@@ -58,7 +63,7 @@ async function main() {
 
     const { data: city } = await db.from("cities").insert({ slug: `e2e-ab-${s}`, name: "Abuja" }).select("id").single();
     cityId = city!.id;
-    const { data: cat } = await db.from("categories").insert({ slug: `e2e-ch-${s}`, name: "Chairs", fulfillment_type: "delivery_return", delivery_mode: "rider" }).select("id").single();
+    const { data: cat } = await db.from("categories").insert({ slug: `e2e-cat-${s}`, name: "Catering", fulfillment_type: "onsite_service" }).select("id").single();
     chairCat = cat!.id;
 
     // A pending provider application.
@@ -77,7 +82,7 @@ async function main() {
     await db.from("provider_wallets").update({ bank_code: "058", bank_account_number: "0000000001" }).eq("provider_id", providerId);
 
     // ---- listing approval queue (Section 06, 12) --------------------------
-    const { data: listing } = await db.from("listings").insert({ provider_id: providerId, category_id: chairCat, title: "50 chairs", slug: `e2e-ch-l-${s}`, price_kobo: 10_000_000, price_type: "fixed", payment_type: "full", caution_fee_kobo: 4_000_000, status: "pending_approval" }).select("id").single();
+    const { data: listing } = await db.from("listings").insert({ provider_id: providerId, category_id: chairCat, title: "Catering, 50 guests", slug: `e2e-cat-l-${s}`, price_kobo: 10_000_000, price_type: "fixed", payment_type: "full", status: "pending_approval" }).select("id").single();
     const queueBefore = await admin.listingQueue();
     check("a pending listing shows in the approval queue", queueBefore.some((l) => l.id === listing!.id), queueBefore.length);
 
@@ -99,17 +104,26 @@ async function main() {
     const penLedger = (await ledgerKinds(booking.bookingId)).filter((l) => l.kind === "penalty");
     check("...recorded on the ledger against the provider and customer", penLedger.length === 2, penLedger);
 
-    // ---- caution damage claim (Section 10) --------------------------------
-    // Simulate a damage dispute on this booking's caution fee, then resolve it.
-    await db.from("disputes").insert({ booking_id: booking.bookingId, raised_by: custId, reason: "Damage at return", is_damage_claim: true, caution_claim_kobo: 4_000_000 });
-    const { data: dispute } = await db.from("disputes").select("id").eq("booking_id", booking.bookingId).single();
-    // Award ₦25,000 of the ₦40,000 caution to the provider; refund ₦15,000.
-    await admin.adminResolveCautionClaim(adminId, booking.bookingId, 2_500_000, dispute!.id);
-    const { data: pay } = await db.from("payments").select("caution_claimed_kobo, caution_refunded_kobo").eq("booking_id", booking.bookingId).single();
-    check("a caution claim awards the chosen amount to the provider", pay?.caution_claimed_kobo === 2_500_000, pay);
-    check("...and refunds the remainder to the customer", pay?.caution_refunded_kobo === 1_500_000, pay);
-    const { data: resolvedDispute } = await db.from("disputes").select("status").eq("id", dispute!.id).single();
-    check("...and marks the dispute resolved", resolvedDispute?.status === "resolved", resolvedDispute);
+    // ---- the monthly platform fee ------------------------------------------
+    // Nexa's second revenue line. A vendor who stops paying stops being findable;
+    // Admin can see who, and put them back.
+    const { data: sub0 } = await db.from("provider_subscriptions").select("status").eq("provider_id", providerId).maybeSingle();
+    check("an approved vendor gets a subscription automatically", !!sub0, sub0);
+
+    await admin.setSubscriptionStatus(adminId, providerId, "past_due");
+    const { data: gone } = await anonClient.from("listings").select("id").eq("id", listing!.id);
+    check("marking a vendor past due removes them from the marketplace", gone?.length === 0, gone);
+
+    await admin.markSubscriptionPaid(adminId, providerId);
+    const { data: subPaid } = await db.from("provider_subscriptions").select("status, last_paid_at, current_period_end").eq("provider_id", providerId).single();
+    check("recording a payment makes them active again", subPaid?.status === "active", subPaid);
+    check("...and rolls their period forward", !!subPaid?.current_period_end && new Date(subPaid.current_period_end) > new Date(), subPaid);
+
+    const { data: receipts } = await db.from("subscription_payments").select("amount_kobo").eq("provider_id", providerId);
+    check("...and leaves a receipt", (receipts?.length ?? 0) === 1, receipts);
+
+    const { data: visible } = await anonClient.from("listings").select("id").eq("id", listing!.id);
+    check("...and the vendor is findable again", visible?.length === 1, visible);
 
     // ---- no-show -> suspend -> appeal -> strike (Section 05) --------------
     const booking2 = await checkout({ listingId: listing!.id, scheduledStart: new Date(Date.now() + 9 * 864e5).toISOString() }, { id: custId, email: custEmail }, customer);

@@ -55,6 +55,13 @@ export interface HoldFundsInput {
 export interface HoldFundsOutput {
   paymentId: string;
   checkoutUrl?: string;
+  /**
+   * "held" means the money is genuinely in Nexa's hands right now. "pending"
+   * means the gateway has only issued a payment link — the customer has not paid
+   * yet, and nothing may be released against this booking until the gateway's
+   * webhook says the charge completed.
+   */
+  status: "pending" | "held";
 }
 
 /**
@@ -101,24 +108,22 @@ export async function holdFunds(input: HoldFundsInput): Promise<HoldFundsOutput>
     throw new PaymentsError(`Could not record the hold: ${error?.message}`);
   }
 
-  // The hold itself is a ledger event. Every kobo that moves gets a row, and
-  // the customer's escrow balance is derived from these, never from a column
-  // somebody remembered to update.
-  await db.from("payment_ledger_entries").insert({
-    payment_id: data.id,
-    booking_id: input.bookingId,
-    kind: "hold",
-    amount_kobo: input.amountKobo,
-    customer_id: input.customer.id,
-    note: "Escrow hold",
-  });
+  // The ledger and the wallet only move when the MONEY moves. With a real
+  // gateway the customer has merely been handed a payment link at this point;
+  // writing a hold now would invent escrow that does not exist. The webhook
+  // writes both when the charge actually completes. The mock gateway settles
+  // instantly, so it lands here.
+  if (result.status === "held") {
+    await recordHold(db, {
+      paymentId: data.id,
+      bookingId: input.bookingId,
+      amountKobo: input.amountKobo,
+      commissionKobo,
+      customerId: input.customer.id,
+    });
+  }
 
-  // What the vendor has earned but cannot touch. Nothing credited this before —
-  // every wallet in the system read zero pending, forever.
-  const providerId = await providerIdFor(db, input.bookingId);
-  await adjustWallet(db, providerId, { pendingKobo: input.amountKobo - commissionKobo });
-
-  return { paymentId: data.id, checkoutUrl: result.checkoutUrl };
+  return { paymentId: data.id, checkoutUrl: result.checkoutUrl, status: result.status };
 }
 
 export interface ReleaseFundsInput {
@@ -242,7 +247,7 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
     withdrawnKobo: input.amountKobo,
   });
 
-  // A payout row is the vendor's withdrawal history (Studio,, and
+  // A payout row is the vendor's withdrawal history in Business Studio, and
   // the record that this much money left Nexa for this provider.
   await db.from("payouts").insert({
     provider_id: input.beneficiary.id,
@@ -417,6 +422,39 @@ async function getSettingNumeric(db: Db, key: string, fallback: number): Promise
   const { data } = await db.from("platform_settings").select("value").eq("key", key).maybeSingle();
   const n = Number(data?.value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * The moment escrow becomes real: one ledger row for the hold, and the vendor's
+ * pending earnings credited. Called either by holdFunds (mock gateway, which
+ * settles instantly) or by the gateway webhook when the customer's charge
+ * completes for real. Never both — the ledger is append-only, and a second hold
+ * row would double every escrow figure in the Admin Console.
+ */
+export async function recordHold(
+  db: Db,
+  input: {
+    paymentId: string;
+    bookingId: string;
+    amountKobo: number;
+    commissionKobo: number;
+    customerId: string;
+  },
+): Promise<void> {
+  await db.from("payment_ledger_entries").insert({
+    payment_id: input.paymentId,
+    booking_id: input.bookingId,
+    kind: "hold",
+    amount_kobo: input.amountKobo,
+    customer_id: input.customerId,
+    note: "Escrow hold",
+  });
+
+  // What the vendor has earned but cannot touch yet.
+  const providerId = await providerIdFor(db, input.bookingId);
+  await adjustWallet(db, providerId, {
+    pendingKobo: input.amountKobo - input.commissionKobo,
+  });
 }
 
 async function providerIdFor(db: Db, bookingId: string): Promise<string> {

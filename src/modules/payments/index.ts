@@ -11,6 +11,7 @@
  */
 export {
   holdFunds,
+  recordHold,
   releaseFunds,
   applyLatePenalty,
   refund,

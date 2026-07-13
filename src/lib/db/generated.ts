@@ -1637,7 +1637,6 @@ export type Database = {
           provider_id: string
           recorded_by: string | null
           signed_at: string | null
-          stage_1_release_percent_override: number | null
         }
         Insert: {
           commission_percent_override?: number | null
@@ -1649,7 +1648,6 @@ export type Database = {
           provider_id: string
           recorded_by?: string | null
           signed_at?: string | null
-          stage_1_release_percent_override?: number | null
         }
         Update: {
           commission_percent_override?: number | null
@@ -1661,7 +1659,6 @@ export type Database = {
           provider_id?: string
           recorded_by?: string | null
           signed_at?: string | null
-          stage_1_release_percent_override?: number | null
         }
         Relationships: [
           {
