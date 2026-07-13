@@ -8,15 +8,15 @@ import { Card, PageHeader } from "@/components/ui";
 /** Admin dashboard. PRD Section 12. */
 export default async function AdminDashboard() {
   const staff = await currentStaff();
-  if (!staff) redirect("/login?next=/admin");
+  if (!staff) redirect("/login");
 
   const d = await adminDashboard();
 
   const queues = [
-    { label: "Provider applications", value: d.pendingProviders, href: "/admin/providers?status=pending" },
-    { label: "Listings to approve", value: d.pendingListings, href: "/admin/listings" },
-    { label: "Open disputes", value: d.openDisputes, href: "/admin/disputes" },
-    { label: "Flagged messages", value: d.pendingFlags, href: "/admin/moderation" },
+    { label: "Provider applications", value: d.pendingProviders, href: "/providers?status=pending" },
+    { label: "Listings to approve", value: d.pendingListings, href: "/listings" },
+    { label: "Open disputes", value: d.openDisputes, href: "/disputes" },
+    { label: "Flagged messages", value: d.pendingFlags, href: "/moderation" },
   ];
 
   return (

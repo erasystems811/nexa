@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { requireProvider, getMyListing, listMedia } from "@/modules/provider";
 import { listCategories } from "@/modules/marketplace";
@@ -36,7 +37,7 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
       </Card>
 
       <div className="mt-4 flex justify-end">
-        <Link href={`/studio/listings/${listing.id}/availability`} className="text-sm underline">
+        <Link href={`/listings/${listing.id}/availability` as Route}  className="text-sm underline">
           Manage availability →
         </Link>
       </div>

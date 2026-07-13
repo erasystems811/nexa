@@ -25,6 +25,32 @@ function carryCookies(from: NextResponse, to: NextResponse): NextResponse {
   return to;
 }
 
+function pathRemainder(pathname: string, prefix: string): string {
+  if (pathname === prefix) return "/";
+  return pathname.slice(prefix.length) || "/";
+}
+
+function cleanSurfacePath(request: NextRequest, response: NextResponse, surface: ReturnType<typeof surfaceForHost>): NextResponse | null {
+  const { pathname } = request.nextUrl;
+  const target = pathname === "/admin" || pathname.startsWith("/admin/")
+    ? { surface: "admin" as const, remainder: pathRemainder(pathname, "/admin") }
+    : pathname === "/studio" || pathname.startsWith("/studio/")
+      ? { surface: "studio" as const, remainder: pathRemainder(pathname, "/studio") }
+      : pathname === "/vendor" || pathname.startsWith("/vendor/")
+        ? { surface: "studio" as const, remainder: pathRemainder(pathname, "/vendor") }
+        : null;
+
+  if (!target) return null;
+
+  if (surface === target.surface) {
+    return carryCookies(response, NextResponse.redirect(new URL(target.remainder, request.url)));
+  }
+
+  const origin = surfaceOrigin(target.surface);
+  if (origin) return carryCookies(response, NextResponse.redirect(`${origin}${target.remainder}`));
+  return carryCookies(response, NextResponse.redirect(new URL("/", request.url)));
+}
+
 function gate(
   internalPath: string,
   userId: string | null,
@@ -37,7 +63,10 @@ function gate(
 
   if (!userId) {
     const login = new URL("/login", request.url);
-    login.searchParams.set("next", internalPath);
+    const hostSurface = surfaceForHost(request.headers.get("host"));
+    if (!((guarded.prefix === "/admin" && hostSurface === "admin") || (guarded.prefix === "/studio" && hostSurface === "studio"))) {
+      login.searchParams.set("next", internalPath);
+    }
     return carryCookies(base, NextResponse.redirect(login));
   }
   if (!role || !guarded.roles.includes(role)) {
@@ -60,6 +89,8 @@ export async function middleware(request: NextRequest) {
   }
 
   const surface = surfaceForHost(request.headers.get("host"));
+  const cleanPathRedirect = cleanSurfacePath(request, response, surface);
+  if (cleanPathRedirect) return cleanPathRedirect;
 
   if (!surface) {
     const wantsAdmin = request.nextUrl.searchParams.get("next")?.startsWith("/admin") === true;
@@ -71,7 +102,6 @@ export async function middleware(request: NextRequest) {
 
   if (surface === "admin" && pathname === "/register") {
     const login = new URL("/login", request.url);
-    login.searchParams.set("next", "/admin");
     return carryCookies(response, NextResponse.redirect(login));
   }
 

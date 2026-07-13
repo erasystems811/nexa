@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listCustomers } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
@@ -14,7 +15,7 @@ export default async function CustomersPage() {
       <ul className="space-y-2">
         {customers.map((c) => (
           <li key={c.id}>
-            <Link href={`/admin/customers/${c.id}`}>
+            <Link href={`/customers/${c.id}` as Route}>
               <Card className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{c.full_name ?? "Unnamed"}</p>

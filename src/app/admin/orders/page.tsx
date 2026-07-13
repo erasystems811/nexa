@@ -18,15 +18,15 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Orders" subtitle="Every booking across the platform." />
       <div className="mb-4 flex flex-wrap gap-2">
-        <Filter label="All" href="/admin/orders" active={!status} />
+        <Filter label="All" href="/orders" active={!status} />
         {STATUSES.map((s) => (
-          <Filter key={s} label={s.replace("_", " ")} href={`/admin/orders?status=${s}` as Route} active={status === s} />
+          <Filter key={s} label={s.replace("_", " ")} href={`/orders?status=${s}` as Route} active={status === s} />
         ))}
       </div>
       <ul className="space-y-2">
         {orders.map((o) => (
           <li key={o.id}>
-            <Link href={`/admin/orders/${o.id}`}>
+            <Link href={`/orders/${o.id}`}>
               <Card className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="font-mono text-xs">{o.reference}</p>

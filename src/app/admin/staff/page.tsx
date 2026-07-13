@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { requireView, listStaff, PERMISSIONS as P, STAFF_ROLE_LABELS } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 import { InviteStaff } from "./invite-staff";
@@ -17,7 +18,7 @@ export default async function StaffPage() {
       <ul className="mt-4 space-y-2">
         {staff.map((m) => (
           <li key={m.id}>
-            <Link href={`/admin/staff/${m.id}`}>
+            <Link href={`/staff/${m.id}` as Route}>
               <Card className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">

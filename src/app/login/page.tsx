@@ -9,8 +9,8 @@ function safeNext(value: string | string[] | undefined): string {
 }
 
 function inferredNext(surface: Surface | null): string {
-  if (surface === "admin") return "/admin";
-  if (surface === "studio") return "/studio";
+  if (surface === "admin") return "/";
+  if (surface === "studio") return "/";
   return "";
 }
 

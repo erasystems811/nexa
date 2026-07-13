@@ -22,9 +22,9 @@ export default async function ProvidersPage({
       <PageHeader title="Providers" />
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <FilterLink label="All" href="/admin/providers" active={!status} />
+        <FilterLink label="All" href={"/providers" as Route} active={!status} />
         {STATUSES.map((s) => (
-          <FilterLink key={s} label={s} href={`/admin/providers?status=${s}` as Route} active={status === s} />
+          <FilterLink key={s} label={s} href={`/providers?status=${s}` as Route} active={status === s} />
         ))}
       </div>
 
@@ -33,7 +33,7 @@ export default async function ProvidersPage({
       <ul className="mt-4 space-y-2">
         {providers.map((p) => (
           <li key={p.id}>
-            <Link href={`/admin/providers/${p.id}`}>
+            <Link href={`/providers/${p.id}` as Route}>
               <Card className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{p.business_name}</p>

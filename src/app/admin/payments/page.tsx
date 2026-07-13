@@ -58,7 +58,7 @@ export default async function PaymentsPage() {
 
       <Card className="mt-4 text-xs text-[color:var(--color-ink-muted)]">
         Commission %, stage-1 release %, and the 30/70 penalty split are all
-        <a href="/admin/settings" className="underline"> Settings</a> — editable, never hardcoded.
+        <a href="/settings" className="underline"> Settings</a> — editable, never hardcoded.
       </Card>
     </>
   );

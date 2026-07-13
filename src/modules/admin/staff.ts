@@ -82,7 +82,7 @@ export function can(staff: StaffContext | null, permission: Permission): boolean
 export async function requireView(permission: Permission): Promise<StaffContext> {
   const staff = await currentStaff();
   if (!staff) redirect("/");
-  if (!can(staff, permission)) redirect("/admin");
+  if (!can(staff, permission)) redirect("/");
   return staff;
 }
 

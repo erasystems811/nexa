@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { requireProvider, providerDashboard } from "@/modules/provider";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
@@ -16,7 +17,7 @@ export default async function StudioHome() {
       />
 
       {stats.awaitingResponse > 0 ? (
-        <Link href="/studio/orders">
+        <Link href={"/orders" as Route}>
           <Card className="mb-4 border-[color:var(--color-ink)]">
             <p className="text-sm font-medium">
               {stats.awaitingResponse} booking{stats.awaitingResponse === 1 ? "" : "s"} awaiting your response
@@ -43,7 +44,7 @@ export default async function StudioHome() {
               {stats.rating?.review_count ? `${stats.rating.avg_rating} ★` : "—"}
             </p>
           </div>
-          <Link href="/studio/reviews" className="text-sm underline">
+          <Link href={"/reviews" as Route} className="text-sm underline">
             {stats.rating?.review_count ?? 0} reviews
           </Link>
         </div>

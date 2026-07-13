@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/modules/auth";
 import {
@@ -111,7 +112,7 @@ export async function createListingAction(_prev: FormState, formData: FormData):
     return fail(e);
   }
   revalidatePath("/studio/listings");
-  redirect(`/studio/listings/${id}`);
+  redirect(`/listings/${id}` as Route);
 }
 
 export async function updateListingAction(
@@ -140,14 +141,14 @@ export async function deleteListingAction(listingId: string): Promise<void> {
   const p = await provider();
   await deleteListing(p.id, listingId);
   revalidatePath("/studio/listings");
-  redirect("/studio/listings");
+  redirect("/listings" as Route);
 }
 
 export async function duplicateListingAction(listingId: string): Promise<void> {
   const p = await provider();
   const newId = await duplicateListing(p.id, listingId);
   revalidatePath("/studio/listings");
-  redirect(`/studio/listings/${newId}`);
+  redirect(`/listings/${newId}` as Route);
 }
 
 // ---- media ----------------------------------------------------------------

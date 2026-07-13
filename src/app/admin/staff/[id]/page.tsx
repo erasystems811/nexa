@@ -68,7 +68,7 @@ export default async function StaffMemberPage({ params }: { params: Promise<{ id
 
       <Card className="mt-4 text-xs text-[color:var(--color-ink-muted)]">
         Every action this person takes is logged to their account. See it under{" "}
-        <a href="/admin/activity" className="underline">Activity</a>.
+        <a href="/activity" className="underline">Activity</a>.
       </Card>
     </>
   );

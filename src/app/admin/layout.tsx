@@ -18,18 +18,18 @@ export default async function AdminLayout({
   await recordLogin(staff.userId).catch(() => {});
 
   const tabs: { href: string; label: string; perm: Permission | null }[] = [
-    { href: "/admin", label: "Home", perm: null },
-    { href: "/admin/providers", label: "Providers", perm: P.providersView },
-    { href: "/admin/listings", label: "Listings", perm: P.listingsView },
-    { href: "/admin/orders", label: "Orders", perm: P.ordersView },
-    { href: "/admin/payments", label: "Payments", perm: P.paymentsView },
-    { href: "/admin/disputes", label: "Disputes", perm: P.disputesView },
-    { href: "/admin/moderation", label: "Flags", perm: P.moderationView },
-    { href: "/admin/customers", label: "Customers", perm: P.customersView },
-    { href: "/admin/reports", label: "Reports", perm: P.reportsView },
-    { href: "/admin/activity", label: "Activity", perm: P.staffManage },
-    { href: "/admin/staff", label: "Staff", perm: P.staffManage },
-    { href: "/admin/settings", label: "Settings", perm: P.settingsManage },
+    { href: "/", label: "Home", perm: null },
+    { href: "/providers", label: "Providers", perm: P.providersView },
+    { href: "/listings", label: "Listings", perm: P.listingsView },
+    { href: "/orders", label: "Orders", perm: P.ordersView },
+    { href: "/payments", label: "Payments", perm: P.paymentsView },
+    { href: "/disputes", label: "Disputes", perm: P.disputesView },
+    { href: "/moderation", label: "Flags", perm: P.moderationView },
+    { href: "/customers", label: "Customers", perm: P.customersView },
+    { href: "/reports", label: "Reports", perm: P.reportsView },
+    { href: "/activity", label: "Activity", perm: P.staffManage },
+    { href: "/staff", label: "Staff", perm: P.staffManage },
+    { href: "/settings", label: "Settings", perm: P.settingsManage },
   ];
   const visible = tabs.filter((t) => t.perm === null || can(staff, t.perm));
 
@@ -37,7 +37,7 @@ export default async function AdminLayout({
     <div className="min-h-dvh bg-[color:var(--color-surface-sunk)]">
       <header className="border-b border-[color:var(--color-line)] bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
-          <Link href="/admin" aria-label="Nexa Admin home">
+          <Link href="/" aria-label="Nexa Admin home">
             <Logo label="Nexa Admin" markClassName="size-8 rounded-xl" textClassName="text-sm" />
           </Link>
           <form action={signOut}>

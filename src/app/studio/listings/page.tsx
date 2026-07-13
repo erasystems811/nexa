@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { requireProvider, listMyListings } from "@/modules/provider";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
@@ -23,7 +24,7 @@ export default async function StudioListings() {
       <div className="mb-6 flex items-center justify-between">
         <PageHeader title="Listings" />
         <Link
-          href="/studio/listings/new"
+          href={"/listings/new" as Route}
           className="h-10 shrink-0 rounded-full bg-[color:var(--color-ink)] px-5 text-sm font-medium leading-10 text-white"
         >
           New listing
@@ -38,7 +39,7 @@ export default async function StudioListings() {
         <ul className="space-y-3">
           {listings.map((l) => (
             <li key={l.id}>
-              <Link href={`/studio/listings/${l.id}`}>
+              <Link href={`/listings/${l.id}` as Route}>
                 <Card className="flex items-center justify-between">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{l.title}</p>

@@ -46,7 +46,7 @@ export function LoginForm({ next, surface }: { next: string; surface: Surface })
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <Link href={surface === "admin" ? "/admin" : "/"} aria-label={`${copy.label} home`}>
+      <Link href="/" aria-label={`${copy.label} home`}>
         <Logo label={copy.label} markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
       </Link>
       <h1 className="mt-6 text-3xl font-semibold tracking-tight">{copy.title}</h1>
