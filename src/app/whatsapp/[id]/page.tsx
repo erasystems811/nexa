@@ -24,7 +24,7 @@ export default async function WhatsappHandoffPage({
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <PageHeader
-        title="Continue your booking"
+        title="Chat on WhatsApp"
         subtitle="Use your booking reference so Nexa can keep the request organized and protected."
       />
 
@@ -35,7 +35,7 @@ export default async function WhatsappHandoffPage({
 
         {href ? (
           <a href={href} className="mt-5 block">
-            <Button className="w-full">Continue</Button>
+            <Button className="w-full">Chat on WhatsApp</Button>
           </a>
         ) : (
           <p className="mt-5 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
