@@ -42,6 +42,7 @@ function loginCopy(next: string, surface: Surface) {
 export function LoginForm({ next, surface }: { next: string; surface: Surface }) {
   const [state, formAction, pending] = useActionState(signIn, initialState);
   const copy = loginCopy(next, surface);
+  const isAdmin = surface === "admin" || next === "/admin" || next.startsWith("/admin/");
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
@@ -55,7 +56,14 @@ export function LoginForm({ next, surface }: { next: string; surface: Surface })
 
       <form action={formAction} className="mt-8 space-y-4">
         <input type="hidden" name="next" value={next} />
-        <Field label="Email" name="email" type="email" autoComplete="email" required />
+        <input type="hidden" name="surface" value={surface} />
+        <Field
+          label={isAdmin ? "Username" : "Email"}
+          name="email"
+          type={isAdmin ? "text" : "email"}
+          autoComplete={isAdmin ? "username" : "email"}
+          required
+        />
         <Field
           label="Password"
           name="password"

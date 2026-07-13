@@ -4,7 +4,7 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { publicEnv } from "@/lib/env";
+import { publicEnv, serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendSignupVerificationCode } from "@/modules/email/resend";
@@ -15,6 +15,11 @@ export interface AuthFormState {
   error?: string;
   message?: string;
 }
+
+const loginCredentials = z.object({
+  identifier: z.string().trim().min(1, "Enter your username or email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 const credentials = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -32,27 +37,116 @@ function safeNextPath(value: FormDataEntryValue | null): string | null {
   return value;
 }
 
+function isAdminIntent(next: string | null, surface: FormDataEntryValue | null): boolean {
+  return surface === "admin" || next === "/admin" || next?.startsWith("/admin/") === true;
+}
+
+async function ensureEnvSuperAdmin(email: string, password: string): Promise<void> {
+  const admin = createAdminClient();
+  const normalizedEmail = email.toLowerCase();
+  const { data: listed, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (listError) throw new Error(listError.message);
+
+  const existing = listed.users.find((user) => user.email?.toLowerCase() === normalizedEmail);
+  const metadata = { role: "admin" };
+  const userMetadata = { full_name: "Nexa Super Admin" };
+
+  const userId = existing?.id;
+  if (userId) {
+    const { error } = await admin.auth.admin.updateUserById(userId, {
+      password,
+      email_confirm: true,
+      app_metadata: { ...(existing.app_metadata ?? {}), ...metadata },
+      user_metadata: { ...(existing.user_metadata ?? {}), ...userMetadata },
+    });
+    if (error) throw new Error(error.message);
+  } else {
+    const { data, error } = await admin.auth.admin.createUser({
+      email: normalizedEmail,
+      password,
+      email_confirm: true,
+      app_metadata: metadata,
+      user_metadata: userMetadata,
+    });
+    if (error || !data.user) throw new Error(error?.message ?? "Could not create the admin login");
+  }
+
+  const resolvedUserId = userId ?? (await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })).data.users.find((user) => user.email?.toLowerCase() === normalizedEmail)?.id;
+  if (!resolvedUserId) throw new Error("Could not resolve the admin login");
+
+  const { error: profileError } = await admin.from("profiles").upsert({
+    id: resolvedUserId,
+    role: "admin",
+    full_name: "Nexa Super Admin",
+  }, { onConflict: "id" });
+  if (profileError) throw new Error(profileError.message);
+
+  const { error: staffError } = await admin.from("staff_members").upsert({
+    user_id: resolvedUserId,
+    staff_role: "super_admin",
+    permissions: [],
+    status: "active",
+  }, { onConflict: "user_id" });
+  if (staffError) throw new Error(staffError.message);
+}
+
 export async function signIn(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const parsed = credentials.safeParse({
-    email: formData.get("email"),
+  const next = safeNextPath(formData.get("next"));
+  const adminIntent = isAdminIntent(next, formData.get("surface"));
+  const parsed = loginCredentials.safeParse({
+    identifier: formData.get("email"),
     password: formData.get("password"),
   });
+
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid credentials" };
   }
 
+  let loginEmail = parsed.data.identifier;
+  let password = parsed.data.password;
+
+  if (adminIntent) {
+    const env = serverEnv();
+    const username = env.NEXA_SUPER_ADMIN_USERNAME?.trim();
+    const email = env.NEXA_SUPER_ADMIN_EMAIL?.trim();
+    const adminPassword = env.NEXA_SUPER_ADMIN_PASSWORD;
+
+    if (!username || !email || !adminPassword) {
+      return { error: "Admin login is not configured yet. Set the Nexa Super Admin env values in Railway." };
+    }
+
+    if (parsed.data.identifier.toLowerCase() !== username.toLowerCase() || parsed.data.password !== adminPassword) {
+      return { error: "Admin username and password do not match." };
+    }
+
+    try {
+      await ensureEnvSuperAdmin(email, adminPassword);
+    } catch {
+      return { error: "Admin login could not be prepared. Check the Supabase service key and admin env values." };
+    }
+
+    loginEmail = email;
+    password = adminPassword;
+  } else {
+    const emailParsed = credentials.pick({ email: true }).safeParse({ email: parsed.data.identifier });
+    if (!emailParsed.success) {
+      return { error: emailParsed.error.issues[0]?.message ?? "Enter a valid email address" };
+    }
+    loginEmail = emailParsed.data.email;
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
   if (error) {
     const message = error.message.toLowerCase();
     if (message.includes("email not confirmed")) {
       return { error: "Your account exists, but it has not been verified yet. Enter the code from your email." };
     }
     if (message.includes("invalid login credentials")) {
-      return { error: "That email and password do not match. If this is your first time, create an account first." };
+      return { error: adminIntent ? "Admin username and password do not match." : "That email and password do not match. If this is your first time, create an account first." };
     }
     return { error: error.message };
   }
@@ -71,8 +165,18 @@ export async function signIn(
     role = profile?.role ?? null;
   }
 
+  if (adminIntent && role !== "admin") {
+    await supabase.auth.signOut();
+    return { error: "This login is not allowed to open Admin." };
+  }
+
+  if (!adminIntent && role === "admin") {
+    await supabase.auth.signOut();
+    return { error: "Admin accounts must sign in from Nexa Admin." };
+  }
+
   revalidatePath("/", "layout");
-  redirect((safeNextPath(formData.get("next")) ?? homePathForRole(role ?? "customer")) as Route);
+  redirect((next ?? homePathForRole(role ?? "customer")) as Route);
 }
 
 /**

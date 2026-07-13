@@ -31,6 +31,12 @@ const serverSchema = z.object({
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_APP_SECRET: z.string().optional(),
+
+  // Fixed admin login. The username is what Admin types; the email is the
+  // hidden Supabase Auth user that carries the admin session.
+  NEXA_SUPER_ADMIN_USERNAME: z.string().optional(),
+  NEXA_SUPER_ADMIN_EMAIL: z.string().email().optional(),
+  NEXA_SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
 });
 
 // Next.js inlines NEXT_PUBLIC_* only when referenced statically, so these cannot
