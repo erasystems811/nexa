@@ -106,10 +106,10 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
           <form action={discussListingAction}>
             <input type="hidden" name="listingId" value={listing.id} />
             <Button type="submit" className="w-full">
-              Discuss price
+              Request price
             </Button>
             <p className="mt-2 text-center text-xs text-[color:var(--color-ink-muted)]">
-              Agree a price in chat. A booking is created once you accept an offer.
+              A booking is created once the provider sends an offer and you accept it.
             </p>
           </form>
         )}

@@ -68,7 +68,7 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
         </dl>
 
         <p className="mt-4 text-xs leading-relaxed text-[color:var(--color-ink-muted)]">
-          Coordinate delivery, pickup, setup, transport, or arrival details directly with {listing.providers.business_name} in Nexa chat.
+          After payment, Nexa helps keep the booking details organized until the service is completed.
         </p>
       </Card>
 
