@@ -42,7 +42,9 @@ export async function signIn(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) return { error: error.message };
+  if (error) {
+    return { error: "We could not sign you in with those details. Check the email and password, or create an account first." };
+  }
 
   const {
     data: { user },

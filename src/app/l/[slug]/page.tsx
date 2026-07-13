@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getListingBySlug } from "@/modules/marketplace";
 import { checkpointsFor } from "@/modules/bookings";
@@ -20,6 +21,8 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const isFixed = listing.price_type === "fixed";
 
   const cover = (provider as unknown as { cover_url: string | null }).cover_url;
+  const bookPath = `/book/${listing.id}` as Route;
+  const loginPath = `/login?next=${encodeURIComponent(bookPath)}` as Route;
 
   return (
     <main className="mx-auto max-w-2xl pb-16">
@@ -86,11 +89,16 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
 
       <div className="mt-6">
         {!session ? (
-          <Link href="/login">
-            <Button className="w-full">Sign in to book</Button>
-          </Link>
+          <div>
+            <Link href={loginPath}>
+              <Button className="w-full">Continue to booking</Button>
+            </Link>
+            <p className="mt-2 text-center text-xs text-[color:var(--color-ink-muted)]">
+              You only sign in if your one-time session has expired.
+            </p>
+          </div>
         ) : isFixed ? (
-          <Link href={`/book/${listing.id}`}>
+          <Link href={bookPath}>
             <Button className="w-full">Book this</Button>
           </Link>
         ) : (
