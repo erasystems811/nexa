@@ -54,7 +54,16 @@ export async function updateSession(request: NextRequest): Promise<SessionContex
   // so the middleware can authorise a route without a database round-trip.
   // It lags by one token refresh after an admin changes someone's role; page-
   // level checks re-read it, and RLS is the real boundary regardless.
-  const role = (user?.app_metadata?.role as UserRole | undefined) ?? null;
+  let role = (user?.app_metadata?.role as UserRole | undefined) ?? null;
+
+  if (user && !role) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role ?? null;
+  }
 
   return { response, userId: user?.id ?? null, role };
 }

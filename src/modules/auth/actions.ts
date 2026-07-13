@@ -47,10 +47,19 @@ export async function signIn(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const role = (user?.app_metadata?.role as UserRole | undefined) ?? "customer";
+  let role = (user?.app_metadata?.role as UserRole | undefined) ?? null;
+
+  if (user && !role) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role ?? null;
+  }
 
   revalidatePath("/", "layout");
-  redirect((safeNextPath(formData.get("next")) ?? homePathForRole(role)) as Route);
+  redirect((safeNextPath(formData.get("next")) ?? homePathForRole(role ?? "customer")) as Route);
 }
 
 /**
