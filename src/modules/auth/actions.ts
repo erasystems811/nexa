@@ -138,8 +138,8 @@ export async function verifySignupCode(
   const email = String(formData.get("email") ?? "").trim();
   const token = String(formData.get("code") ?? "").replace(/\D/g, "");
 
-  if (!email || token.length !== 6) {
-    return { error: "Enter the 6-digit code from your email." };
+  if (!email || token.length < 6 || token.length > 8) {
+    return { error: "Enter the verification code from your email." };
   }
 
   const supabase = await createClient();

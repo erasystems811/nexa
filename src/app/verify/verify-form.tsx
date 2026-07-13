@@ -18,7 +18,7 @@ export function VerifyForm({ email }: { email: string }) {
       </Link>
       <h1 className="mt-6 text-3xl font-semibold tracking-tight">Enter verification code</h1>
       <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-        We sent a 6-digit code to {email || "your email"}.
+        We sent a verification code to {email || "your email"}.
       </p>
 
       <form action={formAction} className="mt-8 space-y-4">
@@ -29,7 +29,7 @@ export function VerifyForm({ email }: { email: string }) {
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={8}
           required
         />
 
