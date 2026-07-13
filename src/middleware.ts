@@ -63,6 +63,12 @@ export async function middleware(request: NextRequest) {
     return gate(pathname, userId, role, request, response) ?? response;
   }
 
+  if (surface === "admin" && pathname === "/register") {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", "/admin");
+    return carryCookies(response, NextResponse.redirect(login));
+  }
+
   const action = resolveRoute(surface, pathname);
 
   if (action.kind === "redirect") {
