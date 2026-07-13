@@ -23,15 +23,6 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-/**
- * What the caller is told to dial. Only ever a proxy number — the counterpart's
- * real number is not in this object, and has no path to a browser.
- */
-export interface CallTicket {
-  callSessionId: string;
-  dialNumber: string;
-  expiresAt: string;
-}
 
 export class MessagingError extends Error {
   constructor(message: string) {

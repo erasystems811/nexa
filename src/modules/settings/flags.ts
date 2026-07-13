@@ -13,12 +13,11 @@ import type { FeatureFlag, UserRole } from "@/lib/db/types";
  * Turning a feature on is an UPDATE. It is never a migration and never a redeploy.
  */
 
-/** Flags the app knows by name. Adding one here does not create it — the row does. */
+/** Flags the app knows by name. Adding one here does not create it â€” the row does. */
 export const FLAGS = {
   planMyEvent: "plan_my_event",
   publicReliabilityScore: "public_reliability_score",
   eventStandMode: "event_stand_mode",
-  inAppCalling: "in_app_calling",
   negotiablePricing: "negotiable_pricing",
   legacyRiderDelivery: "rider_delivery",
   cautionFee: "caution_fee",
@@ -50,7 +49,7 @@ export async function isEnabled(key: FlagKey, role?: UserRole): Promise<boolean>
 /**
  * Admin-only write. Goes through the service-role client because RLS on
  * feature_flags admits only `is_admin()`, and the caller has already been
- * checked by the Admin Console layout — but see the explicit re-check below:
+ * checked by the Admin Console layout â€” but see the explicit re-check below:
  * a service-role write with no authorisation check of its own is a hole.
  */
 export async function setFlag(

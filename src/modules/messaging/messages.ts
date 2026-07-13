@@ -3,17 +3,15 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { MessagingError, type ChatMessage } from "./types";
 import type { ModerationFlagReason } from "@/lib/db/types";
+import { scanMessageBody } from "./safety";
+import { recordBlockedAttempt, relayDashboardMessageToWhatsapp } from "./whatsapp";
 
 /**
  * Sending and reading messages.
  *
- * Scanning happens in a database trigger (0013_messaging.sql), not here. That
- * placement is the whole point: a client that skips this function and POSTs
- * straight to PostgREST with its own anon key is scanned exactly the same, and
- * cannot pass `is_flagged: false` to talk its way out of it.
- *
- * PRD Section 08: a flagged message still sends. It is "not silently blocked,
- * since false positives happen, but surfaced so Admin can act."
+ * The database still scans every inserted row as a backstop. The app path is
+ * stricter: phone numbers, account numbers, and direct-payment attempts are
+ * blocked before the other side sees them, then surfaced to Admin.
  */
 
 export async function sendMessage(input: {
@@ -24,6 +22,20 @@ export async function sendMessage(input: {
   const body = input.body.trim();
   if (!body) throw new MessagingError("A message cannot be empty");
   if (body.length > 4000) throw new MessagingError("That message is too long");
+
+  const blockedReasons = scanMessageBody(body);
+  if (blockedReasons.length > 0) {
+    await recordBlockedAttempt({
+      conversationId: input.conversationId,
+      senderId: input.senderId,
+      channel: "nexa_dashboard",
+      body,
+      reasons: blockedReasons,
+    });
+    throw new MessagingError(
+      "That message includes contact or payment details. Keep payment inside Nexa escrow so both sides stay protected.",
+    );
+  }
 
   const supabase = await createClient();
 
@@ -40,6 +52,12 @@ export async function sendMessage(input: {
   if (error || !data) {
     throw new MessagingError(`Message not sent: ${error?.message}`);
   }
+
+  await relayDashboardMessageToWhatsapp({
+    conversationId: input.conversationId,
+    senderId: input.senderId,
+    body,
+  });
 
   return toChatMessage(data);
 }

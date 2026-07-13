@@ -23,6 +23,11 @@ const registration = credentials.extend({
   phone: z.string().min(7, "Enter a valid phone number").optional().or(z.literal("")),
 });
 
+function safeNextPath(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== "string" || !value.startsWith("/")) return null;
+  if (value.startsWith("//")) return null;
+  return value;
+}
 export async function signIn(
   _prev: AuthFormState,
   formData: FormData,
@@ -45,7 +50,7 @@ export async function signIn(
   const role = (user?.app_metadata?.role as UserRole | undefined) ?? "customer";
 
   revalidatePath("/", "layout");
-  redirect(homePathForRole(role) as Route);
+  redirect((safeNextPath(formData.get("next")) ?? homePathForRole(role)) as Route);
 }
 
 /**

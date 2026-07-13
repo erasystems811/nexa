@@ -61,9 +61,6 @@ function isAuthRoute(path: string): boolean {
   return AUTH_ROUTES.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
-function messagesAllowed(surface: Surface): boolean {
-  return surface === "customer" || surface === "studio";
-}
 
 export type RouteAction =
   | { kind: "pass" }
@@ -87,9 +84,6 @@ export function resolveRoute(surface: Surface, path: string): RouteAction {
   const base = SURFACE_BASE[surface];
   if (path === base || path.startsWith(`${base}/`)) return { kind: "pass" };
 
-  if (path.startsWith("/messages")) {
-    return messagesAllowed(surface) ? { kind: "pass" } : { kind: "notFound" };
-  }
 
   if (path === "/") return { kind: "rewrite", to: base };
   return { kind: "rewrite", to: `${base}${path}` };

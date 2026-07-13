@@ -464,6 +464,160 @@ export type Database = {
           },
         ]
       }
+      blocked_message_attempts: {
+        Row: {
+          body: string
+          channel: Database["public"]["Enums"]["message_origin"]
+          conversation_id: string | null
+          created_at: string
+          id: string
+          reasons: Database["public"]["Enums"]["moderation_flag_reason"][]
+          sender_id: string | null
+          whatsapp_contact_id: string | null
+        }
+        Insert: {
+          body: string
+          channel: Database["public"]["Enums"]["message_origin"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
+          sender_id?: string | null
+          whatsapp_contact_id?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: Database["public"]["Enums"]["message_origin"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
+          sender_id?: string | null
+          whatsapp_contact_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_message_attempts_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_message_attempts_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_message_attempts_whatsapp_contact_id_fkey"
+            columns: ["whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_contacts: {
+        Row: {
+          consent_at: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          phone_hint: string | null
+          profile_id: string | null
+          updated_at: string
+          wa_id: string
+        }
+        Insert: {
+          consent_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          phone_hint?: string | null
+          profile_id?: string | null
+          updated_at?: string
+          wa_id: string
+        }
+        Update: {
+          consent_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          phone_hint?: string | null
+          profile_id?: string | null
+          updated_at?: string
+          wa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_threads: {
+        Row: {
+          business_phone_id: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          last_webhook_at: string | null
+          provider_whatsapp_contact_id: string | null
+          status: string
+          updated_at: string
+          whatsapp_contact_id: string
+        }
+        Insert: {
+          business_phone_id?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_webhook_at?: string | null
+          provider_whatsapp_contact_id?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp_contact_id: string
+        }
+        Update: {
+          business_phone_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_webhook_at?: string | null
+          provider_whatsapp_contact_id?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp_contact_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_threads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_threads_provider_whatsapp_contact_id_fkey"
+            columns: ["provider_whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_threads_whatsapp_contact_id_fkey"
+            columns: ["whatsapp_contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispute_evidence: {
         Row: {
           created_at: string
@@ -994,7 +1148,9 @@ export type Database = {
             | Database["public"]["Enums"]["moderation_flag_reason"]
             | null
           flag_reasons: Database["public"]["Enums"]["moderation_flag_reason"][]
+          external_message_id: string | null
           id: string
+          origin: Database["public"]["Enums"]["message_origin"]
           is_flagged: boolean
           read_at: string | null
           sender_id: string
@@ -1007,7 +1163,9 @@ export type Database = {
             | Database["public"]["Enums"]["moderation_flag_reason"]
             | null
           flag_reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
+          external_message_id?: string | null
           id?: string
+          origin?: Database["public"]["Enums"]["message_origin"]
           is_flagged?: boolean
           read_at?: string | null
           sender_id: string
@@ -1020,7 +1178,9 @@ export type Database = {
             | Database["public"]["Enums"]["moderation_flag_reason"]
             | null
           flag_reasons?: Database["public"]["Enums"]["moderation_flag_reason"][]
+          external_message_id?: string | null
           id?: string
+          origin?: Database["public"]["Enums"]["message_origin"]
           is_flagged?: boolean
           read_at?: string | null
           sender_id?: string
@@ -2675,6 +2835,7 @@ export type Database = {
         | "changes_requested"
         | "paused"
         | "hidden"
+      message_origin: "nexa_dashboard" | "whatsapp_customer" | "whatsapp_vendor"
       moderation_flag_reason:
         | "phone_number"
         | "bank_account"
@@ -2892,6 +3053,7 @@ export const Constants = {
         "paused",
         "hidden",
       ],
+      message_origin: ["nexa_dashboard", "whatsapp_customer", "whatsapp_vendor"],
       moderation_flag_reason: [
         "phone_number",
         "bank_account",

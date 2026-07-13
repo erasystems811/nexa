@@ -73,7 +73,7 @@ export async function discussListingAction(formData: FormData): Promise<void> {
     listingId: listing.id,
   });
 
-  redirect(`/messages/${conversationId}`);
+  redirect(`/whatsapp/${conversationId}`);
 }
 
 export async function sendOfferAction(formData: FormData): Promise<void> {
@@ -100,11 +100,11 @@ export async function sendOfferAction(formData: FormData): Promise<void> {
     amountKobo: Math.round(amountNaira * 100),
   });
 
-  revalidatePath(`/messages/${conversationId}`);
+  revalidatePath(`/whatsapp/${conversationId}`);
 }
 
 export async function acceptOfferAction(offerId: string, conversationId: string): Promise<void> {
   await requireSession();
   await acceptOffer(offerId);
-  revalidatePath(`/messages/${conversationId}`);
+  revalidatePath(`/whatsapp/${conversationId}`);
 }

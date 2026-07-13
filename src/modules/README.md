@@ -13,7 +13,7 @@ New work should avoid adding behavior to the rider module unless it is part of a
 migration/deprecation step.
 
 One directory per domain, per PRD Section 17. Each owns its tables and exposes a
-barrel (`index.ts`). Nothing imports another module's internals — only its barrel.
+barrel (`index.ts`). Nothing imports another module's internals â€” only its barrel.
 
 | Module | Owns | Phase 1 |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 | `provider` | `providers`, agreements, reliability, wallets, own listings/media/orders | built (Business Studio) |
 | `marketplace` | public read model | built |
 | `bookings` | `bookings`, confirmation codes, `price_offers`, `event_projects` | built (Search & Book) |
-| `messaging` | `conversations`, `messages`, `call_sessions`, `moderation_flags` | built |
+| `messaging` | `conversations`, `messages`, `whatsapp_threads`, `moderation_flags` | built |
 | `disputes` | `disputes`, `dispute_evidence` | empty |
 | `notifications` | `notifications`, preferences | empty |
 | `reviews` | `reviews` | empty |
@@ -35,14 +35,10 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 
 **Booking logic never touches a payment processor.** `modules/payments/gateway/`
 is private. `eslint.config.mjs` fails the build on any import of it from outside
-`modules/payments`. Callers get `holdFunds`, `releaseFunds`, `refund` — the three
-functions PRD Section 17 names — and nothing else. Swapping Flutterwave for
+`modules/payments`. Callers get `holdFunds`, `releaseFunds`, `refund` â€” the three
+functions PRD Section 17 names â€” and nothing else. Swapping Flutterwave for
 another processor means writing one adapter and changing one `switch`.
 
-**Nothing outside `messaging` can hold a telephony provider.** `modules/messaging/telephony/`
-takes real phone numbers as arguments. ESLint blocks importing it anywhere else,
-so a future feature cannot place a call that leaks a subscriber number. Callers
-get `startMaskedCall`, which returns a proxy number and nothing more.
 
 **Pages never hold the service-role key.** `@/lib/supabase/admin` bypasses RLS.
 ESLint blocks importing it from `src/app` and `src/components`; it belongs behind
@@ -56,7 +52,7 @@ code that enforces it, it belongs in the database.
 
 **Permissions live in the database.** `supabase/migrations/0011_rls.sql` is the
 permission model from PRD Section 03. `requireRole()` in `modules/auth` decides
-which URL a role may open — a UX boundary. RLS decides which rows they may read.
+which URL a role may open â€” a UX boundary. RLS decides which rows they may read.
 If the two ever disagree, RLS wins, and that is the point.
 
 **Feature flags gate exposure, not architecture.** Event Project and Reliability Score can exist before public exposure. Legacy rider delivery flags are now disabled by Addendum v1.2 while the old schema is migrated. Turning a current feature on is an `UPDATE`.

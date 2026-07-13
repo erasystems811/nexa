@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { signIn, type AuthFormState } from "@/modules/auth/actions";
 import { Alert, Button, Field } from "@/components/ui";
@@ -9,6 +10,8 @@ const initialState: AuthFormState = {};
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(signIn, initialState);
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
@@ -21,6 +24,7 @@ export default function LoginPage() {
       </p>
 
       <form action={formAction} className="mt-8 space-y-4">
+        <input type="hidden" name="next" value={next} />
         <Field label="Email" name="email" type="email" autoComplete="email" required />
         <Field
           label="Password"
@@ -33,7 +37,7 @@ export default function LoginPage() {
         {state.error ? <Alert>{state.error}</Alert> : null}
 
         <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Signing in…" : "Sign in"}
+          {pending ? "Signing inâ€¦" : "Sign in"}
         </Button>
       </form>
 

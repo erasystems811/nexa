@@ -4,7 +4,7 @@ import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
 import { SearchBar } from "@/components/search-bar";
 
-/** Marketplace home. PRD Section 14 + Addendum §3 (premium, image-led). */
+/** Marketplace home. PRD Section 14 + Addendum Â§3 (premium, image-led). */
 export default async function HomePage() {
   const session = await getSession();
   const [categories, providers, planMyEventLive] = await Promise.all([
@@ -22,7 +22,6 @@ export default async function HomePage() {
           {session ? (
             <>
               <Link href="/orders" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">My events</Link>
-              <Link href="/messages" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">Messages</Link>
               <Link href="/account" className="font-medium">Account</Link>
             </>
           ) : (
@@ -39,15 +38,15 @@ export default async function HomePage() {
         </h1>
         <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[color:var(--color-ink-muted)]">
           Book verified DJs, caterers, decorators and more. Nexa holds your payment safely until your
-          event is done — so you can relax.
+          event is done â€” so you can relax.
         </p>
         <div className="mt-6">
           <SearchBar />
         </div>
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[color:var(--color-ink-muted)]">
-          <span>✓ Verified providers</span>
-          <span>✓ Payment held until it&rsquo;s done</span>
-          <span>✓ Real reviews</span>
+          <span>âœ“ Verified providers</span>
+          <span>âœ“ Payment held until it&rsquo;s done</span>
+          <span>âœ“ Real reviews</span>
         </div>
       </section>
 
@@ -59,7 +58,7 @@ export default async function HomePage() {
             {categories.map((c) => (
               <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
                 <div className="flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-line)] bg-white transition group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
-                  <span className="text-2xl">{c.icon ?? "✨"}</span>
+                  <span className="text-2xl">{c.icon ?? "âœ¨"}</span>
                   <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
                 </div>
               </Link>
@@ -90,11 +89,11 @@ export default async function HomePage() {
                 <div className="p-3">
                   <div className="flex items-center gap-1">
                     <p className="truncate text-sm font-semibold">{p.business_name}</p>
-                    <span title="Verified" className="text-[color:var(--color-accent)]">✓</span>
+                    <span title="Verified" className="text-[color:var(--color-accent)]">âœ“</span>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-[color:var(--color-ink-muted)]">
                     {(p.cities as unknown as { name: string } | null)?.name ?? "Nexa provider"}
-                    {p.reviewCount > 0 ? ` · ${p.avgRating}★` : ""}
+                    {p.reviewCount > 0 ? ` Â· ${p.avgRating}â˜…` : ""}
                   </p>
                 </div>
               </Link>
@@ -115,14 +114,14 @@ export default async function HomePage() {
           <h2 className="text-lg font-semibold">Plan My Event</h2>
           <p className="mt-1 max-w-md text-sm text-white/80">
             {planMyEventLive
-              ? "Tell us the event, budget and guest count — we&rsquo;ll assemble a package."
-              : "Coming soon — tell us the event, and we&rsquo;ll assemble the whole package for you."}
+              ? "Tell us the event, budget and guest count â€” we&rsquo;ll assemble a package."
+              : "Coming soon â€” tell us the event, and we&rsquo;ll assemble the whole package for you."}
           </p>
         </div>
       </section>
 
       <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
-        Nexa — powered by ERA. Your payment is held securely until your event is successfully completed.
+        Nexa â€” powered by ERA. Your payment is held securely until your event is successfully completed.
       </footer>
     </main>
   );

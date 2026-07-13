@@ -8,9 +8,10 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
   // The live customer apex, e.g. "nexa.erasystems.com.ng". When set, the app
-  // serves each surface on its own subdomain (Addendum §2). Unset in dev and on
+  // serves each surface on its own subdomain (Addendum Ã‚Â§2). Unset in dev and on
   // the raw Railway URL, where the app is single-domain and path-based.
   NEXT_PUBLIC_ROOT_DOMAIN: z.string().optional(),
+  NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
 });
 
 const serverSchema = z.object({
@@ -20,12 +21,12 @@ const serverSchema = z.object({
   FLUTTERWAVE_ENCRYPTION_KEY: z.string().optional(),
   FLUTTERWAVE_WEBHOOK_SECRET: z.string().optional(),
 
-  // Masked calling. "mock" until a provider account and a proxy number pool
-  // exist (PRD Section 08).
-  TELEPHONY_PROVIDER: z.enum(["mock", "africastalking"]).default("mock"),
-  TELEPHONY_API_KEY: z.string().optional(),
-  TELEPHONY_USERNAME: z.string().optional(),
-  TELEPHONY_WEBHOOK_SECRET: z.string().optional(),
+
+  // WhatsApp Business Platform. Optional until Nexa has a Meta business number.
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_APP_SECRET: z.string().optional(),
 });
 
 // Next.js inlines NEXT_PUBLIC_* only when referenced statically, so these cannot
@@ -35,13 +36,14 @@ export const publicEnv = publicSchema.parse({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
+  NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
 });
 
 let cachedServerEnv: z.infer<typeof serverSchema> | null = null;
 
 /**
  * Server-only. Reading this from a client component is a build error waiting to
- * happen — the service role key must never cross into the browser bundle.
+ * happen Ã¢â‚¬â€ the service role key must never cross into the browser bundle.
  */
 export function serverEnv() {
   if (typeof window !== "undefined") {

@@ -13,7 +13,7 @@ const PROTECTED_PREFIXES: ReadonlyArray<{ prefix: string; roles: UserRole[] }> =
   { prefix: "/admin", roles: ["admin"] },
   { prefix: "/studio", roles: ["provider"] },
   { prefix: "/account", roles: ["customer", "provider", "admin"] },
-  { prefix: "/messages", roles: ["customer", "provider", "admin"] },
+  { prefix: "/whatsapp", roles: ["customer", "provider", "admin"] },
   { prefix: "/orders", roles: ["customer", "admin"] },
   { prefix: "/book", roles: ["customer", "admin"] },
 ];

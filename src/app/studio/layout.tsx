@@ -25,9 +25,6 @@ export default async function StudioLayout({
             Business Studio
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/messages" className="text-sm underline">
-              Messages
-            </Link>
             <form action={signOut}>
               <Button type="submit" variant="ghost" className="h-9 px-4 text-xs">
                 Sign out
