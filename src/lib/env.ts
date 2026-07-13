@@ -8,7 +8,7 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
   // The live customer apex, e.g. "nexa.erasystems.com.ng". When set, the app
-  // serves each surface on its own subdomain (Addendum Ã‚Â§2). Unset in dev and on
+  // serves each surface on its own subdomain (Addendum Section 2). Unset in dev and on
   // the raw Railway URL, where the app is single-domain and path-based.
   NEXT_PUBLIC_ROOT_DOMAIN: z.string().optional(),
   NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
@@ -43,7 +43,7 @@ let cachedServerEnv: z.infer<typeof serverSchema> | null = null;
 
 /**
  * Server-only. Reading this from a client component is a build error waiting to
- * happen Ã¢â‚¬â€ the service role key must never cross into the browser bundle.
+ * happen - the service role key must never cross into the browser bundle.
  */
 export function serverEnv() {
   if (typeof window !== "undefined") {

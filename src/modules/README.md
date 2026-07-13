@@ -13,7 +13,7 @@ New work should avoid adding behavior to the rider module unless it is part of a
 migration/deprecation step.
 
 One directory per domain, per PRD Section 17. Each owns its tables and exposes a
-barrel (`index.ts`). Nothing imports another module's internals â€” only its barrel.
+barrel (`index.ts`). Nothing imports another module's internals - only its barrel.
 
 | Module | Owns | Phase 1 |
 | --- | --- | --- |
@@ -35,8 +35,8 @@ barrel (`index.ts`). Nothing imports another module's internals â€” only it
 
 **Booking logic never touches a payment processor.** `modules/payments/gateway/`
 is private. `eslint.config.mjs` fails the build on any import of it from outside
-`modules/payments`. Callers get `holdFunds`, `releaseFunds`, `refund` â€” the three
-functions PRD Section 17 names â€” and nothing else. Swapping Flutterwave for
+`modules/payments`. Callers get `holdFunds`, `releaseFunds`, `refund` - the three
+functions PRD Section 17 names - and nothing else. Swapping Flutterwave for
 another processor means writing one adapter and changing one `switch`.
 
 
@@ -52,7 +52,7 @@ code that enforces it, it belongs in the database.
 
 **Permissions live in the database.** `supabase/migrations/0011_rls.sql` is the
 permission model from PRD Section 03. `requireRole()` in `modules/auth` decides
-which URL a role may open â€” a UX boundary. RLS decides which rows they may read.
+which URL a role may open - a UX boundary. RLS decides which rows they may read.
 If the two ever disagree, RLS wins, and that is the point.
 
 **Feature flags gate exposure, not architecture.** Event Project and Reliability Score can exist before public exposure. Legacy rider delivery flags are now disabled by Addendum v1.2 while the old schema is migrated. Turning a current feature on is an `UPDATE`.
