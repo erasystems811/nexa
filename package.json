@@ -2,7 +2,7 @@
   "name": "nexa",
   "version": "0.1.0",
   "private": true,
-  "description": "Nexa — event supply marketplace. Powered by ERA.",
+  "description": "Nexa event vendor access marketplace. Powered by ERA.",
   "engines": {
     "node": ">=20"
   },
@@ -16,7 +16,6 @@
     "e2e:messaging": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-messaging.ts",
     "e2e:marketplace": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-marketplace.ts",
     "e2e:studio": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-studio.ts",
-    "e2e:rider": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-rider.ts",
     "e2e:admin": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-admin.ts",
     "e2e:staff": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/e2e-staff.ts",
     "seed:demo": "tsx --tsconfig scripts/tsconfig.e2e.json --env-file=.env.local scripts/seed-demo.ts",

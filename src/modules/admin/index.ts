@@ -2,8 +2,8 @@
  * Admin — the Admin Console's server logic. PRD Section 12. Internal ops only.
  *
  * Owns: verification queues, listing approval, order monitoring, dispute and
- * caution resolution, the suspension/appeal/strike workflow, manual rider
- * (re)assignment, payment interventions, reports, and audit_log.
+ * caution resolution, the suspension/appeal/strike workflow, payment
+ * interventions, reports, and audit_log.
  *
  * Runs on the service role AFTER requireRole("admin") in the server action —
  * the role check is the gate, the service role is what executes once past it,
@@ -35,9 +35,6 @@ export {
 export {
   recordNoShow, listStrikes, resolveAppeal, removeProvider,
 } from "./strikes";
-export {
-  listRiders, getRiderDetail, verifyRider, setRiderSuspended, reassignDelivery,
-} from "./riders";
 export {
   listingQueue, listAllListings, getListingForReview, decideListing,
   restoreListing, decideMedia,

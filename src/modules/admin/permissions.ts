@@ -18,7 +18,7 @@ export const PERMISSIONS = {
   providersEdit: "providers.edit",
   providersSuspend: "providers.suspend",
   providersRemove: "providers.remove",
-  // Riders.
+  // Legacy rider permissions, now used only during migration away from the old Rider App.
   ridersView: "riders.view",
   ridersVerify: "riders.verify",
   ridersSuspend: "riders.suspend",
@@ -73,10 +73,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "providers.edit": "Edit providers, feature",
   "providers.suspend": "Suspend, discipline, appeals",
   "providers.remove": "Remove providers permanently",
-  "riders.view": "View riders",
-  "riders.verify": "Verify riders & documents",
-  "riders.suspend": "Suspend riders",
-  "riders.reassign": "Reassign deliveries",
+  "riders.view": "View legacy rider records",
+  "riders.verify": "Verify legacy rider documents",
+  "riders.suspend": "Suspend legacy rider records",
+  "riders.reassign": "Reassign legacy deliveries",
   "listings.view": "View listings",
   "listings.approve": "Approve / reject listings",
   "orders.view": "View orders",
@@ -118,7 +118,7 @@ export type StaffRole = (typeof STAFF_ROLES)[number];
 
 export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
   super_admin: "Super Admin",
-  rider_operations: "Rider Operations",
+  rider_operations: "Transport & Logistics Vendor Manager",
   service_vendor_manager: "Service Vendor Manager",
   product_vendor_manager: "Product Vendor Manager",
   customer_support: "Customer Support",
@@ -134,7 +134,7 @@ const P = PERMISSIONS;
  * enumerated here.
  */
 export const ROLE_BUNDLES: Record<Exclude<StaffRole, "super_admin">, Permission[]> = {
-  rider_operations: [P.ridersView, P.ridersVerify, P.ridersSuspend, P.ridersReassign, P.ordersView],
+  rider_operations: [P.providersView, P.providersApprove, P.providersEdit, P.providersSuspend, P.listingsView, P.listingsApprove, P.ordersView],
   service_vendor_manager: [
     P.providersView, P.providersApprove, P.providersEdit, P.providersSuspend,
     P.listingsView, P.listingsApprove, P.ordersView, P.reviewsView,

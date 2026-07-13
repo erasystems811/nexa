@@ -5,7 +5,7 @@ import { BankForm } from "./bank-form";
 
 const KIND_LABEL: Record<string, string> = {
   stage_release: "Payment released",
-  rider_payout: "Rider payout",
+  rider_payout: "Legacy delivery payout",
   refund: "Refund",
   penalty: "Penalty",
   commission: "Commission",

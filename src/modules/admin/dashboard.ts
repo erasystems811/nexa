@@ -2,7 +2,7 @@ import "server-only";
 
 import { adminDb } from "./context";
 
-/** Dashboard figures. PRD Section 12. */
+/** Dashboard figures. PRD Section 12, updated by Addendum v1.2. */
 export async function adminDashboard() {
   const db = adminDb();
 
@@ -15,7 +15,6 @@ export async function adminDashboard() {
   const [
     providers,
     pendingProviders,
-    pendingRiders,
     pendingListings,
     ongoingOrders,
     todayOrders,
@@ -25,7 +24,6 @@ export async function adminDashboard() {
   ] = await Promise.all([
     db.from("providers").select("*", head).eq("status", "approved"),
     db.from("providers").select("*", head).eq("status", "pending"),
-    db.from("riders").select("*", head).eq("status", "pending"),
     db.from("listings").select("*", head).eq("status", "pending_approval"),
     db.from("bookings").select("*", head).in("status", ["paid_held", "accepted", "in_progress"]),
     db.from("bookings").select("*", head).gte("scheduled_start", today),
@@ -34,8 +32,6 @@ export async function adminDashboard() {
     db.from("moderation_flags").select("*", head).eq("status", "pending"),
   ]);
 
-  // Revenue and commission are read from the ledger — realised money, not the
-  // sum of booking prices (a price is not revenue until a stage releases).
   const [{ data: commissionRows }, { data: releaseRows }, { data: escrow }] = await Promise.all([
     db.from("payment_ledger_entries").select("amount_kobo").eq("kind", "commission"),
     db.from("payment_ledger_entries").select("amount_kobo").eq("kind", "stage_release"),
@@ -58,7 +54,6 @@ export async function adminDashboard() {
   return {
     providers: providers.count ?? 0,
     pendingProviders: pendingProviders.count ?? 0,
-    pendingRiders: pendingRiders.count ?? 0,
     pendingListings: pendingListings.count ?? 0,
     ongoingOrders: ongoingOrders.count ?? 0,
     todayOrders: todayOrders.count ?? 0,

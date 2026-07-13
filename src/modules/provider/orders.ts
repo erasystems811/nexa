@@ -2,18 +2,11 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { acceptBooking, recordStage1, rejectBooking } from "@/modules/bookings";
-import { callRider } from "@/modules/rider";
 import { ProviderError } from "./context";
-import type { VehicleType } from "@/lib/db/types";
 
 /**
- * The provider's orders and the actions on them. PRD Section 13.
- *
- * The booking-service functions (acceptBooking, recordStage1, …) take a booking
- * id and trust the caller to have authorised it — they run on the service role.
- * So authorisation happens HERE: every action first confirms the booking
- * belongs to this provider, using the provider's own RLS-scoped client. A
- * booking that is not theirs is simply not returned, and the action refuses.
+ * The provider's orders and the actions on them. Addendum v1.2 removes the
+ * Nexa-operated rider pool: vendors own ordinary fulfillment for their listings.
  */
 
 export async function listProviderOrders(providerId: string) {
@@ -24,15 +17,13 @@ export async function listProviderOrders(providerId: string) {
       `id, reference, status, fulfillment_type, scheduled_start,
        agreed_price_kobo, delivery_fee_kobo, ready_for_pickup_at,
        stage_1_at, accepted_at,
-       listings ( title ),
-       rider_assignments ( leg, status )`,
+       listings ( title )`,
     )
     .eq("provider_id", providerId)
     .order("scheduled_start", { ascending: false });
   return data ?? [];
 }
 
-/** Confirms this booking is this provider's, or throws. The authz gate. */
 async function assertOwned(providerId: string, bookingId: string) {
   const supabase = await createClient();
   const { data } = await supabase
@@ -61,27 +52,22 @@ export async function reject(
 }
 
 /**
- * Physical goods: the provider calls a registered rider of a chosen vehicle
- * class (0023). This marks the item ready and books the rider in one action.
+ * Goods and services are fulfilled by the provider under Addendum v1.2. This
+ * marks provider-owned fulfillment as started without booking a Nexa rider.
  */
-export async function callRiderForBooking(
-  providerId: string,
-  bookingId: string,
-  vehicleType: VehicleType,
-): Promise<void> {
-  await assertOwned(providerId, bookingId);
-  await callRider(providerId, bookingId, vehicleType);
+export async function startFulfillment(providerId: string, bookingId: string): Promise<void> {
+  const booking = await assertOwned(providerId, bookingId);
+  if (booking.status !== "accepted") {
+    throw new ProviderError("Accept the booking before starting fulfillment");
+  }
+  await recordStage1(bookingId);
 }
 
-/**
- * Service: check in on arrival. PRD Section 13. For an on-site or
- * vendor-location booking this IS the stage-1 checkpoint (Section 10), so it
- * releases the stage-1 payment — the provider showing up is the verifiable event.
- */
+/** Service providers check in on arrival. */
 export async function checkIn(providerId: string, bookingId: string): Promise<void> {
   const booking = await assertOwned(providerId, bookingId);
-  if (["delivery", "delivery_return"].includes(booking.fulfillment_type)) {
-    throw new ProviderError("A goods booking is picked up by a rider, not checked in");
+  if (booking.status !== "accepted") {
+    throw new ProviderError("Accept the booking before checking in");
   }
   await recordStage1(bookingId);
 }

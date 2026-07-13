@@ -171,13 +171,9 @@ async function transition(bookingId: string, to: BookingStatus) {
 }
 
 /**
- * Marks a physical-goods booking ready for a rider to collect. PRD Section 13:
- * this is the whole of the provider's delivery involvement — "the provider does
- * not arrange their own delivery." It releases no money (the rider's pickup is
- * the stage-1 checkpoint, Phase 5) and only stamps a time.
- *
- * Runs on the caller's own client so RLS and guard_booking_ready_for_pickup
- * (0018) apply: only the owning provider, only on a goods booking, only once.
+ * Legacy compatibility helper. Addendum v1.2 moves ordinary delivery/setup
+ * responsibility to the provider; new code should use provider-owned
+ * fulfillment actions instead of Nexa rider pickup.
  */
 export async function markReadyForPickup(bookingId: string): Promise<void> {
   const supabase = await createClient();
@@ -223,9 +219,7 @@ export async function rejectBooking(bookingId: string, reason?: string): Promise
  * for Delivery + Return it is the customer's first code.
  *
  * Nobody "marks it done": for the code-bearing type the code is verified here,
- * and for the others the caller is a rider pickup scan or a provider check-in,
- * both of which are physical events the platform observes rather than accepts
- * on trust.
+ * and for the others the caller is a provider-owned operational checkpoint.
  */
 export async function recordStage1(
   bookingId: string,
@@ -273,7 +267,7 @@ export async function recordStage1(
  * Stage 2, and the end of the booking. Always gated on the customer's code —
  * this is the sentence in Section 10 that the whole platform rests on: money
  * moves "only when a real, verifiable checkpoint has passed", "never on a
- * provider or rider simply tapping 'done.'"
+ * provider simply tapping "done" without the required checkpoint."
  */
 export async function confirmWithCode(bookingId: string, code: string): Promise<void> {
   const db = createAdminClient();
@@ -313,7 +307,7 @@ export async function confirmWithCode(bookingId: string, code: string): Promise<
 
 /**
  * A code is single-use. Verifying it and marking it consumed has to be one
- * statement, or two riders holding the same code both get paid.
+ * statement, or the same code could be reused.
  */
 async function consumeCode(bookingId: string, stage: 1 | 2, code?: string): Promise<void> {
   if (!code) throw new BookingsError("A confirmation code is required");

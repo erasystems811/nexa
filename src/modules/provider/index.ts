@@ -28,6 +28,6 @@ export {
 } from "./listings";
 export { listMedia, uploadMedia, deleteMedia } from "./media";
 export { listAvailability, blockUnavailable, removeBlock } from "./availability";
-export { listProviderOrders, accept, reject, callRiderForBooking, checkIn } from "./orders";
+export { listProviderOrders, accept, reject, startFulfillment, checkIn } from "./orders";
 export { getWallet, updateBankDetails } from "./wallet";
 export { listMyReviews, replyToReview } from "./reviews";

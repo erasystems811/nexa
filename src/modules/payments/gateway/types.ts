@@ -46,7 +46,7 @@ export interface ReleaseFundsRequest {
   /** 1 = the partial checkpoint release, 2 = the remainder (PRD Section 10). */
   stage: 1 | 2;
   beneficiary: {
-    kind: "provider" | "rider";
+    kind: "provider";
     id: string;
     bankCode: string;
     accountNumber: string;
@@ -89,7 +89,7 @@ export interface PaymentGateway {
   /** Takes the customer's money and holds it. Nothing reaches the provider yet. */
   holdFunds(request: HoldFundsRequest): Promise<HoldFundsResult>;
 
-  /** Moves a stage's share of held funds to a provider or rider. */
+  /** Moves a stage's share of held funds to a provider. */
   releaseFunds(request: ReleaseFundsRequest): Promise<ReleaseFundsResult>;
 
   /** Returns money to the customer, in whole or in part. */

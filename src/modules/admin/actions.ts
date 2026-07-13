@@ -83,21 +83,6 @@ export async function resolveAppealAction(strikeId: string, upheld: boolean, pro
   revalidatePath(`/admin/providers/${providerId}`);
 }
 
-// ---- riders ---------------------------------------------------------------
-
-export async function verifyRiderAction(riderId: string, approved: boolean, reason?: string): Promise<void> {
-  await admin.verifyRider(await actor(P.ridersVerify), riderId, approved, reason);
-  revalidatePath(`/admin/riders/${riderId}`);
-}
-export async function suspendRiderAction(riderId: string, suspended: boolean): Promise<void> {
-  await admin.setRiderSuspended(await actor(P.ridersSuspend), riderId, suspended);
-  revalidatePath(`/admin/riders/${riderId}`);
-}
-export async function reassignDeliveryAction(assignmentId: string, newRiderId: string, bookingId: string): Promise<void> {
-  await admin.reassignDelivery(await actor(P.ridersReassign), assignmentId, newRiderId);
-  revalidatePath(`/admin/orders/${bookingId}`);
-}
-
 // ---- listings -------------------------------------------------------------
 
 export async function decideListingAction(listingId: string, decision: "approved" | "rejected" | "changes_requested" | "hidden", reason?: string): Promise<void> {

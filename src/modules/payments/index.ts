@@ -12,7 +12,6 @@
 export {
   holdFunds,
   releaseFunds,
-  payRider,
   settleCaution,
   applyLatePenalty,
   resolveCautionClaim,
@@ -21,14 +20,12 @@ export {
   type HoldFundsInput,
   type HoldFundsOutput,
   type ReleaseFundsInput,
-  type PayRiderInput,
   type RefundInput,
 } from "./service";
 
 export {
   calculatePayout,
   calculateLatePenalty,
-  calculateRiderFeeSplit,
   calculateRefund,
   type BookingTerms,
   type PayoutBreakdown,

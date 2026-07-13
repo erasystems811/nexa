@@ -49,10 +49,9 @@ export async function signIn(
 }
 
 /**
- * Sign-up always creates a customer. Provider and rider are applications an
- * admin approves (PRD Section 05, 15) — the DB trigger `handle_new_user` hard-
- * codes the customer role for exactly this reason, so no `role` field here
- * would do anything even if someone posted one.
+ * Sign-up always creates a customer. Becoming a provider is an application an
+ * admin approves; the DB trigger `handle_new_user` hard-codes customer for new
+ * accounts, so no `role` field here would do anything even if posted.
  */
 export async function signUp(
   _prev: AuthFormState,

@@ -80,20 +80,6 @@ export function calculateLatePenalty(
 }
 
 /**
- * PRD Section 10: a delivery-only job pays the rider's full fee on the single
- * delivery code; a delivery + return job pays half on drop-off and half on
- * return. "A rider who only does the drop-off leg is paid only the drop-off half."
- */
-export function calculateRiderFeeSplit(
-  deliveryFeeKobo: Kobo,
-  hasReturnLeg: boolean,
-): { leg1Kobo: Kobo; leg2Kobo: Kobo } {
-  if (!hasReturnLeg) return { leg1Kobo: deliveryFeeKobo, leg2Kobo: 0 };
-  const [leg1Kobo, leg2Kobo] = splitByPercent(deliveryFeeKobo, 50);
-  return { leg1Kobo, leg2Kobo };
-}
-
-/**
  * PRD Section 09: before acceptance the customer always gets everything back.
  * After acceptance, the provider's own tiered policy decides — "calculated
  * automatically, never manual".

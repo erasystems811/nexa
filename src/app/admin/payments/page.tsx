@@ -4,7 +4,7 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
 const KIND: Record<string, string> = {
-  hold: "Held", stage_release: "Released", rider_payout: "Rider", commission: "Commission",
+  hold: "Held", stage_release: "Released", rider_payout: "Legacy delivery", commission: "Commission",
   penalty: "Penalty", refund: "Refund", caution_hold: "Caution held", caution_refund: "Caution refund", caution_claim: "Caution claim",
 };
 
@@ -32,7 +32,7 @@ export default async function PaymentsPage() {
           <ul className="mt-2 space-y-1 text-sm">
             {payouts.map((p) => (
               <li key={p.id} className="flex justify-between">
-                <span className="text-[color:var(--color-ink-muted)]">{p.provider_id ? "Provider" : "Rider"}</span>
+                <span className="text-[color:var(--color-ink-muted)]">{p.provider_id ? "Provider" : "Legacy delivery"}</span>
                 <span className="tabular-nums">{formatKobo(p.amount_kobo)}</span>
               </li>
             ))}
@@ -57,7 +57,7 @@ export default async function PaymentsPage() {
       </Card>
 
       <Card className="mt-4 text-xs text-[color:var(--color-ink-muted)]">
-        Commission %, stage-1 release %, delivery fee, and the 30/70 penalty split are all
+        Commission %, stage-1 release %, and the 30/70 penalty split are all
         <a href="/admin/settings" className="underline"> Settings</a> — editable, never hardcoded.
       </Card>
     </>

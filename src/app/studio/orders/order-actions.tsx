@@ -3,34 +3,21 @@
 import { useState, useTransition } from "react";
 import {
   acceptOrderAction,
-  callRiderAction,
   checkInAction,
   rejectOrderAction,
+  startFulfillmentAction,
 } from "@/modules/provider/actions";
 import type { BookingStatus } from "@/lib/db/types";
-
-const RIDER_STATUS_LABEL: Record<string, string> = {
-  assigned: "Rider called — waiting for them to accept",
-  accepted: "Rider on the way to pick up",
-  picked_up: "Picked up",
-  en_route: "On the way to the customer",
-  arrived: "Rider has arrived",
-  delivered: "Delivered",
-};
 
 export function OrderActions({
   bookingId,
   status,
   isGoods,
-  riderCalled,
-  riderStatus,
   stage1Done,
 }: {
   bookingId: string;
   status: BookingStatus;
   isGoods: boolean;
-  riderCalled: boolean;
-  riderStatus: string | null;
   stage1Done: boolean;
 }) {
   const [pending, start] = useTransition();
@@ -59,27 +46,15 @@ export function OrderActions({
         </>
       ) : null}
 
-      {(status === "accepted" || status === "in_progress") && isGoods ? (
-        riderCalled ? (
-          <p className="text-xs text-[color:var(--color-ink-muted)]">
-            {riderStatus ? (RIDER_STATUS_LABEL[riderStatus] ?? riderStatus) : "Rider called"}
+      {status === "accepted" && isGoods && !stage1Done ? (
+        <div className="w-full">
+          <p className="mb-2 text-xs text-[color:var(--color-ink-muted)]">
+            Arrange delivery, pickup, setup, or transport directly according to your listing terms.
           </p>
-        ) : (
-          <div className="w-full">
-            <p className="mb-2 text-xs font-medium">Call a rider to collect it</p>
-            <div className="flex flex-wrap gap-2">
-              <Btn primary disabled={pending} onClick={() => run(() => callRiderAction(bookingId, "bike"))}>
-                Call a bike
-              </Btn>
-              <Btn disabled={pending} onClick={() => run(() => callRiderAction(bookingId, "car"))}>
-                Call a car
-              </Btn>
-              <Btn disabled={pending} onClick={() => run(() => callRiderAction(bookingId, "van"))}>
-                Call a van
-              </Btn>
-            </div>
-          </div>
-        )
+          <Btn primary disabled={pending} onClick={() => run(() => startFulfillmentAction(bookingId))}>
+            Mark fulfillment started
+          </Btn>
+        </div>
       ) : null}
 
       {status === "accepted" && !isGoods && !stage1Done ? (
@@ -88,9 +63,9 @@ export function OrderActions({
         </Btn>
       ) : null}
 
-      {status === "in_progress" && !isGoods ? (
+      {status === "in_progress" ? (
         <p className="text-xs text-[color:var(--color-ink-muted)]">
-          Waiting for the customer&rsquo;s confirmation code to complete this.
+          Waiting for the customer&rsquo;s confirmation code to complete this booking.
         </p>
       ) : null}
 

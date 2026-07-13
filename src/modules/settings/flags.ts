@@ -7,8 +7,8 @@ import type { FeatureFlag, UserRole } from "@/lib/db/types";
 
 /**
  * Feature flags. PRD Section 17: "Architecture and exposure are different
- * decisions." The schema for Event Project, Reliability Score, and rider
- * assignment exists from Phase 1; these rows decide who can see them.
+ * decisions." Event Project and Reliability Score can exist before they are
+ * publicly exposed; these rows decide who can see them.
  *
  * Turning a feature on is an UPDATE. It is never a migration and never a redeploy.
  */
@@ -20,7 +20,7 @@ export const FLAGS = {
   eventStandMode: "event_stand_mode",
   inAppCalling: "in_app_calling",
   negotiablePricing: "negotiable_pricing",
-  riderDelivery: "rider_delivery",
+  legacyRiderDelivery: "rider_delivery",
   cautionFee: "caution_fee",
   contactInfoFlagging: "contact_info_flagging",
   coupons: "coupons",

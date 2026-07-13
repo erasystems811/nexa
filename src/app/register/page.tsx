@@ -33,20 +33,18 @@ export default function RegisterPage() {
         {state.error ? <Alert>{state.error}</Alert> : null}
 
         <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Creating account…" : "Create account"}
+          {pending ? "Creating account..." : "Create account"}
         </Button>
       </form>
 
       {/*
-        Every account starts as a customer. Becoming a provider or a rider is an
-        application an admin reviews (PRD Sections 05, 15) — it is not a choice
-        made on a sign-up form, and the database enforces that regardless of
-        what this form posts.
+        Every account starts as a customer. Becoming a provider is an application
+        an admin reviews. Transport and logistics companies apply as providers,
+        not as Nexa riders.
       */}
       <p className="mt-6 text-sm text-[color:var(--color-ink-muted)]">
-        Want to sell on Nexa or ride for us? Create your account first, then apply
-        from your profile — every provider and rider is verified by our team before
-        going live.
+        Want to sell services on Nexa? Create your account first, then apply from
+        your profile. Every provider is reviewed by our team before going live.
       </p>
 
       <p className="mt-6 text-center text-sm text-[color:var(--color-ink-muted)]">

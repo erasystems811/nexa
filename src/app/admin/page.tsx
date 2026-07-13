@@ -12,7 +12,6 @@ export default async function AdminDashboard() {
 
   const queues = [
     { label: "Provider applications", value: d.pendingProviders, href: "/admin/providers?status=pending" },
-    { label: "Rider applications", value: d.pendingRiders, href: "/admin/riders?status=pending" },
     { label: "Listings to approve", value: d.pendingListings, href: "/admin/listings" },
     { label: "Open disputes", value: d.openDisputes, href: "/admin/disputes" },
     { label: "Flagged messages", value: d.pendingFlags, href: "/admin/moderation" },
@@ -51,7 +50,7 @@ export default async function AdminDashboard() {
 
       {d.providers === 0 ? (
         <Card className="mt-6 text-sm text-[color:var(--color-ink-muted)]">
-          No providers yet. Onboard the first one — the marketplace opens the day it has a
+          No providers yet. Onboard the first one - the marketplace opens the day it has a
           verified provider and the category to match.
         </Card>
       ) : null}

@@ -14,14 +14,11 @@ export default async function AdminLayout({
   const staff = await currentStaff();
   if (!staff) redirect("/");
 
-  // Record the visit as a login event (deduped to once per hour by last_login).
   await recordLogin(staff.userId).catch(() => {});
 
-  // Each tab needs a permission; only tabs the staff member holds are shown.
   const tabs: { href: string; label: string; perm: Permission | null }[] = [
     { href: "/admin", label: "Home", perm: null },
     { href: "/admin/providers", label: "Providers", perm: P.providersView },
-    { href: "/admin/riders", label: "Riders", perm: P.ridersView },
     { href: "/admin/listings", label: "Listings", perm: P.listingsView },
     { href: "/admin/orders", label: "Orders", perm: P.ordersView },
     { href: "/admin/payments", label: "Payments", perm: P.paymentsView },

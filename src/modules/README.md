@@ -1,5 +1,17 @@
 # Modules
 
+
+## Product pivot note
+
+`PRD_ADDENDUM_v1.2.md` supersedes the rider-network architecture. The existing
+`rider` module and rider-specific tables/routes are legacy pending refactor.
+Transport, logistics, car, van, bus, and truck companies should be modeled as
+ordinary providers under transport/logistics categories, not as a separate Nexa
+registered rider pool.
+
+New work should avoid adding behavior to the rider module unless it is part of a
+migration/deprecation step.
+
 One directory per domain, per PRD Section 17. Each owns its tables and exposes a
 barrel (`index.ts`). Nothing imports another module's internals — only its barrel.
 
@@ -11,7 +23,6 @@ barrel (`index.ts`). Nothing imports another module's internals — only its bar
 | `users` | `profiles` | empty |
 | `admin` | verification, approvals, listing queue, orders, payments, disputes, strikes, reports, audit log | built (Admin Console) |
 | `provider` | `providers`, agreements, reliability, wallets, own listings/media/orders | built (Business Studio) |
-| `rider` | `riders`, `rider_assignments`, reliability, wallets | built (Rider App) |
 | `marketplace` | public read model | built |
 | `bookings` | `bookings`, confirmation codes, `price_offers`, `event_projects` | built (Search & Book) |
 | `messaging` | `conversations`, `messages`, `call_sessions`, `moderation_flags` | built |
@@ -48,6 +59,4 @@ permission model from PRD Section 03. `requireRole()` in `modules/auth` decides
 which URL a role may open — a UX boundary. RLS decides which rows they may read.
 If the two ever disagree, RLS wins, and that is the point.
 
-**Feature flags gate exposure, not architecture.** The schema for Event Project,
-Reliability Score, rider assignment, and the caution fee is live from Phase 1.
-`feature_flags` rows decide who sees them. Turning a feature on is an `UPDATE`.
+**Feature flags gate exposure, not architecture.** Event Project and Reliability Score can exist before public exposure. Legacy rider delivery flags are now disabled by Addendum v1.2 while the old schema is migrated. Turning a current feature on is an `UPDATE`.

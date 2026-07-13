@@ -119,7 +119,7 @@ export interface ReleaseFundsInput {
   stage: 1 | 2;
   amountKobo: Kobo;
   beneficiary: {
-    kind: "provider" | "rider";
+    kind: "provider";
     id: string;
     bankCode: string;
     accountNumber: string;
@@ -127,7 +127,7 @@ export interface ReleaseFundsInput {
 }
 
 /**
- * Releases one stage's share to a provider or rider.
+ * Releases one stage's share to a provider.
  *
  * The caller is responsible for having verified the checkpoint — a confirmation
  * code entered by the customer, not a provider tapping "done" (PRD Section 10).
@@ -159,7 +159,7 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
   // is not, and two rows would double-count what the provider is owed.
   const alreadyReleased =
     input.stage === 1 ? row.stage_1_released_at : row.stage_2_released_at;
-  if (alreadyReleased && input.beneficiary.kind === "provider") {
+  if (alreadyReleased) {
     throw new PaymentsError(
       `Stage ${input.stage} of booking ${input.bookingId} was already released`,
     );
@@ -184,11 +184,10 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
     .insert({
       payment_id: row.id,
       booking_id: input.bookingId,
-      kind: input.beneficiary.kind === "rider" ? "rider_payout" : "stage_release",
+      kind: "stage_release",
       amount_kobo: input.amountKobo,
       stage: input.stage,
-      provider_id: input.beneficiary.kind === "provider" ? input.beneficiary.id : null,
-      rider_id: input.beneficiary.kind === "rider" ? input.beneficiary.id : null,
+      provider_id: input.beneficiary.id,
     });
 
   if (ledgerError) {
@@ -198,11 +197,6 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
       `Funds released but the ledger write failed for booking ${input.bookingId}: ${ledgerError.message}`,
     );
   }
-
-  // Only a provider release consumes the escrow balance and closes a stage. A
-  // rider's delivery fee is paid from the delivery fee, not from the money held
-  // against the booking price (PRD Section 10).
-  if (input.beneficiary.kind !== "provider") return;
 
   const releasedKobo = row.released_kobo + input.amountKobo;
 
@@ -228,91 +222,6 @@ export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
       `Funds released but the payment row was not updated for booking ${input.bookingId}: ${updateError.message}`,
     );
   }
-}
-
-export interface PayRiderInput {
-  bookingId: string;
-  riderId: string;
-  amountKobo: Kobo;
-  stage: 1 | 2;
-  bankCode: string;
-  accountNumber: string;
-}
-
-/**
- * Pays a rider their share of the delivery fee. PRD Section 10.
- *
- * A rider's money comes from the delivery fee the customer paid, NOT from the
- * escrow held against the booking price — "it is not part of the provider's
- * payout calculation." So this budgets against `delivery_fee_kobo` and the
- * rider payouts already made, entirely separate from provider releases.
- */
-export async function payRider(input: PayRiderInput): Promise<void> {
-  const gateway = getPaymentGateway();
-  const db = createAdminClient();
-
-  const { data: payment, error } = await db
-    .from("payments")
-    .select("id, gateway_reference, delivery_fee_kobo")
-    .eq("booking_id", input.bookingId)
-    .single();
-
-  if (error || !payment) throw new PaymentsError(`No payment for booking ${input.bookingId}`);
-  if (!payment.gateway_reference) {
-    throw new PaymentsError(`Booking ${input.bookingId} has no gateway reference`);
-  }
-
-  const { data: prior } = await db
-    .from("payment_ledger_entries")
-    .select("amount_kobo")
-    .eq("booking_id", input.bookingId)
-    .eq("kind", "rider_payout");
-
-  const alreadyPaid = (prior ?? []).reduce((sum, r) => sum + r.amount_kobo, 0);
-  if (alreadyPaid + input.amountKobo > payment.delivery_fee_kobo) {
-    throw new PaymentsError(
-      `Rider payout of ${input.amountKobo} exceeds the remaining delivery fee on booking ${input.bookingId}`,
-    );
-  }
-
-  await gateway.releaseFunds({
-    gatewayReference: payment.gateway_reference,
-    amountKobo: input.amountKobo,
-    stage: input.stage,
-    beneficiary: {
-      kind: "rider",
-      id: input.riderId,
-      bankCode: input.bankCode,
-      accountNumber: input.accountNumber,
-    },
-    idempotencyKey: `${input.bookingId}:rider:${input.riderId}:${input.stage}`,
-  });
-
-  const { error: ledgerError } = await db.from("payment_ledger_entries").insert({
-    payment_id: payment.id,
-    booking_id: input.bookingId,
-    kind: "rider_payout",
-    amount_kobo: input.amountKobo,
-    stage: input.stage,
-    rider_id: input.riderId,
-    note: "Delivery fee",
-  });
-  if (ledgerError) {
-    throw new PaymentsError(
-      `Rider paid but the ledger write failed for booking ${input.bookingId}: ${ledgerError.message}`,
-    );
-  }
-
-  // Rider earnings land as pending until the payout schedule settles them.
-  const { data: wallet } = await db
-    .from("rider_wallets")
-    .select("pending_kobo")
-    .eq("rider_id", input.riderId)
-    .single();
-  await db
-    .from("rider_wallets")
-    .update({ pending_kobo: (wallet?.pending_kobo ?? 0) + input.amountKobo })
-    .eq("rider_id", input.riderId);
 }
 
 /**

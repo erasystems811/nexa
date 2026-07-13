@@ -4,14 +4,14 @@ import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 import { OrderActions } from "./order-actions";
 
-/** Orders. PRD Section 13: accept/reject; mark ready (goods) or check in (service). */
+/** Orders. Addendum v1.2: providers own ordinary fulfillment. */
 export default async function StudioOrders() {
   const provider = await requireProvider();
   const orders = await listProviderOrders(provider.id);
 
   return (
     <>
-      <PageHeader title="Orders" subtitle="Every booking is paid and held before it reaches you." />
+      <PageHeader title="Orders" subtitle="Accept bookings, coordinate fulfillment, and complete events." />
 
       {orders.length === 0 ? (
         <Card className="text-sm text-[color:var(--color-ink-muted)]">No orders yet.</Card>
@@ -19,8 +19,6 @@ export default async function StudioOrders() {
         <ul className="space-y-3">
           {orders.map((o) => {
             const isGoods = ["delivery", "delivery_return"].includes(o.fulfillment_type);
-            const outbound = (o.rider_assignments ?? []).find((a) => a.leg === 1);
-            const riderCalled = !!outbound && !["declined", "cancelled"].includes(outbound.status);
             return (
               <li key={o.id}>
                 <Card>
@@ -44,8 +42,6 @@ export default async function StudioOrders() {
                     bookingId={o.id}
                     status={o.status}
                     isGoods={isGoods}
-                    riderCalled={riderCalled}
-                    riderStatus={outbound?.status ?? null}
                     stage1Done={!!o.stage_1_at}
                   />
                 </Card>

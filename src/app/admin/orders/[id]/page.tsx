@@ -9,7 +9,7 @@ import { ActionButton } from "../../action-button";
 import { OrderInterventions } from "./interventions";
 
 const KIND: Record<string, string> = {
-  hold: "Held", stage_release: "Released to provider", rider_payout: "Rider payout",
+  hold: "Held", stage_release: "Released to provider", rider_payout: "Legacy delivery payout",
   commission: "Commission", penalty: "Penalty", refund: "Refund",
   caution_hold: "Caution held", caution_refund: "Caution refunded", caution_claim: "Caution claim",
 };
@@ -66,7 +66,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
 
       {assignments.length > 0 ? (
         <Card className="mt-3">
-          <h2 className="text-sm font-semibold">Rider assignments</h2>
+          <h2 className="text-sm font-semibold">Legacy delivery assignments</h2>
           <ul className="mt-2 space-y-1 text-sm">
             {assignments.map((a) => (
               <li key={a.id} className="flex justify-between">
