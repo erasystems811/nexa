@@ -17,6 +17,7 @@ export async function listProviders(status?: string) {
     .select("id, business_name, slug, status, is_featured, is_on_probation, strike_count, created_at, cities ( name )")
     .order("created_at", { ascending: false });
   if (status) q = q.eq("status", status as never);
+  else q = q.neq("status", "removed");
   const { data } = await q;
   return data ?? [];
 }
