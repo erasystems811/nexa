@@ -38,8 +38,15 @@ export function rootDomain(): string | undefined {
 }
 
 export function surfaceForHost(host: string | null | undefined, root = rootDomain()): Surface | null {
-  if (!host || !root) return null;
+  if (!host) return null;
   const h = (host.split(":")[0] ?? host).toLowerCase();
+  const firstLabel = h.split(".")[0] ?? "";
+
+  // Keep Admin/Studio reachable even when Railway has not received the exact
+  // root-domain env yet. A custom admin host must never fall back to customer.
+  if (LABEL_TO_SURFACE[firstLabel]) return LABEL_TO_SURFACE[firstLabel];
+
+  if (!root) return null;
   if (h === root || h === `www.${root}`) return "customer";
   if (!h.endsWith(`.${root}`)) return null;
   const label = h.slice(0, h.length - (`.${root}`).length).split(".").pop() ?? "";

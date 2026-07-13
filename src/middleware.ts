@@ -41,6 +41,11 @@ function gate(
     return carryCookies(base, NextResponse.redirect(login));
   }
   if (!role || !guarded.roles.includes(role)) {
+    if (guarded.prefix === "/admin") {
+      const login = new URL("/login", request.url);
+      login.searchParams.set("next", "/admin");
+      return carryCookies(base, NextResponse.redirect(login));
+    }
     return carryCookies(base, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
   }
   return null;
@@ -57,7 +62,8 @@ export async function middleware(request: NextRequest) {
   const surface = surfaceForHost(request.headers.get("host"));
 
   if (!surface) {
-    if (userId && AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
+    const wantsAdmin = request.nextUrl.searchParams.get("next")?.startsWith("/admin") === true;
+    if (userId && AUTH_ROUTES.some((r) => pathname.startsWith(r)) && !(wantsAdmin && role !== "admin")) {
       return carryCookies(response, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
     }
     return gate(pathname, userId, role, request, response) ?? response;
@@ -82,7 +88,10 @@ export async function middleware(request: NextRequest) {
   const internalPath = action.kind === "rewrite" ? action.to : pathname;
 
   if (userId && AUTH_ROUTES.some((r) => internalPath.startsWith(r))) {
-    return carryCookies(response, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
+    const wantsAdmin = surface === "admin" || request.nextUrl.searchParams.get("next")?.startsWith("/admin") === true;
+    if (!(wantsAdmin && role !== "admin")) {
+      return carryCookies(response, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
+    }
   }
 
   const blocked = gate(internalPath, userId, role, request, response);
