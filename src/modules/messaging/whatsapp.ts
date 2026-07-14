@@ -45,6 +45,7 @@ export async function relayDashboardMessageToWhatsapp(input: {
   await sendWhatsappText({
     to: targetWaId,
     body: formatRelayText(side, input.body),
+    nudgeName: side === "customer" ? context.vendorName : context.customerName,
   });
 }
 
@@ -263,10 +264,12 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
   const context = await getWhatsappThreadContext(conversationId);
   const targetWaId: string | null | undefined =
     resolvedSide === "customer" ? context?.vendorWaId : context?.customerWaId;
-  if (targetWaId) {
+  if (targetWaId && context) {
     await sendWhatsappText({
       to: targetWaId,
       body: formatRelayText(resolvedSide, input.text),
+      // If their 24-hour window has shut, this is the name the template greets.
+      nudgeName: resolvedSide === "customer" ? context.vendorName : context.customerName,
     });
   }
 }
@@ -308,13 +311,16 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
   providerUserId: string | null;
   customerWaId: string | null;
   vendorWaId: string | null;
+  /** Who the template greets. A name, never a number — that is the whole point. */
+  customerName: string;
+  vendorName: string;
 } | null> {
   const db = createAdminClient();
 
   const { data: thread } = await db
     .from("whatsapp_threads")
     .select(
-      "whatsapp_contact_id, provider_whatsapp_contact_id, conversations ( customer_id, providers ( user_id ) )",
+      "whatsapp_contact_id, provider_whatsapp_contact_id, conversations ( customer_id, providers ( user_id, business_name ), profiles ( full_name ) )",
     )
     .eq("conversation_id", conversationId)
     .eq("status", "active")
@@ -324,6 +330,11 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
   const providerContactId = thread?.provider_whatsapp_contact_id;
   const conversation = thread?.conversations;
   if (!customerContactId || !conversation?.customer_id) return null;
+
+  const provider = conversation.providers as unknown as
+    | { user_id: string; business_name: string }
+    | null;
+  const customer = conversation.profiles as unknown as { full_name: string | null } | null;
 
   const contactIds = [customerContactId, providerContactId].filter(Boolean) as string[];
   const { data: contacts } = await db
@@ -335,15 +346,29 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
 
   return {
     customerId: conversation.customer_id,
-    providerUserId: conversation.providers?.user_id ?? null,
+    providerUserId: provider?.user_id ?? null,
     customerWaId: byId.get(customerContactId) ?? null,
     vendorWaId: providerContactId ? byId.get(providerContactId) ?? null : null,
+    customerName: customer?.full_name?.trim() || "there",
+    vendorName: provider?.business_name?.trim() || "there",
   };
 }
 
-async function sendWhatsappText(input: { to: string; body: string }): Promise<void> {
+/**
+ * WhatsApp will not let a business send free text to someone who has not messaged
+ * it in the last 24 hours. Meta says so with error 131047.
+ *
+ * That rule is the difference between a relay that works and one that quietly
+ * drops messages: a vendor who last replied on Tuesday cannot be reached on
+ * Thursday, and without handling it, the customer's message would vanish with
+ * nobody told. So when the window is shut, Nexa sends an approved template
+ * instead — a plain "you have a new message" ping. The moment the vendor replies
+ * to it, the window reopens and ordinary text flows again.
+ */
+const WINDOW_CLOSED = 131047;
+
+async function callGraph(payload: Record<string, unknown>): Promise<{ ok: boolean; errorCode: number | null; detail: string }> {
   const env = serverEnv();
-  if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) return;
 
   const response = await fetch(
     `https://graph.facebook.com/v20.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -353,19 +378,77 @@ async function sendWhatsappText(input: { to: string; body: string }): Promise<vo
         Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: input.to,
-        type: "text",
-        text: { preview_url: false, body: input.body },
-      }),
+      body: JSON.stringify({ messaging_product: "whatsapp", ...payload }),
     },
   );
 
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`WhatsApp send failed: ${detail}`);
+  if (response.ok) return { ok: true, errorCode: null, detail: "" };
+
+  const detail = await response.text();
+  let errorCode: number | null = null;
+  try {
+    errorCode = (JSON.parse(detail) as { error?: { code?: number } }).error?.code ?? null;
+  } catch {
+    // Not JSON. The status code alone will have to do.
   }
+  return { ok: false, errorCode, detail };
+}
+
+/**
+ * The ping that reopens a closed window. `name` is who the message is about —
+ * the other side's name, never their number.
+ */
+async function sendWhatsappTemplate(input: { to: string; name: string }): Promise<void> {
+  const env = serverEnv();
+
+  const result = await callGraph({
+    to: input.to,
+    type: "template",
+    template: {
+      name: env.WHATSAPP_TEMPLATE_NAME,
+      language: { code: env.WHATSAPP_TEMPLATE_LANG },
+      components: [
+        {
+          type: "body",
+          parameters: [{ type: "text", text: input.name }],
+        },
+      ],
+    },
+  });
+
+  if (!result.ok) {
+    throw new Error(`WhatsApp template send failed: ${result.detail}`);
+  }
+}
+
+/**
+ * `nudgeName` is used only if the 24-hour window has closed and the template has
+ * to carry the message instead. Without it, a closed window is simply a failure.
+ */
+async function sendWhatsappText(input: {
+  to: string;
+  body: string;
+  nudgeName?: string;
+}): Promise<void> {
+  const env = serverEnv();
+  if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) return;
+
+  const result = await callGraph({
+    to: input.to,
+    type: "text",
+    text: { preview_url: false, body: input.body },
+  });
+
+  if (result.ok) return;
+
+  if (result.errorCode === WINDOW_CLOSED && input.nudgeName) {
+    // They have not spoken to Nexa in over a day. Tap them on the shoulder; the
+    // message itself follows as soon as they reply and the window reopens.
+    await sendWhatsappTemplate({ to: input.to, name: input.nudgeName });
+    return;
+  }
+
+  throw new Error(`WhatsApp send failed: ${result.detail}`);
 }
 
 function formatRelayText(from: WhatsappSide, body: string): string {

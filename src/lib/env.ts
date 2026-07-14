@@ -32,6 +32,10 @@ const serverSchema = z.object({
   WHATSAPP_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_APP_SECRET: z.string().optional(),
 
+  // The approved Meta template used to reopen a closed 24-hour window.
+  WHATSAPP_TEMPLATE_NAME: z.string().default("nexa_new_message"),
+  WHATSAPP_TEMPLATE_LANG: z.string().default("en"),
+
   // Fixed admin login. The username is what Admin types; the email is the
   // hidden Supabase Auth user that carries the admin session.
   NEXA_SUPER_ADMIN_USERNAME: z.string().optional(),
