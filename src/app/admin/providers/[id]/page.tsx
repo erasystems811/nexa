@@ -9,6 +9,7 @@ import {
   resolveAppealAction,
   suspendProviderAction,
 } from "@/modules/admin/actions";
+import { bankName } from "@/modules/payments";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "../../action-button";
@@ -34,6 +35,10 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
   if (!d) notFound();
 
   const { provider, contact, wallet, reliability, listings, bookings, reviews, strikes, identity } = d;
+
+  // The code is what the processor is paid by; the name is the only part an
+  // admin can sanity-check against the business in front of them.
+  const bank = await bankName(wallet?.bank_code ?? null);
 
   const categoryName =
     (provider.provider_categories as unknown as
@@ -201,7 +206,9 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
           <h2 className="text-sm font-semibold">Bank account</h2>
           {wallet?.bank_account_number ? (
             <dl className="mt-2 space-y-1 text-sm">
+              <Row k="Bank" v={bank ?? "—"} />
               <Row k="Account" v={wallet.bank_account_number} />
+              <Row k="Name" v={wallet.bank_account_name ?? "—"} />
               <Row k="Paid out so far" v={formatKobo(wallet.withdrawn_kobo ?? 0)} />
             </dl>
           ) : (

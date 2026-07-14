@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { PageHeader } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { ApplyForm } from "./apply-form";
+import { surfaceOrigin } from "@/lib/surfaces";
 
 export const metadata = {
   title: "Become a Nexa vendor",
@@ -49,6 +50,11 @@ export default async function ApplyPage() {
         cities={cities.map((c) => ({ id: c.id, name: c.name }))}
         idTypes={ID_TYPES.map((t) => ({ value: t.value, label: t.label, needsNumber: t.needsNumber }))}
         acceptedMimeTypes={[...ACCEPTED_ID_MIME_TYPES]}
+        // This page lives on the CUSTOMER domain — it is where a vendor finds
+        // Nexa. But signing in belongs on the vendor domain, or the person who
+        // just applied to sell lands back on the marketplace they came from.
+        // In dev there are no subdomains, so the path is the best we can do.
+        vendorLoginUrl={`${surfaceOrigin("studio") ?? ""}/login`}
       />
     </main>
   );

@@ -4,6 +4,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { serverEnv } from "@/lib/env";
 import {
   GatewayError,
+  type Bank,
   type HoldFundsRequest,
   type HoldFundsResult,
   type Kobo,
@@ -48,6 +49,7 @@ import {
 
 const API_BASE = "https://api.flutterwave.com/v3";
 const CURRENCY = "NGN";
+const COUNTRY = "NG";
 const TIMEOUT_MS = 20_000;
 
 /** Every Flutterwave response is this envelope. `status` is the real verdict. */
@@ -72,8 +74,45 @@ interface RefundData {
   status?: string;
 }
 
+interface BankData {
+  code?: string;
+  name?: string;
+}
+
 export class FlutterwaveGateway implements PaymentGateway {
   readonly name = "flutterwave";
+
+  // -------------------------------------------------------------------------
+  // Banks
+  // -------------------------------------------------------------------------
+
+  /**
+   * The banks Flutterwave will pay into, asked of Flutterwave itself.
+   *
+   * A hardcoded list would be wrong within a year — Nigerian banks merge, and
+   * the ones vendors actually use (Moniepoint, Opay, Kuda) are newer than most
+   * lists. Asking the processor that has to honour the code is the only way the
+   * code is certainly right.
+   *
+   * Deduplicated by name: the raw list carries several hundred entries, and the
+   * same bank appears more than once when it has more than one rail. The first
+   * code wins, and the list comes back alphabetical because a vendor scrolling
+   * for their bank is the entire point.
+   */
+  async listBanks(): Promise<Bank[]> {
+    const data = await this.get<BankData[]>(`/banks/${COUNTRY}`);
+
+    const byName = new Map<string, Bank>();
+    for (const bank of data) {
+      const name = bank.name?.trim();
+      if (!name || !bank.code) continue;
+      if (!byName.has(name.toUpperCase())) {
+        byName.set(name.toUpperCase(), { code: bank.code, name });
+      }
+    }
+
+    return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   // -------------------------------------------------------------------------
   // Money in
@@ -295,6 +334,45 @@ export class FlutterwaveGateway implements PaymentGateway {
       );
     }
     return key;
+  }
+
+  /**
+   * A read. Same envelope discipline as `call`, no body — Flutterwave's bank
+   * list is a GET, and sending it a POST returns a 404 that reads like an
+   * outage.
+   */
+  private async get<T>(path: string): Promise<T> {
+    let response: Response;
+
+    try {
+      response = await fetch(`${API_BASE}${path}`, {
+        headers: { Authorization: `Bearer ${this.secretKey()}` },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        // The bank list changes about as often as a Nigerian bank is founded,
+        // and every vendor opening their wallet would otherwise re-fetch it.
+        next: { revalidate: 60 * 60 * 24 },
+      });
+    } catch (cause) {
+      throw new GatewayError(`Flutterwave ${path} could not be reached`, this.name, cause);
+    }
+
+    const raw = await response.text();
+
+    let envelope: Envelope<T>;
+    try {
+      envelope = JSON.parse(raw) as Envelope<T>;
+    } catch {
+      throw new GatewayError(`Flutterwave ${path} returned something that is not JSON`, this.name);
+    }
+
+    if (!response.ok || envelope.status === "error" || envelope.data === undefined) {
+      throw new GatewayError(
+        envelope.message ?? `Flutterwave ${path} failed (${response.status})`,
+        this.name,
+      );
+    }
+
+    return envelope.data;
   }
 
   /**

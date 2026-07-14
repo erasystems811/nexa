@@ -105,7 +105,8 @@ export async function signIn(
   formData: FormData,
 ): Promise<AuthFormState> {
   const next = safeNextPath(formData.get("next"));
-  const adminIntent = isAdminIntent(next, formData.get("surface"));
+  const surface = formData.get("surface");
+  const adminIntent = isAdminIntent(next, surface);
   const parsed = loginCredentials.safeParse({
     identifier: formData.get("email"),
     password: formData.get("password"),
@@ -186,6 +187,19 @@ export async function signIn(
   }
 
   revalidatePath("/", "layout");
+
+  // Where you land is decided by where you ARE, not only by what you are.
+  //
+  // A vendor whose application is still pending has the role "customer" — the DB
+  // only promotes them on approval. Sending them to their role's home therefore
+  // threw them out of the vendor site and onto the customer marketplace, seconds
+  // after they had signed up as a vendor. Staying put is the only sane answer:
+  // on the vendor surface, "/" is the vendor surface, and it will show them
+  // Business Studio if they are approved and their application status if not.
+  if (!next && surface === "studio") {
+    redirect("/" as Route);
+  }
+
   redirect((next ?? homePathForRole(role ?? "customer")) as Route);
 }
 

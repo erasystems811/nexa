@@ -1,4 +1,5 @@
 import { requireProvider, getWallet } from "@/modules/provider";
+import { listBanks } from "@/modules/payments";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { BankForm } from "./bank-form";
@@ -13,7 +14,10 @@ const KIND_LABEL: Record<string, string> = {
 /** Wallet & payouts. */
 export default async function StudioWallet() {
   const provider = await requireProvider();
-  const { wallet, payouts, ledger } = await getWallet(provider.id);
+  const [{ wallet, payouts, ledger }, banks] = await Promise.all([
+    getWallet(provider.id),
+    listBanks(),
+  ]);
 
   return (
     <>
@@ -35,8 +39,13 @@ export default async function StudioWallet() {
       </Card>
 
       <Card className="mt-4">
-        <h2 className="mb-3 text-sm font-semibold">Payout account</h2>
+        <h2 className="text-sm font-semibold">Payout account</h2>
+        <p className="mb-3 mt-1 text-xs text-[color:var(--color-ink-muted)]">
+          Where Nexa sends your money. Get it wrong and the payment goes nowhere — check the
+          account name is the one your bank has for you.
+        </p>
         <BankForm
+          banks={banks}
           defaults={{
             bank_code: wallet.bank_code ?? "",
             bank_account_number: wallet.bank_account_number ?? "",

@@ -28,11 +28,14 @@ export function ApplyForm({
   cities,
   idTypes,
   acceptedMimeTypes,
+  vendorLoginUrl,
 }: {
   categories: Option[];
   cities: Option[];
   idTypes: IdTypeOption[];
   acceptedMimeTypes: string[];
+  /** Absolute, and on the vendor domain. */
+  vendorLoginUrl: string;
 }) {
   const [state, action, pending] = useActionState(applyAction, initialState);
 
@@ -49,9 +52,9 @@ export function ApplyForm({
           You can sign in with the password you just chose to check on it at any time. The moment
           you are approved, Business Studio opens and you can build your listings.
         </p>
-        <Link href="/login" className="mt-5 block">
-          <Button className="w-full">Sign in</Button>
-        </Link>
+        <a href={vendorLoginUrl} className="mt-5 block">
+          <Button className="w-full">Sign in to Nexa for vendors</Button>
+        </a>
         <Link href="/" className="mt-3 block">
           <Button variant="ghost" className="w-full">
             Back to Nexa

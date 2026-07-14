@@ -24,3 +24,4 @@ export {
 } from "./service";
 
 export { calculateRefund, type CancellationTier } from "./calculations";
+export { listBanks, bankName, type Bank } from "./banks";

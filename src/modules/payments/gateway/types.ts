@@ -81,8 +81,24 @@ export interface WebhookEvent {
   payload: unknown;
 }
 
+export interface Bank {
+  /** What the processor demands when paying out. Never shown to a human. */
+  code: string;
+  /** What the vendor calls their bank. Never sent to the processor. */
+  name: string;
+}
+
 export interface PaymentGateway {
   readonly name: string;
+
+  /**
+   * The banks this processor can pay into.
+   *
+   * A vendor knows the name of their bank and not its code, and a code typed
+   * from memory is a failed payout that looks like Nexa refusing to pay. So the
+   * codes come from the processor that will have to honour them.
+   */
+  listBanks(): Promise<Bank[]>;
 
   /** Takes the customer's money and holds it. Nothing reaches the provider yet. */
   holdFunds(request: HoldFundsRequest): Promise<HoldFundsResult>;
