@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listCategories } from "@/modules/marketplace";
+import { listCategories, categoryImages } from "@/modules/marketplace";
 import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
 import { Logo } from "@/components/logo";
@@ -9,9 +9,10 @@ import { CategoryIcon } from "@/components/category-icon";
 /** Marketplace home. */
 export default async function HomePage() {
   const session = await getSession();
-  const [categories, planMyEventLive] = await Promise.all([
+  const [categories, planMyEventLive, images] = await Promise.all([
     listCategories(),
     isEnabled(FLAGS.planMyEvent, session?.profile.role),
+    categoryImages(),
   ]);
 
   return (
