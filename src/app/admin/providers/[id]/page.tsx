@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireView, getProviderDetail, PERMISSIONS as P } from "@/modules/admin";
 import {
   approveProviderAction,
+  decideDocumentAction,
   featureProviderAction,
   rejectProviderAction,
   removeProviderAction,
@@ -11,6 +12,12 @@ import {
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "../../action-button";
+
+const DOC_STATUS_LABEL: Record<string, string> = {
+  pending: "Waiting for you to look at it",
+  approved: "Approved by Nexa",
+  rejected: "Rejected",
+};
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Waiting for your approval",
@@ -26,8 +33,9 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
   const d = await getProviderDetail(id);
   if (!d) notFound();
 
-  const { provider, contact, wallet, reliability, listings, bookings, reviews, strikes } = d;
+  const { provider, contact, wallet, reliability, listings, bookings, reviews, strikes, identity } = d;
   const openStrikes = strikes.filter((s) => !s.appealed_at);
+  const waiting = identity.documents.filter((doc) => doc.status === "pending");
 
   return (
     <>
@@ -67,6 +75,86 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
           run={featureProviderAction.bind(null, provider.id, !provider.is_featured)}
         />
       </div>
+
+      <Card className="mb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold">Who they are</h2>
+            <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
+              {identity.verified
+                ? "Verified. Their services can go live."
+                : `Not verified. Nexa needs ${identity.required} means of identification approved before any service of theirs reaches a customer.`}
+            </p>
+          </div>
+          <span
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+              identity.verified
+                ? "bg-emerald-50 text-[color:var(--color-success)]"
+                : "bg-amber-50 text-amber-900"
+            }`}
+          >
+            {identity.verified ? "Verified" : `${waiting.length} waiting`}
+          </span>
+        </div>
+
+        {identity.documents.length === 0 ? (
+          <p className="mt-4 text-sm text-[color:var(--color-ink-muted)]">
+            Nothing submitted yet. They are asked for their ID the moment they sign in to Business
+            Studio, and cannot list a service until you have approved two.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {identity.documents.map((doc) => (
+              <li
+                key={doc.id}
+                className="rounded-xl border border-[color:var(--color-line)] p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{doc.label}</p>
+                    <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">
+                      {doc.idNumber ?? "no number given"}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[color:var(--color-ink-muted)]">
+                      {DOC_STATUS_LABEL[doc.status] ?? doc.status}
+                      {doc.notes ? ` — ${doc.notes}` : ""}
+                    </p>
+                  </div>
+                  {doc.url ? (
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 text-xs font-medium underline"
+                    >
+                      Look at the photo
+                    </a>
+                  ) : null}
+                </div>
+
+                {doc.status === "pending" ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <ActionButton
+                      label="Approve this ID"
+                      variant="primary"
+                      confirm="Have you looked at the photo, and does it match the business?"
+                      run={decideDocumentAction.bind(null, doc.id, provider.id, true)}
+                    />
+                    <ActionButton
+                      label="Reject"
+                      variant="danger"
+                      prompt="What is wrong with it? They will see this."
+                      run={(notes?: string) =>
+                        decideDocumentAction(doc.id, provider.id, false, notes)
+                      }
+                    />
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Card>

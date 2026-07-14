@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { ProviderError } from "./context";
+import { providerIsVerified, NOT_VERIFIED_MESSAGE } from "./identification";
 import type { PaymentType } from "@/lib/db/types";
 
 /**
@@ -73,8 +74,18 @@ function validate(input: ListingInput): void {
   }
 }
 
+/**
+ * An unverified vendor keeps all of Business Studio and reaches no customer.
+ * Creating a service and un-pausing one are the two doors onto the marketplace,
+ * so they are the two doors this stands in.
+ */
+async function requireVerified(providerId: string): Promise<void> {
+  if (!(await providerIsVerified(providerId))) throw new ProviderError(NOT_VERIFIED_MESSAGE);
+}
+
 export async function createListing(providerId: string, input: ListingInput): Promise<string> {
   validate(input);
+  await requireVerified(providerId);
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -137,6 +148,7 @@ export async function setListingPaused(
   listingId: string,
   paused: boolean,
 ): Promise<void> {
+  if (!paused) await requireVerified(providerId);
   const supabase = await createClient();
 
   // A paused listing goes to 'paused'; unpausing returns it to Pending Approval,

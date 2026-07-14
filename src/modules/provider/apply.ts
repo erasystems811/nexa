@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureAuthUser } from "@/modules/auth/provisioning";
 import { ProviderError } from "./context";
+import { storeIdDocument, validateIdSet, type IdSubmission } from "./identification";
 
 /**
  * The public vendor application — how a business asks to join Nexa.
@@ -19,47 +20,14 @@ import { ProviderError } from "./context";
  *   2. a providers row with status 'pending' — invisible to the marketplace
  *      until Admin approves it,
  *   3. their category and their contact details,
- *   4. the means of identification: the file in Storage, and a provider_documents
- *      row pointing at it.
+ *   4. their two means of identification: each file in Storage, and a
+ *      provider_documents row pointing at it.
  *
  * Approval is Admin's, in the pending queue that already exists. Approving flips
  * the profile to the provider role (the sync_provider_role trigger), which is
- * what opens Business Studio.
+ * what opens Business Studio. Approving the *documents* is a separate act, and
+ * it is what lets them put a service in front of a customer — identification.ts.
  */
-
-/**
- * The identification a Nigerian business can actually produce.
- *
- * provider_documents.kind is a plain `text` column — 0004 lists a vocabulary in
- * a comment but adds no check constraint, so these values are all legal. Three
- * of them ('cac', 'nin', 'bank_bvn') are that documented vocabulary; a passport
- * and a driver's licence had no name yet, so they get one. The human-readable
- * type and the ID number also go into `metadata`, so nothing is lost if the
- * vocabulary is ever tightened.
- */
-export const ID_TYPES = [
-  { value: "cac", label: "CAC certificate" },
-  { value: "nin", label: "NIN (National Identity Number)" },
-  { value: "bank_bvn", label: "BVN (Bank Verification Number)" },
-  { value: "passport", label: "International passport" },
-  { value: "drivers_licence", label: "Driver's licence" },
-] as const;
-
-export type IdType = (typeof ID_TYPES)[number]["value"];
-
-/**
- * The provider-media bucket (0018) accepts images and short video, not PDFs. A
- * photo of the document is what a vendor on a phone actually has anyway.
- */
-export const ACCEPTED_ID_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-] as const;
-
-const BUCKET = "provider-media";
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export interface ApplicationInput {
   businessName: string;
@@ -68,13 +36,8 @@ export interface ApplicationInput {
   categoryId: string;
   cityId: string;
   description: string;
-  idType: IdType;
-  idNumber: string;
-  idFile: File;
-}
-
-function isIdType(value: string): value is IdType {
-  return ID_TYPES.some((t) => t.value === value);
+  /** Two, of two different kinds. validateIdSet is what says so. */
+  ids: IdSubmission[];
 }
 
 function slugify(businessName: string): string {
@@ -98,17 +61,7 @@ function validate(input: ApplicationInput): void {
   if (input.description.trim().length < 20) {
     throw new ProviderError("Tell us a little more about your business — a sentence or two");
   }
-  if (!isIdType(input.idType)) throw new ProviderError("Choose a means of identification");
-  if (input.idNumber.trim().length < 4) throw new ProviderError("Enter the number on your ID");
-  if (!input.idFile || input.idFile.size === 0) {
-    throw new ProviderError("Attach a photo of your ID");
-  }
-  if (input.idFile.size > MAX_FILE_BYTES) {
-    throw new ProviderError("That file is too large. Keep the photo under 10MB");
-  }
-  if (!(ACCEPTED_ID_MIME_TYPES as readonly string[]).includes(input.idFile.type)) {
-    throw new ProviderError("Attach a photo of your ID — a JPG, PNG or WEBP image");
-  }
+  validateIdSet(input.ids);
 }
 
 export async function submitApplication(input: ApplicationInput): Promise<{ providerId: string }> {
@@ -178,7 +131,9 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
       );
     if (contactError) throw new ProviderError(contactError.message);
 
-    await storeIdDocument(provider.id, input);
+    for (const submission of input.ids) {
+      await storeIdDocument(db, provider.id, submission, "public_application");
+    }
   } catch (e) {
     await db.from("providers").delete().eq("id", provider.id);
     throw e instanceof ProviderError
@@ -187,45 +142,4 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
   }
 
   return { providerId: provider.id };
-}
-
-/**
- * The ID file lands under the provider's own id prefix, which is the path
- * convention every storage policy in 0018 checks — so once Admin approves them,
- * the vendor can still see what they submitted, and no other vendor ever can.
- */
-async function storeIdDocument(providerId: string, input: ApplicationInput): Promise<void> {
-  const db = createAdminClient();
-
-  const ext = input.idFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const path = `${providerId}/identification/${crypto.randomUUID()}.${ext}`;
-
-  const { error: uploadError } = await db.storage
-    .from(BUCKET)
-    .upload(path, input.idFile, { contentType: input.idFile.type, upsert: false });
-
-  if (uploadError) {
-    throw new ProviderError(`We could not upload your ID: ${uploadError.message}`);
-  }
-
-  const label = ID_TYPES.find((t) => t.value === input.idType)?.label ?? input.idType;
-
-  const { error: documentError } = await db.from("provider_documents").insert({
-    provider_id: providerId,
-    kind: input.idType,
-    storage_path: path,
-    status: "pending",
-    metadata: {
-      id_type: input.idType,
-      id_type_label: label,
-      id_number: input.idNumber.trim(),
-      source: "public_application",
-    },
-  });
-
-  if (documentError) {
-    // The row failed, so the orphaned file should not linger.
-    await db.storage.from(BUCKET).remove([path]);
-    throw new ProviderError(`We could not record your ID: ${documentError.message}`);
-  }
 }

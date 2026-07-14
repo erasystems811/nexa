@@ -1,6 +1,12 @@
 "use server";
 
-import { ProviderError, submitApplication, type IdType } from "@/modules/provider";
+import {
+  ProviderError,
+  submitApplication,
+  REQUIRED_ID_COUNT,
+  type IdSubmission,
+  type IdType,
+} from "@/modules/provider";
 
 /**
  * The public vendor application. No session, on purpose: the whole point is that
@@ -13,13 +19,27 @@ export interface ApplyState {
   email?: string;
 }
 
-export async function applyAction(_prev: ApplyState, formData: FormData): Promise<ApplyState> {
-  const idFile = formData.get("id_file");
-  const email = String(formData.get("email") ?? "").trim();
+/** The form numbers its ID fields from 1. Two of them, and they must differ. */
+function readIds(formData: FormData): IdSubmission[] {
+  const ids: IdSubmission[] = [];
 
-  if (!(idFile instanceof File)) {
-    return { error: "Attach a photo of your ID" };
+  for (let n = 1; n <= REQUIRED_ID_COUNT; n += 1) {
+    const file = formData.get(`id_file_${n}`);
+    if (!(file instanceof File)) {
+      throw new ProviderError(`Attach a photo of ID ${n}`);
+    }
+    ids.push({
+      idType: String(formData.get(`id_type_${n}`) ?? "") as IdType,
+      idNumber: String(formData.get(`id_number_${n}`) ?? ""),
+      file,
+    });
   }
+
+  return ids;
+}
+
+export async function applyAction(_prev: ApplyState, formData: FormData): Promise<ApplyState> {
+  const email = String(formData.get("email") ?? "").trim();
 
   try {
     await submitApplication({
@@ -29,9 +49,7 @@ export async function applyAction(_prev: ApplyState, formData: FormData): Promis
       categoryId: String(formData.get("category_id") ?? ""),
       cityId: String(formData.get("city_id") ?? ""),
       description: String(formData.get("description") ?? ""),
-      idType: String(formData.get("id_type") ?? "") as IdType,
-      idNumber: String(formData.get("id_number") ?? ""),
-      idFile,
+      ids: readIds(formData),
     });
   } catch (e) {
     return {

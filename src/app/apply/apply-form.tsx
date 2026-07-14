@@ -123,47 +123,24 @@ export function ApplyForm({
         />
       </label>
 
-      <fieldset className="space-y-4 rounded-[var(--radius-card)] border border-[color:var(--color-line)] p-4">
-        <legend className="px-1 text-sm font-medium">Means of identification</legend>
-        <p className="text-xs text-[color:var(--color-ink-muted)]">
-          Nexa verifies every vendor before they can take a booking. Only Nexa sees this.
+      <div className="rounded-[var(--radius-card)] bg-[color:var(--color-surface-sunk)] p-4">
+        <p className="text-sm font-medium">Two means of identification</p>
+        <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
+          Nexa checks who every vendor is before they can take a booking — it is why customers trust
+          the vendors here. Send two different ones. Only Nexa ever sees them.
         </p>
+      </div>
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Type</span>
-          <select
-            name="id_type"
-            required
-            defaultValue=""
-            className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
-          >
-            <option value="" disabled>
-              Choose one
-            </option>
-            {idTypes.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <Field label="ID number" name="id_number" required />
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Photo of the ID</span>
-          <input
-            type="file"
-            name="id_file"
-            required
-            accept={acceptedMimeTypes.join(",")}
-            className="w-full rounded-xl border border-[color:var(--color-line)] bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--color-surface-sunk)] file:px-4 file:py-2 file:text-sm"
-          />
-          <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">
-            A clear photo or scan. JPG, PNG or WEBP, under 10MB.
-          </span>
-        </label>
-      </fieldset>
+      <IdFieldset
+        n={1}
+        idTypes={idTypes}
+        acceptedMimeTypes={acceptedMimeTypes}
+      />
+      <IdFieldset
+        n={2}
+        idTypes={idTypes}
+        acceptedMimeTypes={acceptedMimeTypes}
+      />
 
       {state.error ? <Alert>{state.error}</Alert> : null}
 
@@ -174,5 +151,57 @@ export function ApplyForm({
         Nexa reviews every application by hand. You will hear from us by email.
       </p>
     </form>
+  );
+}
+
+/** One means of identification. The form asks for two, numbered from 1. */
+function IdFieldset({
+  n,
+  idTypes,
+  acceptedMimeTypes,
+}: {
+  n: number;
+  idTypes: IdTypeOption[];
+  acceptedMimeTypes: string[];
+}) {
+  return (
+    <fieldset className="space-y-4 rounded-[var(--radius-card)] border border-[color:var(--color-line)] p-4">
+      <legend className="px-1 text-sm font-medium">ID {n}</legend>
+
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Type</span>
+        <select
+          name={`id_type_${n}`}
+          required
+          defaultValue=""
+          className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
+        >
+          <option value="" disabled>
+            Choose one
+          </option>
+          {idTypes.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <Field label="ID number" name={`id_number_${n}`} required />
+
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Photo of the ID</span>
+        <input
+          type="file"
+          name={`id_file_${n}`}
+          required
+          accept={acceptedMimeTypes.join(",")}
+          className="w-full rounded-xl border border-[color:var(--color-line)] bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--color-surface-sunk)] file:px-4 file:py-2 file:text-sm"
+        />
+        <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">
+          A clear photo or scan. JPG, PNG or WEBP, under 10MB.
+        </span>
+      </label>
+    </fieldset>
   );
 }

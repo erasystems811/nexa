@@ -31,7 +31,8 @@ export { adminDashboard } from "./dashboard";
 export {
   listProviders, getProviderDetail, approveProvider, rejectProvider,
   setProviderSuspended, setProviderFeatured, addProviderManually,
-  type ManualProviderResult,
+  providerIdentity, decideDocument,
+  type ManualProviderResult, type AdminIdDocument,
 } from "./providers";
 export {
   recordNoShow, listStrikes, resolveAppeal, removeProvider,

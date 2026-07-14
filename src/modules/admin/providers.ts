@@ -1,6 +1,7 @@
 import "server-only";
 
 import { ensureAuthUser, trySendPasswordSetupCode } from "@/modules/auth/provisioning";
+import { idTypeLabel, isIdentityVerified, REQUIRED_ID_COUNT } from "@/modules/provider";
 import { adminDb, audit, AdminError } from "./context";
 
 /**
@@ -9,6 +10,11 @@ import { adminDb, audit, AdminError } from "./context";
  * Approving a vendor means one thing now: they are allowed to sell on Nexa.
  * There are no terms to set at approval — no deposit, no commission, no penalty.
  * Money is decided later, per booking, when an admin pays the vendor.
+ *
+ * Approving a vendor is not the same as believing who they are. A vendor added
+ * here skips the application queue, but not identification: they sign in, they
+ * are asked for two means of ID, and nothing of theirs reaches a customer until
+ * an admin has looked at both. See decideDocument, below.
  */
 
 export async function listProviders(status?: string) {
@@ -50,7 +56,98 @@ export async function getProviderDetail(providerId: string) {
     reviews: reviews.data ?? [],
     strikes: strikes.data ?? [],
     payouts: payouts.data ?? [],
+    identity: await providerIdentity(providerId),
   };
+}
+
+export interface AdminIdDocument {
+  id: string;
+  kind: string;
+  label: string;
+  idNumber: string | null;
+  status: string;
+  notes: string | null;
+  source: string | null;
+  createdAt: string;
+  /** A short-lived link to the private file, so Admin can look at the photo. */
+  url: string | null;
+}
+
+/**
+ * The vendor's means of identification, and whether Nexa believes them.
+ *
+ * The documents live in a private bucket, so the photo is served through a
+ * signed URL minted here rather than a public path — the ID a business sends
+ * Nexa is not a thing to leave lying on the open internet.
+ */
+export async function providerIdentity(providerId: string): Promise<{
+  verified: boolean;
+  required: number;
+  documents: AdminIdDocument[];
+}> {
+  const db = adminDb();
+
+  const { data } = await db
+    .from("provider_documents")
+    .select("id, kind, status, notes, metadata, storage_path, created_at")
+    .eq("provider_id", providerId)
+    .order("created_at");
+
+  const rows = data ?? [];
+
+  const documents = await Promise.all(
+    rows.map(async (d) => {
+      const metadata = (d.metadata ?? {}) as { id_number?: string; source?: string };
+      const { data: signed } = d.storage_path
+        ? await db.storage.from("provider-media").createSignedUrl(d.storage_path, 60 * 60)
+        : { data: null };
+
+      return {
+        id: d.id,
+        kind: d.kind,
+        label: idTypeLabel(d.kind),
+        idNumber: metadata.id_number ?? null,
+        status: d.status as string,
+        notes: d.notes,
+        source: metadata.source ?? null,
+        createdAt: d.created_at,
+        url: signed?.signedUrl ?? null,
+      };
+    }),
+  );
+
+  return {
+    verified: isIdentityVerified(rows),
+    required: REQUIRED_ID_COUNT,
+    documents,
+  };
+}
+
+/**
+ * Approve or reject one document. The vendor cannot do this to their own — there
+ * is no update policy on provider_documents for them at all (0011). It is Admin's
+ * word, and the audit log records whose.
+ */
+export async function decideDocument(
+  actorId: string,
+  documentId: string,
+  approved: boolean,
+  notes?: string,
+): Promise<void> {
+  const db = adminDb();
+
+  const { error } = await db
+    .from("provider_documents")
+    .update({
+      status: approved ? "approved" : "rejected",
+      reviewed_by: actorId,
+      reviewed_at: new Date().toISOString(),
+      notes: notes ?? null,
+    })
+    .eq("id", documentId);
+
+  if (error) throw new AdminError(error.message);
+  await audit(actorId, approved ? "approve_document" : "reject_document", "provider_document", documentId, null, { notes });
 }
 
 /**

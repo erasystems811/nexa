@@ -17,13 +17,21 @@
 export { ProviderError, currentProvider, requireProvider } from "./context";
 export { providerDashboard } from "./dashboard";
 export { updateProfile, getContact, updateContact, type ProfileUpdate } from "./profile";
+export { submitApplication, type ApplicationInput } from "./apply";
 export {
-  submitApplication,
   ID_TYPES,
   ACCEPTED_ID_MIME_TYPES,
+  REQUIRED_ID_COUNT,
+  NOT_VERIFIED_MESSAGE,
+  isIdentityVerified,
+  idTypeLabel,
+  myIdentityStatus,
+  providerIsVerified,
+  submitIdDocument,
   type IdType,
-  type ApplicationInput,
-} from "./apply";
+  type IdSubmission,
+  type IdentityStatus,
+} from "./identification";
 export {
   listMyListings,
   getMyListing,

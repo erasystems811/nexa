@@ -64,6 +64,21 @@ export async function addProviderAction(_prev: AdminActionState, formData: FormD
   }
 }
 
+/**
+ * The vendor's ID, looked at by a human. Approving two of them is what lets a
+ * vendor's services reach a customer, so it takes the same permission as
+ * approving the vendor itself.
+ */
+export async function decideDocumentAction(
+  documentId: string,
+  providerId: string,
+  approved: boolean,
+  notes?: string,
+): Promise<void> {
+  await admin.decideDocument(await actor(P.providersApprove), documentId, approved, notes);
+  revalidatePath(`/admin/providers/${providerId}`);
+}
+
 // ---- strikes / appeals ----------------------------------------------------
 
 export async function noShowAction(bookingId: string): Promise<void> {

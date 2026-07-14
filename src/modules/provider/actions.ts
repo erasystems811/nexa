@@ -18,11 +18,13 @@ import {
   removeBlock,
   replyToReview,
   setListingPaused,
+  submitIdDocument,
   updateBankDetails,
   updateContact,
   updateListing,
   updateProfile,
   uploadMedia,
+  type IdType,
 } from ".";
 import type { PaymentType } from "@/lib/db/types";
 
@@ -152,6 +154,35 @@ export async function duplicateListingAction(listingId: string): Promise<void> {
   const newId = await duplicateListing(p.id, listingId);
   revalidatePath("/studio/listings");
   redirect(`/listings/${newId}` as Route);
+}
+
+// ---- identification -------------------------------------------------------
+
+/**
+ * The vendor sending Nexa one of their two means of ID. They can submit it and
+ * see it; they cannot approve it. That is not politeness — provider_documents
+ * has no update policy for them at all.
+ */
+export async function submitIdDocumentAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const p = await provider();
+  const file = formData.get("id_file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Attach a photo of your ID" };
+
+  try {
+    await submitIdDocument(p.id, {
+      idType: String(formData.get("id_type") ?? "") as IdType,
+      idNumber: String(formData.get("id_number") ?? ""),
+      file,
+    });
+    revalidatePath("/studio/verification");
+    revalidatePath("/studio");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
 }
 
 // ---- media ----------------------------------------------------------------
