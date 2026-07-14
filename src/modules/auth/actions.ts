@@ -9,7 +9,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendSignupVerificationCode } from "@/modules/email/resend";
 import { sendPasswordCode } from "./provisioning";
-import { homePathForRole } from "./session";
 import type { UserRole } from "@/lib/db/types";
 
 export interface AuthFormState {
@@ -188,19 +187,14 @@ export async function signIn(
 
   revalidatePath("/", "layout");
 
-  // Where you land is decided by where you ARE, not only by what you are.
-  //
-  // A vendor whose application is still pending has the role "customer" — the DB
-  // only promotes them on approval. Sending them to their role's home therefore
-  // threw them out of the vendor site and onto the customer marketplace, seconds
-  // after they had signed up as a vendor. Staying put is the only sane answer:
-  // on the vendor surface, "/" is the vendor surface, and it will show them
-  // Business Studio if they are approved and their application status if not.
-  if (!next && surface === "studio") {
-    redirect("/" as Route);
-  }
-
-  redirect((next ?? homePathForRole(role ?? "customer")) as Route);
+  // You stay on the site you signed in on. The three surfaces are standalone and
+  // no longer share a session, so sending someone to their role's *other*
+  // subdomain would land them there signed out — the login they just completed
+  // does not exist over there. "/" is the right answer on every surface: the
+  // customer marketplace on the root, Business Studio (or the application status)
+  // on vendor.<root>, the console on admin.<root>. `next` is already a path on
+  // this same host, so it is safe too.
+  redirect((next ?? "/") as Route);
 }
 
 /**
@@ -373,7 +367,10 @@ export async function completePasswordReset(
   }
 
   revalidatePath("/", "layout");
-  redirect(homePathForRole(role ?? "customer") as Route);
+  // Stay on the site where the password was just set, for the same reason sign-in
+  // does: the session is host-only now, and the role's other subdomain would not
+  // recognise it. "/" resolves to the right home on whichever surface this is.
+  redirect("/" as Route);
 }
 
 export async function signOut(): Promise<void> {

@@ -28,9 +28,11 @@ export default async function VendorAccessPage() {
   return (
     <main className="flex min-h-dvh flex-col justify-center px-3 py-8">
       <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-[color:var(--color-line)] bg-white px-6 py-10 shadow-card">
-      <Link href="/" aria-label="Nexa home" className="mb-8 self-center">
-        <Logo markClassName="size-12 rounded-2xl" textClassName="text-lg" />
-      </Link>
+      {/* The mark, but not a link. This is the vendor surface; there is nothing
+          on the customer site a vendor came here to reach. */}
+      <span className="mb-8 flex justify-center" aria-label="Nexa for vendors">
+        <Logo label="Nexa for vendors" markClassName="size-12 rounded-2xl" textClassName="text-lg" />
+      </span>
 
       <Card>
         <h1 className="text-lg font-semibold">Nexa for vendors</h1>
@@ -78,13 +80,6 @@ export default async function VendorAccessPage() {
           </p>
         ) : null}
       </Card>
-
-      <Link
-        href={"/" as Route}
-        className="mt-6 text-center text-xs text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]"
-      >
-        &larr; Back to Nexa
-      </Link>
     </div>
     </main>
   );

@@ -128,7 +128,18 @@ export function homeForRole(role: "admin" | "provider" | "customer" | "rider"): 
   return SURFACE_BASE[surface] || "/";
 }
 
+/**
+ * Undefined, on purpose: the session cookie is host-only, so it belongs to the
+ * one subdomain that set it and no other.
+ *
+ * This used to return `.${root}`, which scoped the cookie to the whole family
+ * and made one sign-in span customer, vendor and admin at once. That is exactly
+ * the mixing that made the three surfaces feel like one: signing in on Admin
+ * carried the Admin session onto the vendor site, where it read as "you are an
+ * admin, not a vendor." Three standalone surfaces means three separate sign-ins.
+ * Admin stays on admin.<root>, vendor on vendor.<root>, customer on the root —
+ * and a session on one is invisible to the others.
+ */
 export function cookieDomain(): string | undefined {
-  const root = rootDomain();
-  return root ? `.${root}` : undefined;
+  return undefined;
 }
