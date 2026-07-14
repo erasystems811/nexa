@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireSession } from "@/modules/auth";
 import { getConversation } from "@/modules/messaging";
 import { publicEnv } from "@/lib/env";
+import { toWhatsAppNumber } from "@/lib/phone";
 import { Button, Card, PageHeader } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 
@@ -16,10 +17,12 @@ export default async function WhatsappHandoffPage({
   const conversation = await getConversation(id);
   if (!conversation) notFound();
 
-  const number = publicEnv.NEXT_PUBLIC_WHATSAPP_NUMBER;
+  // Normalised, not trusted: a number typed the way Nigerians say it (08022748369)
+  // builds a wa.me link that goes nowhere.
+  const number = toWhatsAppNumber(publicEnv.NEXT_PUBLIC_WHATSAPP_NUMBER);
   const message = `Hi Nexa, I want to continue my booking. Ref: ${id}`;
   const href = number
-    ? `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`
+    ? `https://wa.me/${number}?text=${encodeURIComponent(message)}`
     : null;
 
   return (
