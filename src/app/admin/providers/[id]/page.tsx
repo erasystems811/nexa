@@ -112,9 +112,11 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{doc.label}</p>
-                    <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">
-                      {doc.idNumber ?? "no number given"}
-                    </p>
+                    {doc.idNumber ? (
+                      <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">
+                        {doc.idNumber}
+                      </p>
+                    ) : null}
                     <p className="mt-1 text-[11px] text-[color:var(--color-ink-muted)]">
                       {DOC_STATUS_LABEL[doc.status] ?? doc.status}
                       {doc.notes ? ` — ${doc.notes}` : ""}

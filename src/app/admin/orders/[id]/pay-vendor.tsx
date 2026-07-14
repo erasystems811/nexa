@@ -16,10 +16,25 @@ import { formatKobo, koboToNaira } from "@/lib/money";
  * everything still held and can only be lowered — the server refuses anything
  * above it, and this form will not even offer it.
  */
-export function PayVendor({ bookingId, stillHeldKobo }: { bookingId: string; stillHeldKobo: number }) {
+export function PayVendor({
+  bookingId,
+  stillHeldKobo,
+  commissionPercent,
+}: {
+  bookingId: string;
+  stillHeldKobo: number;
+  /** Only decides what the box opens with. It is not enforced anywhere. */
+  commissionPercent: number;
+}) {
   const [state, action, pending] = useActionState(payVendorAction, {} as AdminActionState);
   const maxNaira = koboToNaira(stillHeldKobo);
-  const [naira, setNaira] = useState(String(maxNaira));
+
+  // The suggestion: everything Nexa holds, less its commission. Rounded to whole
+  // naira so the box never opens with a number nobody would type.
+  const suggestedKobo = Math.round(stillHeldKobo * (1 - commissionPercent / 100));
+  const suggestedNaira = Math.floor(koboToNaira(suggestedKobo));
+
+  const [naira, setNaira] = useState(String(suggestedNaira));
 
   const entered = Number(naira);
   const tooMuch = Number.isFinite(entered) && entered > maxNaira;
@@ -32,6 +47,16 @@ export function PayVendor({ bookingId, stillHeldKobo }: { bookingId: string; sti
         Nexa is holding <strong className="text-[color:var(--color-ink)]">{formatKobo(stillHeldKobo)}</strong> on this
         booking. Send the vendor all of it, or less — whatever you do not send, Nexa keeps.
       </p>
+
+      {commissionPercent > 0 ? (
+        <p className="mt-2 text-xs text-[color:var(--color-ink-muted)]">
+          Filled in for you at your {commissionPercent}% commission, which leaves Nexa{" "}
+          <strong className="text-[color:var(--color-ink)]">
+            {formatKobo(stillHeldKobo - suggestedKobo)}
+          </strong>
+          . Change the number if this booking is different.
+        </p>
+      ) : null}
 
       <form action={action} className="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="booking_id" value={bookingId} />

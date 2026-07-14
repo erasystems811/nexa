@@ -48,9 +48,11 @@ export default async function VerificationPage() {
               <li key={doc.id} className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{doc.label}</p>
-                  <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">
-                    {doc.idNumber ?? "—"}
-                  </p>
+                  {doc.idNumber ? (
+                    <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">
+                      {doc.idNumber}
+                    </p>
+                  ) : null}
                   {doc.status === "rejected" && doc.notes ? (
                     <p className="mt-1 text-xs text-[color:var(--color-danger)]">{doc.notes}</p>
                   ) : null}

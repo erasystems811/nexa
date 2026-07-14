@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitIdDocumentAction } from "@/modules/provider/actions";
 import type { FormState } from "@/modules/provider/actions";
 import { Alert, Button, Field } from "@/components/ui";
@@ -10,6 +10,8 @@ const initialState: FormState = {};
 interface IdTypeOption {
   value: string;
   label: string;
+  /** A CAC certificate is a document, not a number. Nothing to type in. */
+  needsNumber: boolean;
 }
 
 /**
@@ -25,6 +27,8 @@ export function VerifyForm({
   acceptedMimeTypes: string[];
 }) {
   const [state, action, pending] = useActionState(submitIdDocumentAction, initialState);
+  const [chosen, setChosen] = useState("");
+  const needsNumber = remainingTypes.find((t) => t.value === chosen)?.needsNumber ?? true;
 
   if (remainingTypes.length === 0) {
     return (
@@ -41,7 +45,8 @@ export function VerifyForm({
         <select
           name="id_type"
           required
-          defaultValue=""
+          value={chosen}
+          onChange={(e) => setChosen(e.target.value)}
           className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
         >
           <option value="" disabled>
@@ -55,7 +60,7 @@ export function VerifyForm({
         </select>
       </label>
 
-      <Field label="The number on it" name="id_number" required />
+      {needsNumber ? <Field label="The number on it" name="id_number" required /> : null}
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Photo of it</span>

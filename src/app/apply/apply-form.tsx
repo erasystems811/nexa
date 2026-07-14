@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { applyAction, type ApplyState } from "./actions";
 import { Alert, Button, Card, Field } from "@/components/ui";
 
@@ -13,6 +13,8 @@ interface Option {
 interface IdTypeOption {
   value: string;
   label: string;
+  /** A CAC certificate is a document, not a number. Nothing to type in. */
+  needsNumber: boolean;
 }
 
 const initialState: ApplyState = {};
@@ -164,6 +166,9 @@ function IdFieldset({
   idTypes: IdTypeOption[];
   acceptedMimeTypes: string[];
 }) {
+  const [chosen, setChosen] = useState("");
+  const needsNumber = idTypes.find((t) => t.value === chosen)?.needsNumber ?? true;
+
   return (
     <fieldset className="space-y-4 rounded-[var(--radius-card)] border border-[color:var(--color-line)] p-4">
       <legend className="px-1 text-sm font-medium">ID {n}</legend>
@@ -173,7 +178,8 @@ function IdFieldset({
         <select
           name={`id_type_${n}`}
           required
-          defaultValue=""
+          value={chosen}
+          onChange={(e) => setChosen(e.target.value)}
           className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
         >
           <option value="" disabled>
@@ -187,7 +193,7 @@ function IdFieldset({
         </select>
       </label>
 
-      <Field label="ID number" name={`id_number_${n}`} required />
+      {needsNumber ? <Field label="ID number" name={`id_number_${n}`} required /> : null}
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Photo of the ID</span>

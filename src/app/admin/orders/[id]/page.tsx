@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireView, currentStaff, can, getOrderDetail, PERMISSIONS as P } from "@/modules/admin";
 import { noShowAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
+import { getNumericSetting, SETTINGS } from "@/modules/settings";
 import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 import { ActionButton } from "../../action-button";
@@ -18,7 +19,10 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   await requireView(P.ordersView);
   const staff = await currentStaff();
-  const d = await getOrderDetail(id);
+  const [d, commissionPercent] = await Promise.all([
+    getOrderDetail(id),
+    getNumericSetting(SETTINGS.commissionPercent),
+  ]);
   if (!d) notFound();
 
   const { booking, money, codes, ledger } = d;
@@ -71,7 +75,11 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       )}
 
       {holding && can(staff, P.paymentsPayout) ? (
-        <PayVendor bookingId={booking.id} stillHeldKobo={money.stillHeldKobo} />
+        <PayVendor
+          bookingId={booking.id}
+          stillHeldKobo={money.stillHeldKobo}
+          commissionPercent={commissionPercent}
+        />
       ) : null}
       {holding && can(staff, P.paymentsRefund) ? (
         <RefundCustomer bookingId={booking.id} stillHeldKobo={money.stillHeldKobo} />

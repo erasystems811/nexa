@@ -21,16 +21,29 @@ import { ProviderError } from "./context";
  * update at all (0011). The status is Admin's to write, and nobody else's.
  */
 
-/** The identification a Nigerian business can actually produce. */
+/**
+ * The identification a Nigerian business can actually produce.
+ *
+ * `needsNumber` is false for the CAC certificate alone. The others *are* a
+ * number — a NIN, a BVN, a passport number — and the photo only backs it up. A
+ * CAC certificate is a document; the vendor has it in their hand, and asking
+ * them to copy a registration number off it adds a step and a typo, when the
+ * scan in front of the admin says everything.
+ */
 export const ID_TYPES = [
-  { value: "cac", label: "CAC certificate" },
-  { value: "nin", label: "NIN (National Identity Number)" },
-  { value: "bank_bvn", label: "BVN (Bank Verification Number)" },
-  { value: "passport", label: "International passport" },
-  { value: "drivers_licence", label: "Driver's licence" },
+  { value: "cac", label: "CAC certificate", needsNumber: false },
+  { value: "nin", label: "NIN (National Identity Number)", needsNumber: true },
+  { value: "bank_bvn", label: "BVN (Bank Verification Number)", needsNumber: true },
+  { value: "passport", label: "International passport", needsNumber: true },
+  { value: "drivers_licence", label: "Driver's licence", needsNumber: true },
 ] as const;
 
 export type IdType = (typeof ID_TYPES)[number]["value"];
+
+/** Whether this kind of ID is a number the vendor must type, or just a document. */
+export function idNeedsNumber(kind: string): boolean {
+  return ID_TYPES.find((t) => t.value === kind)?.needsNumber ?? true;
+}
 
 /**
  * The provider-media bucket (0018) accepts images and short video, not PDFs. A
@@ -83,7 +96,7 @@ export function isIdentityVerified(documents: IdDocumentRow[]): boolean {
 
 export function validateIdSubmission(submission: IdSubmission): void {
   if (!isIdType(submission.idType)) throw new ProviderError("Choose a means of identification");
-  if (submission.idNumber.trim().length < 4) {
+  if (idNeedsNumber(submission.idType) && submission.idNumber.trim().length < 4) {
     throw new ProviderError("Enter the number on your ID");
   }
   if (!submission.file || submission.file.size === 0) {
@@ -134,6 +147,8 @@ export async function storeIdDocument(
 
   if (uploadError) throw new ProviderError(`We could not upload your ID: ${uploadError.message}`);
 
+  const number = submission.idNumber.trim();
+
   const { error: documentError } = await db.from("provider_documents").insert({
     provider_id: providerId,
     kind: submission.idType,
@@ -142,7 +157,8 @@ export async function storeIdDocument(
     metadata: {
       id_type: submission.idType,
       id_type_label: idTypeLabel(submission.idType),
-      id_number: submission.idNumber.trim(),
+      // A CAC certificate has no number to carry. Store nothing rather than "".
+      id_number: number || null,
       source,
     },
   });
@@ -168,7 +184,7 @@ export interface IdentityStatus {
     createdAt: string;
   }>;
   /** Types they have not submitted yet, for the upload form. */
-  remainingTypes: Array<{ value: string; label: string }>;
+  remainingTypes: Array<{ value: string; label: string; needsNumber: boolean }>;
 }
 
 /** What the vendor sees on their own verification page. */
@@ -204,6 +220,7 @@ export async function myIdentityStatus(providerId: string): Promise<IdentityStat
     remainingTypes: ID_TYPES.filter((t) => !settled.has(t.value)).map((t) => ({
       value: t.value,
       label: t.label,
+      needsNumber: t.needsNumber,
     })),
   };
 }

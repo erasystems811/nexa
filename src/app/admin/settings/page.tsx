@@ -7,8 +7,8 @@ import { SettingRow } from "./setting-row";
 /**
  * Admin Console → Settings.
  *
- * Commission and stage-1 release settings are edited
- * here and nowhere else. There is no constant for any of them in the codebase.
+ * Every number Nexa runs on is edited here and nowhere else. There is no
+ * constant for any of them in the codebase, so changing one is never a deploy.
  */
 export default async function AdminSettingsPage() {
   await requireView(P.settingsManage);
@@ -18,7 +18,7 @@ export default async function AdminSettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        subtitle="Commission, release percentages, and fees are edited here — never in code."
+        subtitle="The numbers Nexa runs on. Change them here — never in code."
       />
 
       <Card>

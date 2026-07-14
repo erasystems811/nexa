@@ -47,7 +47,7 @@ export default async function ApplyPage() {
       <ApplyForm
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
         cities={cities.map((c) => ({ id: c.id, name: c.name }))}
-        idTypes={ID_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+        idTypes={ID_TYPES.map((t) => ({ value: t.value, label: t.label, needsNumber: t.needsNumber }))}
         acceptedMimeTypes={[...ACCEPTED_ID_MIME_TYPES]}
       />
     </main>
