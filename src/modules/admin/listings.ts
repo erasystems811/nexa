@@ -52,7 +52,7 @@ export async function listAllListings(status?: string) {
   const db = adminDb();
   let q = db
     .from("listings")
-    .select("id, title, status, price_type, price_kobo, providers ( business_name )")
+    .select("id, title, status, price_type, price_kobo, created_at, providers ( business_name ), categories ( name )")
     .order("created_at", { ascending: false });
   if (status) q = q.eq("status", status as never);
   const { data } = await q;
