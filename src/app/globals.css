@@ -26,7 +26,6 @@
    * outright, so there is nothing left to beat.
    */
   --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
 }
 
 @layer base {
@@ -50,15 +49,14 @@
 
 @layer components {
   /*
-   * The display face, for the handful of lines that are selling rather than
-   * telling. Used sparingly and on purpose — a serif everywhere is a costume,
-   * a serif on one headline is a brand. Optical sizing and a looser tracking
-   * because Instrument Serif is drawn for large sizes.
+   * The headline. A serif was here and was cut for being pretty and hard to
+   * read; weight and tight tracking do the work instead. Nothing exotic — this
+   * is the same face as the rest of the page, pushed hard.
    */
   .font-display {
-    font-family: var(--font-display);
-    font-weight: 400;
-    letter-spacing: -0.005em;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.03;
   }
 }
 

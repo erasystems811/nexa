@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans, Instrument_Serif } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -10,37 +10,23 @@ import "./globals.css";
  * to default to — Segoe UI on Windows, Roboto on Android, San Francisco on an
  * iPhone. A brand that borrows the OS's font is a brand nobody remembers.
  *
- * Instrument Sans carries the interface: a grotesk with slightly narrow, modern
- * letterforms that hold up small, which is where a marketplace lives — prices,
- * vendor names, status pills.
+ * One face, all of it. A display serif sat here briefly and was cut: it was
+ * beautiful at a glance and hard to read on a phone in the sun, which is the
+ * only condition that matters. Weight and size carry the headline instead — the
+ * cheapest kind of confidence, and the kind nobody has to squint at.
  *
- * Instrument Serif carries the few big lines that have to make somebody feel
- * something: the homepage promise, a section that is selling rather than
- * informing. Events are weddings and birthdays and funerals; a serif says
- * "occasion" in a way no grotesk can, and using it sparingly is what keeps it
- * feeling expensive rather than decorative.
+ * Loaded by Next, which means self-hosted and preloaded: no request to Google
+ * from the visitor's browser, and no flash of the wrong font.
  *
- * Both are loaded by Next, which means self-hosted and preloaded — no request to
- * Google from the visitor's browser, and no flash of the wrong font.
- */
-/*
- * Named for the face, not the role — `--font-sans` and `--font-display` are
- * Tailwind theme tokens, and Tailwind emits its own defaults for them *after*
- * next/font's variables in the stylesheet. Same specificity, later wins: naming
- * these `--font-sans` would have let Tailwind's system-font stack quietly beat
- * Instrument Sans, and the site would have gone on looking exactly as it did.
- * globals.css maps the theme tokens onto these instead.
+ * Named for the face, not the role. `--font-sans` is a Tailwind theme token and
+ * Tailwind emits its own default — the system stack — *after* next/font's
+ * variables, at equal specificity. Naming this one `--font-sans` would have let
+ * Tailwind quietly win, and the site would have gone on looking exactly as it
+ * did. globals.css points the theme token at this instead.
  */
 const sans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-instrument-sans",
-  display: "swap",
-});
-
-const serif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-instrument-serif",
   display: "swap",
 });
 
@@ -64,7 +50,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
+    <html lang="en" className={sans.variable}>
       {/*
         The marketplace sits on the sunk grey, not on the page. Every customer
         screen is a white card floating on it — which is what stops Nexa reading

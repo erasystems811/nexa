@@ -36,9 +36,9 @@ export default async function HomePage() {
       </header>
 
       <section className="pt-6">
-        <h1 className="font-display text-[2.6rem] leading-[1.05] sm:text-6xl">
+        <h1 className="font-display text-[2.35rem] sm:text-[3.4rem]">
           Everything your event needs,<br />
-          <span className="italic text-[color:var(--color-accent)]">booked with confidence.</span>
+          <span className="text-[color:var(--color-accent)]">booked with confidence.</span>
         </h1>
         <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[color:var(--color-ink-muted)]">
           Find verified caterers, decorators, DJs, transport services and more. Nexa keeps your payment
@@ -75,7 +75,7 @@ export default async function HomePage() {
 
       <section className="mt-12">
         <div className="overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] p-6 text-white">
-          <h2 className="font-display text-2xl">Plan My Event</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Plan My Event</h2>
           <p className="mt-1 max-w-md text-sm text-white/80">
             {planMyEventLive
               ? "Tell us the event, budget and guest count - we'll assemble a package."
