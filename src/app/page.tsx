@@ -94,7 +94,23 @@ export default async function HomePage() {
       </section>
 
       <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
-        Nexa - powered by ERA. Your payment is held securely until your event is successfully completed.
+        <p>
+          Nexa - powered by ERA. Your payment is held securely until your event is successfully
+          completed.
+        </p>
+        <p className="mt-3">
+          <Link href="/privacy" className="underline hover:text-[color:var(--color-ink)]">
+            Privacy
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/terms" className="underline hover:text-[color:var(--color-ink)]">
+            Terms
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/apply" className="underline hover:text-[color:var(--color-ink)]">
+            Become a vendor
+          </Link>
+        </p>
       </footer>
     </main>
   );
