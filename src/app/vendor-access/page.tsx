@@ -20,7 +20,7 @@ export default async function VendorAccessPage() {
   // Somebody who already applied must not be told to apply. They handed over
   // their CAC and their NIN; being asked to do it again is how a vendor decides
   // Nexa is not serious.
-  const application = session ? await myApplication() : null;
+  const application = session ? await myApplication(session.userId) : null;
 
   const waiting = application?.status === "pending";
   const turnedDown = application?.status === "rejected";

@@ -170,8 +170,18 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
  * page has no business holding the service role. Returns null for someone who
  * never applied.
  */
-export async function myApplication(): Promise<{ status: string } | null> {
+export async function myApplication(userId: string): Promise<{ status: string } | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("providers").select("status").maybeSingle();
+
+  // Filter by user_id explicitly. RLS alone is not enough here: `providers_public_read`
+  // shows every APPROVED vendor to everyone, so an unfiltered select returns the
+  // whole marketplace as well as your own row, and maybeSingle() then finds "many"
+  // and returns nothing. The applicant would be told they had never applied.
+  const { data } = await supabase
+    .from("providers")
+    .select("status")
+    .eq("user_id", userId)
+    .maybeSingle();
+
   return data;
 }
