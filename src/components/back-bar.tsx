@@ -7,10 +7,18 @@ import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 
 /**
- * Client-side navigations made in this document. It resets on a hard load, which
- * is the signal we want: a customer who opened a shared listing link has no
- * in-app history, so Back must go to the page's parent rather than throw them
- * off the site entirely.
+ * The customer marketplace's back and home buttons. Customer pages only.
+ *
+ * Not Business Studio, not Admin, and not /apply. Those are the vendor's and the
+ * operator's surfaces: they live on their own subdomains, they have their own
+ * navigation, and "Home" on them would mean the customer marketplace — which is
+ * the one place a vendor halfway through an application does not want to be sent.
+ * Studio and Admin have their own layouts; /apply has its own header.
+ *
+ * `inAppNavigations` counts client-side navigations made in this document. It
+ * resets on a hard load, which is the signal we want: a customer who opened a
+ * shared listing link has no in-app history, so Back must go to the page's
+ * parent rather than throw them off the site entirely.
  */
 let inAppNavigations = 0;
 

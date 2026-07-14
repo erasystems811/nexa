@@ -3,7 +3,6 @@ import { listCategories, listCities } from "@/modules/marketplace";
 import { ID_TYPES, ACCEPTED_ID_MIME_TYPES } from "@/modules/provider";
 import { Logo } from "@/components/logo";
 import { PageHeader } from "@/components/ui";
-import { BackBar } from "@/components/back-bar";
 import { ApplyForm } from "./apply-form";
 import { surfaceOrigin } from "@/lib/surfaces";
 
@@ -32,8 +31,6 @@ export default async function ApplyPage() {
           Already a vendor? Sign in
         </Link>
       </header>
-
-      <BackBar className="mb-5" />
 
       <PageHeader
         title="Become a Nexa vendor"
