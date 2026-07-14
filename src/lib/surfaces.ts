@@ -95,6 +95,10 @@ export function resolveRoute(surface: Surface, path: string): RouteAction {
   for (const [s, base] of Object.entries(SURFACE_BASE) as [Surface, string][]) {
     if (s === surface || base === "") continue;
     if (path === base || path.startsWith(`${base}/`)) {
+      // Business Studio is not reachable from the customer site. A customer who
+      // types /studio (or /vendor, which is not a route at all) gets a 404, not a
+      // trip to a vendor's dashboard. Vendors use vendor.<root>.
+      if (surface === "customer" && s === "studio") return { kind: "notFound" };
       const remainder = path.slice(base.length) || "/";
       return { kind: "redirect", surface: s, path: remainder };
     }

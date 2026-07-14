@@ -51,17 +51,18 @@ function cleanSurfacePath(request: NextRequest, response: NextResponse, surface:
     return carryCookies(response, NextResponse.redirect(new URL(target.remainder, request.url)));
   }
 
+  // The customer site does not know Business Studio exists. It will not send a
+  // customer there, and it will not quietly hand a vendor a shortcut: vendors
+  // reach their dashboard at vendor.<root>, and nowhere else.
+  if (surface === "customer" && target.surface === "studio") {
+    return carryCookies(response, NextResponse.rewrite(new URL("/not-found", request.url)));
+  }
+
   const origin = surfaceOrigin(target.surface);
   if (origin) return carryCookies(response, NextResponse.redirect(`${origin}${target.remainder}`));
 
-  // Single-domain (dev, and the raw Railway URL): there are no subdomains to send
-  // anyone to, so the surfaces live at their paths. /vendor is the name people
-  // type; /studio is where it lives. Sending them home instead — which is what
-  // this did — is how "/vendor" became a dead end.
-  if (pathname === "/vendor" || pathname.startsWith("/vendor/")) {
-    const to = target.remainder === "/" ? "/studio" : `/studio${target.remainder}`;
-    return carryCookies(response, NextResponse.redirect(new URL(to, request.url)));
-  }
+  // No subdomains configured (dev, and the raw Railway URL): the surfaces live at
+  // their paths, because there is nowhere else for them to live.
   return null;
 }
 
@@ -138,8 +139,11 @@ export async function middleware(request: NextRequest) {
     const origin = surfaceOrigin(action.surface);
     return carryCookies(response, NextResponse.redirect(`${origin}${action.path}`));
   }
+  // Business Studio does not exist on the customer domain. Not as a path, not as
+  // a redirect — Nexa's customers have no business being sent there, and a vendor
+  // reaches it at vendor.<root> or not at all.
   if (action.kind === "notFound") {
-    return carryCookies(response, NextResponse.redirect(`${surfaceOrigin(surface)}/`));
+    return carryCookies(response, NextResponse.rewrite(new URL("/not-found", request.url)));
   }
 
   const internalPath = action.kind === "rewrite" ? action.to : pathname;
