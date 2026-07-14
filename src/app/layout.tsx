@@ -1,5 +1,40 @@
 import type { Metadata, Viewport } from "next";
+import { Instrument_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+
+/**
+ * Nexa's typeface.
+ *
+ * globals.css has always asked for `--font-sans` and nothing ever set it, so the
+ * whole marketplace rendered in whatever the visitor's operating system happened
+ * to default to — Segoe UI on Windows, Roboto on Android, San Francisco on an
+ * iPhone. A brand that borrows the OS's font is a brand nobody remembers.
+ *
+ * Instrument Sans carries the interface: a grotesk with slightly narrow, modern
+ * letterforms that hold up small, which is where a marketplace lives — prices,
+ * vendor names, status pills.
+ *
+ * Instrument Serif carries the few big lines that have to make somebody feel
+ * something: the homepage promise, a section that is selling rather than
+ * informing. Events are weddings and birthdays and funerals; a serif says
+ * "occasion" in a way no grotesk can, and using it sparingly is what keeps it
+ * feeling expensive rather than decorative.
+ *
+ * Both are loaded by Next, which means self-hosted and preloaded — no request to
+ * Google from the visitor's browser, and no flash of the wrong font.
+ */
+const sans = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const serif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Nexa - Event services marketplace",
@@ -21,7 +56,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
       <body className="min-h-dvh bg-white text-[color:var(--color-ink)]">
         {children}
       </body>

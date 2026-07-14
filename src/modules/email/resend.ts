@@ -126,3 +126,44 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+/**
+ * Something a vendor submitted is not good enough, and they need to know WHAT.
+ *
+ * Rejecting an ID silently is the same as ignoring the application: the vendor
+ * sits there wondering, and Nexa loses a supplier for want of one sentence. So
+ * the admin's note is sent to them verbatim, with a link to fix it.
+ */
+export async function sendVerificationChangesRequested(input: {
+  to: string;
+  businessName: string;
+  documentLabel: string;
+  reason: string;
+  actionUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `Nexa needs something else from ${input.businessName}`,
+    html: `
+      <p>Hello ${escapeHtml(input.businessName)},</p>
+      <p>We looked at the <strong>${escapeHtml(input.documentLabel)}</strong> you sent us, and we need you to send it again.</p>
+      <p style="padding:12px 16px;background:#fff7ed;border-left:3px solid #f59e0b;">
+        ${escapeHtml(input.reason)}
+      </p>
+      <p>Sign in to Nexa and upload it again — it only takes a minute, and your listings can go live as soon as we have approved it.</p>
+      <p><a href="${input.actionUrl}">Send it again</a></p>
+      <p>— Nexa</p>
+    `,
+    text: [
+      `Hello ${input.businessName},`,
+      "",
+      `We looked at the ${input.documentLabel} you sent us, and we need you to send it again.`,
+      "",
+      input.reason,
+      "",
+      `Sign in and upload it again: ${input.actionUrl}`,
+      "",
+      "- Nexa",
+    ].join("\n"),
+  });
+}

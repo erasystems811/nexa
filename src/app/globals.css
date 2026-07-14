@@ -39,6 +39,20 @@
   }
 }
 
+@layer components {
+  /*
+   * The display face, for the handful of lines that are selling rather than
+   * telling. Used sparingly and on purpose — a serif everywhere is a costume,
+   * a serif on one headline is a brand. Optical sizing and a looser tracking
+   * because Instrument Serif is drawn for large sizes.
+   */
+  .font-display {
+    font-family: var(--font-display), Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+  }
+}
+
 @layer utilities {
   /* Soft premium card shadow. */
   .shadow-card {

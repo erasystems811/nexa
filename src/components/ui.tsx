@@ -1,5 +1,23 @@
-import clsx from "clsx";
+import clsx, { type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+
+/**
+ * Merge classes so a caller can actually override a component's defaults.
+ *
+ * clsx only concatenates, which means `Card` shipping `bg-white` and a caller
+ * passing `bg-[color:var(--color-ink)]` both end up in the class list — and which
+ * one wins is decided by the order Tailwind happened to emit them in the
+ * stylesheet, not by the caller's intent. That is how the Admin dashboard ended
+ * up rendering white text on a white card: the dark background lost, the white
+ * text did not, and the numbers vanished.
+ *
+ * twMerge resolves the conflict the way anyone would expect: last one wins.
+ */
+function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
+}
+
 
 export function Card({
   children,
@@ -10,7 +28,7 @@ export function Card({
 }) {
   return (
     <div
-      className={clsx(
+      className={cn(
         "rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-5",
         className,
       )}
@@ -28,7 +46,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={clsx(
+      className={cn(
         "inline-flex h-12 items-center justify-center rounded-full px-6 text-sm font-medium",
         "transition-opacity disabled:opacity-50",
         variant === "primary" && "bg-[color:var(--color-accent)] text-white hover:opacity-90",
@@ -63,7 +81,7 @@ export function Alert({ children, tone = "danger" }: { children: ReactNode; tone
   return (
     <p
       role="status"
-      className={clsx(
+      className={cn(
         "rounded-xl px-4 py-3 text-sm",
         tone === "danger" && "bg-red-50 text-[color:var(--color-danger)]",
         tone === "success" && "bg-emerald-50 text-[color:var(--color-success)]",

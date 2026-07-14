@@ -4,6 +4,7 @@ import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
 import { Logo } from "@/components/logo";
 import { SearchBar } from "@/components/search-bar";
+import { CategoryIcon } from "@/components/category-icon";
 
 /** Marketplace home. */
 export default async function HomePage() {
@@ -35,9 +36,9 @@ export default async function HomePage() {
       </header>
 
       <section className="pt-6">
-        <h1 className="text-[2.1rem] font-semibold leading-[1.1] tracking-tight sm:text-5xl">
+        <h1 className="font-display text-[2.6rem] leading-[1.05] sm:text-6xl">
           Everything your event needs,<br />
-          <span className="text-[color:var(--color-accent)]">booked with confidence.</span>
+          <span className="italic text-[color:var(--color-accent)]">booked with confidence.</span>
         </h1>
         <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-[color:var(--color-ink-muted)]">
           Find verified caterers, decorators, DJs, transport services and more. Nexa keeps your payment
@@ -59,8 +60,11 @@ export default async function HomePage() {
           <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
             {categories.map((c) => (
               <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
-                <div className="flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-line)] bg-white transition group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
-                  <span className="text-2xl">{c.icon ?? "*"}</span>
+                <div className="flex h-28 w-28 flex-col items-center justify-center gap-2.5 rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
+                  <CategoryIcon
+                    slug={c.slug}
+                    className="size-7 text-[color:var(--color-ink-muted)] transition-colors group-hover:text-[color:var(--color-accent)]"
+                  />
                   <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
                 </div>
               </Link>
@@ -71,7 +75,7 @@ export default async function HomePage() {
 
       <section className="mt-12">
         <div className="overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] p-6 text-white">
-          <h2 className="text-lg font-semibold">Plan My Event</h2>
+          <h2 className="font-display text-2xl">Plan My Event</h2>
           <p className="mt-1 max-w-md text-sm text-white/80">
             {planMyEventLive
               ? "Tell us the event, budget and guest count - we'll assemble a package."

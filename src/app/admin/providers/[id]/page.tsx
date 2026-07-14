@@ -34,6 +34,11 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
   if (!d) notFound();
 
   const { provider, contact, wallet, reliability, listings, bookings, reviews, strikes, identity } = d;
+
+  const categoryName =
+    (provider.provider_categories as unknown as
+      | Array<{ categories: { name: string } | null }>
+      | null)?.[0]?.categories?.name ?? null;
   const openStrikes = strikes.filter((s) => !s.appealed_at);
   const waiting = identity.documents.filter((doc) => doc.status === "pending");
 
@@ -75,6 +80,33 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
           run={featureProviderAction.bind(null, provider.id, !provider.is_featured)}
         />
       </div>
+
+      {/* What they actually wrote on their application. You cannot judge a vendor
+          you cannot see. */}
+      <Card className="mb-3">
+        <h2 className="text-sm font-semibold">Their application</h2>
+        <dl className="mt-3 space-y-2 text-sm">
+          <Row k="Business" v={provider.business_name} />
+          <Row k="Service" v={categoryName ?? "—"} />
+          <Row k="City" v={(provider.cities as unknown as { name: string } | null)?.name ?? "—"} />
+          <Row k="Phone" v={contact?.contact_phone ?? "—"} />
+          <Row k="Email" v={contact?.contact_email ?? "—"} />
+          <Row
+            k="Applied"
+            v={new Date(provider.created_at).toLocaleString("en-NG")}
+          />
+        </dl>
+        {provider.description ? (
+          <>
+            <p className="mt-4 text-xs font-medium text-[color:var(--color-ink-muted)]">
+              What they say they do
+            </p>
+            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed">
+              {provider.description}
+            </p>
+          </>
+        ) : null}
+      </Card>
 
       <Card className="mb-3">
         <div className="flex items-start justify-between gap-3">
@@ -143,12 +175,10 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
                       run={decideDocumentAction.bind(null, doc.id, provider.id, true)}
                     />
                     <ActionButton
-                      label="Reject"
+                      label="Ask them to fix it"
                       variant="danger"
-                      prompt="What is wrong with it? They will see this."
-                      run={(notes?: string) =>
-                        decideDocumentAction(doc.id, provider.id, false, notes)
-                      }
+                      prompt="What is wrong with it? This is emailed to them word for word."
+                      run={decideDocumentAction.bind(null, doc.id, provider.id, false)}
                     />
                   </div>
                 ) : null}

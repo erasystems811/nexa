@@ -3,6 +3,8 @@ import "server-only";
 import { ensureAuthUser, trySendPasswordSetupCode } from "@/modules/auth/provisioning";
 import { idTypeLabel, isIdentityVerified, REQUIRED_ID_COUNT } from "@/modules/provider";
 import { adminDb, audit, AdminError } from "./context";
+import { sendVerificationChangesRequested } from "@/modules/email/resend";
+import { publicEnv } from "@/lib/env";
 
 /**
  * Vendor management.
@@ -34,7 +36,7 @@ export async function getProviderDetail(providerId: string) {
 
   const [provider, contact, wallet, reliability, listings, bookings, reviews, strikes, payouts] =
     await Promise.all([
-      db.from("providers").select("*, cities ( name )").eq("id", providerId).maybeSingle(),
+      db.from("providers").select("*, cities ( name ), provider_categories ( categories ( name ) )").eq("id", providerId).maybeSingle(),
       db.from("provider_contacts").select("contact_phone, contact_email").eq("provider_id", providerId).maybeSingle(),
       db.from("provider_wallets").select("*").eq("provider_id", providerId).maybeSingle(),
       db.from("provider_reliability").select("*").eq("provider_id", providerId).maybeSingle(),
@@ -148,6 +150,51 @@ export async function decideDocument(
 
   if (error) throw new AdminError(error.message);
   await audit(actorId, approved ? "approve_document" : "reject_document", "provider_document", documentId, null, { notes });
+
+  // Telling a vendor their ID was rejected is not optional. Rejecting it silently
+  // is the same as ignoring them: they sit waiting, Nexa loses a vendor, and
+  // nobody ever finds out why. The admin's note goes to them word for word.
+  if (!approved) {
+    await tellThemWhatIsWrong(documentId, notes);
+  }
+}
+
+async function tellThemWhatIsWrong(documentId: string, notes?: string): Promise<void> {
+  const db = adminDb();
+
+  const { data: doc } = await db
+    .from("provider_documents")
+    .select("kind, provider_id, providers ( business_name )")
+    .eq("id", documentId)
+    .maybeSingle();
+
+  if (!doc) return;
+
+  const { data: contact } = await db
+    .from("provider_contacts")
+    .select("contact_email")
+    .eq("provider_id", doc.provider_id)
+    .maybeSingle();
+
+  const email = contact?.contact_email;
+  if (!email) return;
+
+  const businessName =
+    (doc.providers as unknown as { business_name: string } | null)?.business_name ?? "there";
+
+  try {
+    await sendVerificationChangesRequested({
+      to: email,
+      businessName,
+      documentLabel: idTypeLabel(doc.kind),
+      reason: notes?.trim() || "We could not read it clearly. Please send a clearer photo.",
+      actionUrl: `${publicEnv.NEXT_PUBLIC_SITE_URL}/studio/verification`,
+    });
+  } catch {
+    // Resend being down must not undo a decision the admin already made. The
+    // document stays rejected; the audit log records it; the vendor sees the
+    // reason the moment they open Business Studio.
+  }
 }
 
 /**
