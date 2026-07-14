@@ -30,10 +30,16 @@ function fail(e: unknown): AdminActionState {
 
 // ---- providers ------------------------------------------------------------
 
+/**
+ * Approving a vendor emails them a link to set their password. If that email does
+ * not go, the admin has to know — an approved vendor who was never told is a
+ * vendor Nexa has silently lost.
+ */
 export async function approveProviderAction(providerId: string): Promise<void> {
-  await admin.approveProvider(await actor(P.providersApprove), providerId);
+  const { warning } = await admin.approveProvider(await actor(P.providersApprove), providerId);
   revalidatePath("/admin/providers");
   revalidatePath(`/admin/providers/${providerId}`);
+  if (warning) throw new admin.AdminError(warning);
 }
 export async function rejectProviderAction(providerId: string, reason?: string): Promise<void> {
   await admin.rejectProvider(await actor(P.providersApprove), providerId, reason ?? "");

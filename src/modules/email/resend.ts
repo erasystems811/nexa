@@ -167,3 +167,32 @@ export async function sendVerificationChangesRequested(input: {
     ].join("\n"),
   });
 }
+
+/** Somebody just handed Nexa their ID and their business. Say so. */
+export async function sendApplicationReceived(input: {
+  to: string;
+  businessName: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: "Nexa has your application",
+    html: `
+      <p>Hello ${escapeHtml(input.businessName)},</p>
+      <p>We have your application to sell on Nexa, and someone is going to look at it properly — including the identification you sent.</p>
+      <p>When you are approved we will email you a link to set your password. That is what gets you into Business Studio, where you build your listings.</p>
+      <p>If anything is unclear or we need a better photo, we will email you and tell you exactly what.</p>
+      <p>— Nexa</p>
+    `,
+    text: [
+      `Hello ${input.businessName},`,
+      "",
+      "We have your application to sell on Nexa, and someone is going to look at it properly - including the identification you sent.",
+      "",
+      "When you are approved we will email you a link to set your password. That is what gets you into Business Studio, where you build your listings.",
+      "",
+      "If anything is unclear or we need a better photo, we will email you and tell you exactly what.",
+      "",
+      "- Nexa",
+    ].join("\n"),
+  });
+}

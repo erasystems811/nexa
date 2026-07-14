@@ -201,16 +201,47 @@ async function tellThemWhatIsWrong(documentId: string, notes?: string): Promise<
  * Approve a vendor: mark them approved, and that is all. The DB trigger promotes
  * their profile to the provider role, which unlocks Business Studio for them.
  */
-export async function approveProvider(actorId: string, providerId: string): Promise<void> {
+export async function approveProvider(
+  actorId: string,
+  providerId: string,
+): Promise<{ warning?: string }> {
   const db = adminDb();
 
-  const { error } = await db
+  const { data: provider, error } = await db
     .from("providers")
     .update({ status: "approved", approved_at: new Date().toISOString(), approved_by: actorId })
-    .eq("id", providerId);
+    .eq("id", providerId)
+    .select("business_name")
+    .single();
   if (error) throw new AdminError(error.message);
 
   await audit(actorId, "approve_provider", "provider", providerId);
+
+  // A vendor who applied through /apply has an account with NO password, because
+  // they never chose one — they filled in a form. Approving them without telling
+  // them, and without giving them a way in, leaves them holding an account they
+  // cannot sign into and no idea that anything happened. This is the email that
+  // makes the whole application flow mean something.
+  const { data: contact } = await db
+    .from("provider_contacts")
+    .select("contact_email")
+    .eq("provider_id", providerId)
+    .maybeSingle();
+
+  const email = contact?.contact_email;
+  if (!email) {
+    return {
+      warning:
+        "They are approved, but Nexa has no email address for them, so nobody has told them. Send them their sign-in link yourself.",
+    };
+  }
+
+  const warning = await trySendPasswordSetupCode({
+    email,
+    name: provider.business_name,
+  });
+
+  return { warning };
 }
 
 export async function rejectProvider(actorId: string, providerId: string, reason: string): Promise<void> {

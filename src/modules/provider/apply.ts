@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureAuthUser } from "@/modules/auth/provisioning";
 import { ProviderError } from "./context";
 import { storeIdDocument, validateIdSet, type IdSubmission } from "./identification";
+import { sendApplicationReceived } from "@/modules/email/resend";
 
 /**
  * The public vendor application — how a business asks to join Nexa.
@@ -141,5 +142,13 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
       : new ProviderError("We could not save your application. Please try again.");
   }
 
+
+  // Nothing worse than handing over your NIN and hearing nothing back. If Resend
+  // is down the application still stands — this must never undo it.
+  try {
+    await sendApplicationReceived({ to: input.email, businessName: input.businessName });
+  } catch {
+    // Swallowed on purpose.
+  }
   return { providerId: provider.id };
 }
