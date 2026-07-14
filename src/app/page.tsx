@@ -36,7 +36,7 @@ export default async function HomePage() {
       </header>
 
       <section className="pt-6">
-        <h1 className="font-display text-[2.35rem] sm:text-[3.4rem]">
+        <h1 className="text-[2.1rem] font-semibold leading-[1.1] tracking-tight sm:text-5xl">
           Everything your event needs,<br />
           <span className="text-[color:var(--color-accent)]">booked with confidence.</span>
         </h1>
@@ -75,7 +75,7 @@ export default async function HomePage() {
 
       <section className="mt-12">
         <div className="overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] p-6 text-white">
-          <h2 className="text-xl font-semibold tracking-tight">Plan My Event</h2>
+          <h2 className="text-lg font-semibold">Plan My Event</h2>
           <p className="mt-1 max-w-md text-sm text-white/80">
             {planMyEventLive
               ? "Tell us the event, budget and guest count - we'll assemble a package."

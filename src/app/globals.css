@@ -18,14 +18,6 @@
   --color-star: #e8a020;
 
   --radius-card: 1rem;
-
-  /*
-   * Overriding Tailwind's own --font-sans, which would otherwise be the system
-   * stack and would otherwise win — it is emitted after next/font's variables
-   * and carries the same specificity. Defining it here replaces the default
-   * outright, so there is nothing left to beat.
-   */
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
@@ -47,18 +39,6 @@
   }
 }
 
-@layer components {
-  /*
-   * The headline. Deliberately not bold: 500 is enough at this size, and the
-   * quietness is the point — heavy type reads as a sale, airy type reads as a
-   * brand. Size and space carry it, weight does not.
-   */
-  .font-display {
-    font-weight: 500;
-    letter-spacing: -0.022em;
-    line-height: 1.12;
-  }
-}
 
 @layer utilities {
   /* Soft premium card shadow. */
