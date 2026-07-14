@@ -6,6 +6,7 @@ import { formatKobo } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
 import { BackBar } from "@/components/back-bar";
+import { CategoryIcon } from "@/components/category-icon";
 
 /** Search & category browse.+ */
 export default async function SearchPage({
@@ -29,7 +30,7 @@ export default async function SearchPage({
   const active = categories.find((c) => c.slug === sp.category);
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-6">
+    <main className="mx-3 my-3 max-w-3xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-6 sm:mx-auto sm:my-8">
       <BackBar />
       <div className="mt-3">
         <PageHeader
@@ -43,7 +44,7 @@ export default async function SearchPage({
       <nav className="mt-4 -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
         <Chip href="/search" label="All" active={!sp.category} />
         {categories.map((c) => (
-          <Chip key={c.id} href={`/search?category=${c.slug}` as Route} label={`${c.icon ?? ""} ${c.name}`} active={sp.category === c.slug} />
+          <Chip key={c.id} href={`/search?category=${c.slug}` as Route} slug={c.slug} label={c.name} active={sp.category === c.slug} />
         ))}
       </nav>
 
@@ -80,12 +81,24 @@ export default async function SearchPage({
   );
 }
 
-function Chip({ label, href, active }: { label: string; href: Route; active: boolean }) {
+function Chip({
+  label,
+  href,
+  active,
+  slug,
+}: {
+  label: string;
+  href: Route;
+  active: boolean;
+  /** Absent on the "All" chip, which is a word rather than a category. */
+  slug?: string;
+}) {
   return (
     <Link
       href={href}
-      className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-medium ${active ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white" : "border-[color:var(--color-line)] text-[color:var(--color-ink)]"}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-medium transition ${active ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white" : "border-[color:var(--color-line)] text-[color:var(--color-ink)] hover:border-[color:var(--color-ink-muted)]"}`}
     >
+      {slug ? <CategoryIcon slug={slug} className="size-4" /> : null}
       {label}
     </Link>
   );

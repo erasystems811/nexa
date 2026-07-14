@@ -23,16 +23,24 @@ import "./globals.css";
  * Both are loaded by Next, which means self-hosted and preloaded — no request to
  * Google from the visitor's browser, and no flash of the wrong font.
  */
+/*
+ * Named for the face, not the role — `--font-sans` and `--font-display` are
+ * Tailwind theme tokens, and Tailwind emits its own defaults for them *after*
+ * next/font's variables in the stylesheet. Same specificity, later wins: naming
+ * these `--font-sans` would have let Tailwind's system-font stack quietly beat
+ * Instrument Sans, and the site would have gone on looking exactly as it did.
+ * globals.css maps the theme tokens onto these instead.
+ */
 const sans = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-instrument-sans",
   display: "swap",
 });
 
 const serif = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
-  variable: "--font-display",
+  variable: "--font-instrument-serif",
   display: "swap",
 });
 
@@ -57,7 +65,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable}`}>
-      <body className="min-h-dvh bg-white text-[color:var(--color-ink)]">
+      {/*
+        The marketplace sits on the sunk grey, not on the page. Every customer
+        screen is a white card floating on it — which is what stops Nexa reading
+        as words typed onto paper. Admin and Studio each paint their own
+        full-height background over this, so they are untouched.
+      */}
+      <body className="min-h-dvh bg-[color:var(--color-surface-sunk)] text-[color:var(--color-ink)]">
         {children}
       </body>
     </html>

@@ -26,7 +26,7 @@ export default async function WhatsappHandoffPage({
     : null;
 
   return (
-    <main className="mx-auto max-w-xl px-5 py-10">
+    <main className="mx-3 my-3 max-w-xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-10 sm:mx-auto sm:my-8">
       <BackBar fallback="/orders" className="mb-4" />
       <PageHeader
         title="Chat on WhatsApp"

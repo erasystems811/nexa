@@ -17,7 +17,8 @@ export default async function VendorAccessPage() {
   const session = await getSession();
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10">
+    <main className="flex min-h-dvh flex-col justify-center px-3 py-8">
+      <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-[color:var(--color-line)] bg-white px-6 py-10 shadow-card">
       <Link href="/" aria-label="Nexa home" className="mb-8 self-center">
         <Logo markClassName="size-12 rounded-2xl" textClassName="text-lg" />
       </Link>
@@ -56,6 +57,7 @@ export default async function VendorAccessPage() {
       >
         &larr; Back to Nexa
       </Link>
+    </div>
     </main>
   );
 }

@@ -26,7 +26,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   const bookable = listings.find((l) => l.price_type === "fixed") ?? listings[0] ?? null;
 
   return (
-    <main className="mx-auto max-w-2xl pb-16">
+    <main className="mx-3 my-3 max-w-2xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card pb-16 sm:mx-auto sm:my-8">
       {/* Cover */}
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-[color:var(--color-surface-sunk)] sm:aspect-[21/9]">
         {cover ? (

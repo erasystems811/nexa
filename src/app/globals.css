@@ -18,6 +18,15 @@
   --color-star: #e8a020;
 
   --radius-card: 1rem;
+
+  /*
+   * Overriding Tailwind's own --font-sans, which would otherwise be the system
+   * stack and would otherwise win — it is emitted after next/font's variables
+   * and carries the same specificity. Defining it here replaces the default
+   * outright, so there is nothing left to beat.
+   */
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
 }
 
 @layer base {
@@ -47,7 +56,7 @@
    * because Instrument Serif is drawn for large sizes.
    */
   .font-display {
-    font-family: var(--font-display), Georgia, "Times New Roman", serif;
+    font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: -0.005em;
   }

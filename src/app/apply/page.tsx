@@ -19,7 +19,7 @@ export default async function ApplyPage() {
   const [categories, cities] = await Promise.all([listCategories(), listCities()]);
 
   return (
-    <main className="mx-auto max-w-xl px-5 pb-16">
+    <main className="mx-3 my-3 max-w-xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 pb-16 sm:mx-auto sm:my-8">
       <header className="flex items-center justify-between py-5">
         <Link href="/" aria-label="Nexa home">
           <Logo markClassName="size-10 rounded-[1.1rem]" textClassName="text-lg" />
