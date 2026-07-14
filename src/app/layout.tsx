@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -10,10 +10,15 @@ import "./globals.css";
  * to default to — Segoe UI on Windows, Roboto on Android, San Francisco on an
  * iPhone. A brand that borrows the OS's font is a brand nobody remembers.
  *
- * One face, all of it. A display serif sat here briefly and was cut: it was
- * beautiful at a glance and hard to read on a phone in the sun, which is the
- * only condition that matters. Weight and size carry the headline instead — the
- * cheapest kind of confidence, and the kind nobody has to squint at.
+ * DM Sans, one face for all of it. Geometric, low contrast, open counters — the
+ * letterforms are calm rather than assertive, and calm is what premium actually
+ * looks like on a screen. Two faces were tried and cut before it: a display serif
+ * that was beautiful and unreadable on a phone, and a grotesk whose strokes were
+ * simply too thick to feel expensive.
+ *
+ * Restraint is the brief. Weight is spent sparingly and size does the work — a
+ * heavy headline reads as a discount banner, an airy one reads as a brand that
+ * does not need to raise its voice.
  *
  * Loaded by Next, which means self-hosted and preloaded: no request to Google
  * from the visitor's browser, and no flash of the wrong font.
@@ -24,9 +29,9 @@ import "./globals.css";
  * Tailwind quietly win, and the site would have gone on looking exactly as it
  * did. globals.css points the theme token at this instead.
  */
-const sans = Instrument_Sans({
+const sans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-instrument-sans",
+  variable: "--font-dm-sans",
   display: "swap",
 });
 

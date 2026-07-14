@@ -25,7 +25,7 @@
    * and carries the same specificity. Defining it here replaces the default
    * outright, so there is nothing left to beat.
    */
-  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
@@ -49,14 +49,14 @@
 
 @layer components {
   /*
-   * The headline. A serif was here and was cut for being pretty and hard to
-   * read; weight and tight tracking do the work instead. Nothing exotic — this
-   * is the same face as the rest of the page, pushed hard.
+   * The headline. Deliberately not bold: 500 is enough at this size, and the
+   * quietness is the point — heavy type reads as a sale, airy type reads as a
+   * brand. Size and space carry it, weight does not.
    */
   .font-display {
-    font-weight: 700;
-    letter-spacing: -0.035em;
-    line-height: 1.03;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    line-height: 1.12;
   }
 }
 
