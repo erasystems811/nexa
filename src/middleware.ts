@@ -148,9 +148,25 @@ export async function middleware(request: NextRequest) {
 
   const internalPath = action.kind === "rewrite" ? action.to : pathname;
 
+  // Already signed in and asking for the login page? Normally that means they
+  // clicked it by mistake, so send them home. But not always:
+  //
+  //   - on the Admin surface, someone who is not an admin needs to reach /login
+  //     to sign in as one;
+  //   - on the vendor surface, someone who is not a VENDOR needs to reach it for
+  //     exactly the same reason. Bouncing them "home" is what sent an admin who
+  //     clicked "Sign in" on the vendor site straight into the Admin Console —
+  //     which is a strange answer to the question they asked.
+  //
+  // In both cases the person is on the wrong account for where they are standing,
+  // and the login page is precisely what they want.
   if (userId && AUTH_ROUTES.some((r) => internalPath.startsWith(r))) {
-    const wantsAdmin = surface === "admin" || request.nextUrl.searchParams.get("next")?.startsWith("/admin") === true;
-    if (!(wantsAdmin && role !== "admin")) {
+    const wantsAdmin =
+      surface === "admin" || request.nextUrl.searchParams.get("next")?.startsWith("/admin") === true;
+    const wrongAccountForAdmin = wantsAdmin && role !== "admin";
+    const wrongAccountForVendor = surface === "studio" && role !== "provider";
+
+    if (!wrongAccountForAdmin && !wrongAccountForVendor) {
       return carryCookies(response, NextResponse.redirect(new URL(homeForRole(role ?? "customer"), request.url)));
     }
   }

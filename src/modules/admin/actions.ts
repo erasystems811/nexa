@@ -79,6 +79,36 @@ export async function decideDocumentAction(
   revalidatePath(`/admin/providers/${providerId}`);
 }
 
+// ---- categories -----------------------------------------------------------
+
+/**
+ * The photo on a category tile. It is the first thing a customer sees, so it is
+ * a settings-level act: whoever runs the marketplace decides what it looks like.
+ */
+export async function setCategoryImageAction(
+  slug: string,
+  _prev: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a photo" };
+
+  try {
+    await admin.setCategoryImage(await actor(P.settingsManage), slug, file);
+    revalidatePath("/admin/categories");
+    revalidatePath("/");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function removeCategoryImageAction(slug: string): Promise<void> {
+  await admin.removeCategoryImage(await actor(P.settingsManage), slug);
+  revalidatePath("/admin/categories");
+  revalidatePath("/");
+}
+
 // ---- strikes / appeals ----------------------------------------------------
 
 export async function noShowAction(bookingId: string): Promise<void> {

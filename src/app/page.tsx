@@ -61,10 +61,19 @@ export default async function HomePage() {
             {categories.map((c) => (
               <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
                 <div className="flex h-28 w-28 flex-col items-center justify-center gap-2.5 rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
-                  <CategoryIcon
-                    slug={c.slug}
-                    className="size-7 text-[color:var(--color-ink-muted)] transition-colors group-hover:text-[color:var(--color-accent)]"
-                  />
+                  {images[c.slug] ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Supabase storage, no loader configured
+                    <img
+                      src={images[c.slug]}
+                      alt=""
+                      className="size-12 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <CategoryIcon
+                      slug={c.slug}
+                      className="size-7 text-[color:var(--color-ink-muted)] transition-colors group-hover:text-[color:var(--color-accent)]"
+                    />
+                  )}
                   <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
                 </div>
               </Link>

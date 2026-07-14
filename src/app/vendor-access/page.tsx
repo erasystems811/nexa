@@ -27,20 +27,24 @@ export default async function VendorAccessPage() {
         <h1 className="text-lg font-semibold">Nexa for vendors</h1>
         <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
           This is where vendors manage their listings, bookings and payouts.
-          {session
-            ? " Your account isn't a vendor account yet."
-            : " Sign in with your vendor account to continue."}
         </p>
 
+        {session ? (
+          <p className="mt-3 rounded-xl bg-[color:var(--color-surface-sunk)] px-4 py-3 text-xs text-[color:var(--color-ink-muted)]">
+            You are signed in as <strong className="text-[color:var(--color-ink)]">{session.email}</strong>,
+            which is not a vendor account. Sign in with your vendor account to continue.
+          </p>
+        ) : null}
+
         <div className="mt-6 space-y-3">
-          {!session ? (
-            <Link href={"/login" as Route} className="block">
-              <Button className="w-full">Sign in</Button>
-            </Link>
-          ) : null}
+          <Link href={"/login" as Route} className="block">
+            <Button className="w-full">
+              {session ? "Sign in as a vendor" : "Sign in"}
+            </Button>
+          </Link>
 
           <Link href={"/apply" as Route} className="block">
-            <Button variant={session ? "primary" : "ghost"} className="w-full">
+            <Button variant="ghost" className="w-full">
               Apply to become a vendor
             </Button>
           </Link>

@@ -17,6 +17,8 @@ import { createClient } from "@/lib/supabase/server";
  * in this file references it.
  */
 
+export { categoryImages, categoryImageUrl, BUCKET as CATEGORY_BUCKET } from "./category-images";
+
 export async function listCategories() {
   const supabase = await createClient();
   const { data } = await supabase

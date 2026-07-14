@@ -29,6 +29,10 @@ export {
 } from "./staff";
 export { adminDashboard } from "./dashboard";
 export {
+  listCategoriesForAdmin, setCategoryImage, removeCategoryImage,
+  type AdminCategory,
+} from "./categories";
+export {
   listProviders, getProviderDetail, approveProvider, rejectProvider,
   setProviderSuspended, setProviderFeatured, addProviderManually,
   providerIdentity, decideDocument,

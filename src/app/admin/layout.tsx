@@ -28,6 +28,7 @@ export default async function AdminLayout({
     { href: "/payments", label: "Money", perm: P.paymentsView },
     { href: "/subscriptions", label: "Subscriptions", perm: P.subscriptionsView },
     { href: "/disputes", label: "Support", perm: P.disputesView },
+    { href: "/categories", label: "Categories", perm: P.settingsManage },
     { href: "/settings", label: "Settings", perm: P.settingsManage },
   ];
   const visible = tabs.filter((t) => t.perm === null || can(staff, t.perm));
