@@ -33,8 +33,9 @@ export function OrderActions({
       {status === "paid_held" ? (
         <div className="w-full">
           <p className="mb-2 text-xs text-[color:var(--color-ink-muted)]">
-            The customer has paid and Nexa is holding the money. Accept, and your
-            deposit is sent to your bank account straight away.
+            The customer has paid and Nexa is holding the whole amount. Accept it,
+            do the job, and Nexa pays you once the customer gives you their
+            completion code.
           </p>
           <div className="flex gap-2">
             <Btn primary disabled={pending} onClick={() => run(() => acceptOrderAction(bookingId))}>
@@ -56,7 +57,7 @@ export function OrderActions({
       {status === "in_progress" ? (
         <p className="text-xs text-[color:var(--color-ink-muted)]">
           When the job is done, ask the customer for their completion code and enter
-          it to release the balance.
+          it. That is what tells Nexa to pay you.
         </p>
       ) : null}
 

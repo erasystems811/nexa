@@ -3,6 +3,7 @@ import { requireSession } from "@/modules/auth";
 import { getConversation } from "@/modules/messaging";
 import { publicEnv } from "@/lib/env";
 import { Button, Card, PageHeader } from "@/components/ui";
+import { BackBar } from "@/components/back-bar";
 
 export default async function WhatsappHandoffPage({
   params,
@@ -23,14 +24,16 @@ export default async function WhatsappHandoffPage({
 
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
+      <BackBar fallback="/orders" className="mb-4" />
       <PageHeader
         title="Chat on WhatsApp"
-        subtitle="Use your booking reference so Nexa can keep the request organized and protected."
+        subtitle="You are messaging Nexa's WhatsApp number. You never see the vendor's number, and they never see yours."
       />
 
       <Card>
         <p className="text-sm text-[color:var(--color-ink-muted)]">
-          Keep all booking details and payment steps connected to this request. Nexa keeps a record for escrow, support, and dispute protection.
+          Nexa passes your messages on and keeps the record — so the price you agree, the job you
+          asked for, and the money being held all stay connected to one request.
         </p>
 
         {href ? (

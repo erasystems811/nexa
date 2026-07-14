@@ -1,7 +1,12 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getProviderBySlug } from "@/modules/marketplace";
+import { getSession } from "@/modules/auth";
 import { formatKobo } from "@/lib/money";
+import { Button } from "@/components/ui";
+import { BackBar } from "@/components/back-bar";
+import { ChatOnWhatsApp, PrivacyNote } from "@/components/chat-cta";
 
 /** Provider profile.+/ */
 export default async function ProviderPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -9,10 +14,16 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   const result = await getProviderBySlug(slug);
   if (!result) notFound();
 
+  const session = await getSession();
   const { provider, listings, rating, reviews } = result;
   const cover = (provider as unknown as { cover_url: string | null }).cover_url;
   const logo = (provider as unknown as { logo_url: string | null }).logo_url;
   const cityName = (provider.cities as unknown as { name: string } | null)?.name;
+  const providerPath = `/p/${provider.slug}`;
+
+  // "Book this" on a vendor page means their first bookable listing; a vendor
+  // with nothing listed yet can still be chatted to.
+  const bookable = listings.find((l) => l.price_type === "fixed") ?? listings[0] ?? null;
 
   return (
     <main className="mx-auto max-w-2xl pb-16">
@@ -22,7 +33,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
           <img src={cover} alt={provider.business_name} className="h-full w-full object-cover" />
         ) : null}
-        <Link href="/search" className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium shadow-sm">← Back</Link>
+        <BackBar variant="overlay" fallback="/search" />
       </div>
 
       <div className="px-5">
@@ -53,6 +64,22 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         {provider.description ? (
           <p className="mt-4 text-sm leading-relaxed text-[color:var(--color-ink-muted)]">{provider.description}</p>
         ) : null}
+
+        {/* Something to actually do. The vendor page used to offer nothing at all. */}
+        <div className="mt-5 space-y-3">
+          {bookable ? (
+            <Link href={`/l/${bookable.slug}` as Route} className="block">
+              <Button className="w-full">Book this vendor</Button>
+            </Link>
+          ) : null}
+          <ChatOnWhatsApp
+            providerId={provider.id}
+            signedIn={Boolean(session)}
+            next={providerPath}
+            variant={bookable ? "ghost" : "primary"}
+          />
+          <PrivacyNote />
+        </div>
 
         {/* Listings */}
         <section className="mt-8">

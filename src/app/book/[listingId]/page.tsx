@@ -1,8 +1,10 @@
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/modules/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
+import { BackBar } from "@/components/back-bar";
 import { BookingForm } from "./booking-form";
 
 /** Date/time, confirm, pay.: vendors own ordinary fulfillment. */
@@ -14,7 +16,7 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
   const { data: listing } = await supabase
     .from("listings")
     .select(
-      `id, title, price_kobo, price_type, payment_type,
+      `id, slug, title, price_kobo, price_type, payment_type,
        categories ( name, fulfillment_type ),
        providers ( business_name )`,
     )
@@ -42,6 +44,7 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
+      <BackBar fallback={`/l/${listing.slug}` as Route} className="mb-4" />
       <PageHeader title={listing.title} subtitle={listing.providers.business_name} />
 
       <Card>

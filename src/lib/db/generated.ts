@@ -165,25 +165,19 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
-          commission_percent: number
           completed_at: string | null
           created_at: string
           customer_id: string
           event_project_id: string | null
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
           id: string
-          late_minutes: number
-          late_penalty_percent_per_30min: number
           listing_id: string
           notes: string | null
-          provider_arrived_at: string | null
           provider_id: string
           reference: string
           rejected_at: string | null
           scheduled_end: string | null
           scheduled_start: string
-          stage_1_at: string | null
-          stage_1_release_percent: number
           stage_2_at: string | null
           status: Database["public"]["Enums"]["booking_status"]
           updated_at: string
@@ -197,25 +191,19 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
-          commission_percent: number
           completed_at?: string | null
           created_at?: string
           customer_id: string
           event_project_id?: string | null
           fulfillment_type: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
-          late_minutes?: number
-          late_penalty_percent_per_30min?: number
           listing_id: string
           notes?: string | null
-          provider_arrived_at?: string | null
           provider_id: string
           reference?: string
           rejected_at?: string | null
           scheduled_end?: string | null
           scheduled_start: string
-          stage_1_at?: string | null
-          stage_1_release_percent: number
           stage_2_at?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
@@ -229,25 +217,19 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
-          commission_percent?: number
           completed_at?: string | null
           created_at?: string
           customer_id?: string
           event_project_id?: string | null
           fulfillment_type?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
-          late_minutes?: number
-          late_penalty_percent_per_30min?: number
           listing_id?: string
           notes?: string | null
-          provider_arrived_at?: string | null
           provider_id?: string
           reference?: string
           rejected_at?: string | null
           scheduled_end?: string | null
           scheduled_start?: string
-          stage_1_at?: string | null
-          stage_1_release_percent?: number
           stage_2_at?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
@@ -1292,54 +1274,42 @@ export type Database = {
         Row: {
           amount_kobo: number
           booking_id: string
-          commission_kobo: number
           created_at: string
           gateway: string | null
           gateway_metadata: Json
           gateway_reference: string | null
           held_kobo: number
           id: string
-          penalty_kobo: number
           refunded_kobo: number
           released_kobo: number
-          stage_1_released_at: string | null
-          stage_2_released_at: string | null
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
         }
         Insert: {
           amount_kobo: number
           booking_id: string
-          commission_kobo?: number
           created_at?: string
           gateway?: string | null
           gateway_metadata?: Json
           gateway_reference?: string | null
           held_kobo?: number
           id?: string
-          penalty_kobo?: number
           refunded_kobo?: number
           released_kobo?: number
-          stage_1_released_at?: string | null
-          stage_2_released_at?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
         }
         Update: {
           amount_kobo?: number
           booking_id?: string
-          commission_kobo?: number
           created_at?: string
           gateway?: string | null
           gateway_metadata?: Json
           gateway_reference?: string | null
           held_kobo?: number
           id?: string
-          penalty_kobo?: number
           refunded_kobo?: number
           released_kobo?: number
-          stage_1_released_at?: string | null
-          stage_2_released_at?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
         }
@@ -1399,67 +1369,6 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      penalty_applications: {
-        Row: {
-          applied_by: string | null
-          booking_id: string
-          created_at: string
-          customer_share_kobo: number
-          id: string
-          late_minutes: number
-          payment_id: string
-          penalty_kobo: number
-          platform_share_kobo: number
-          reason: string
-        }
-        Insert: {
-          applied_by?: string | null
-          booking_id: string
-          created_at?: string
-          customer_share_kobo: number
-          id?: string
-          late_minutes?: number
-          payment_id: string
-          penalty_kobo: number
-          platform_share_kobo: number
-          reason: string
-        }
-        Update: {
-          applied_by?: string | null
-          booking_id?: string
-          created_at?: string
-          customer_share_kobo?: number
-          id?: string
-          late_minutes?: number
-          payment_id?: string
-          penalty_kobo?: number
-          platform_share_kobo?: number
-          reason?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "penalty_applications_applied_by_fkey"
-            columns: ["applied_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "penalty_applications_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "penalty_applications_payment_id_fkey"
-            columns: ["payment_id"]
-            isOneToOne: false
-            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
@@ -1622,57 +1531,6 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      provider_agreements: {
-        Row: {
-          commission_percent_override: number | null
-          created_at: string
-          deposit_percent: number
-          id: string
-          is_active: boolean
-          late_penalty_percent_per_30min_override: number | null
-          provider_id: string
-          recorded_by: string | null
-          signed_at: string | null
-        }
-        Insert: {
-          commission_percent_override?: number | null
-          created_at?: string
-          deposit_percent: number
-          id?: string
-          is_active?: boolean
-          late_penalty_percent_per_30min_override?: number | null
-          provider_id: string
-          recorded_by?: string | null
-          signed_at?: string | null
-        }
-        Update: {
-          commission_percent_override?: number | null
-          created_at?: string
-          deposit_percent?: number
-          id?: string
-          is_active?: boolean
-          late_penalty_percent_per_30min_override?: number | null
-          provider_id?: string
-          recorded_by?: string | null
-          signed_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "provider_agreements_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "providers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "provider_agreements_recorded_by_fkey"
-            columns: ["recorded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2449,15 +2307,6 @@ export type Database = {
         Args: { p_provider_id: string }
         Returns: boolean
       }
-      resolve_booking_terms: {
-        Args: { p_provider_id: string }
-        Returns: {
-          commission_percent: number
-          deposit_percent: number
-          late_penalty_percent_per_30min: number
-          stage_1_release_percent: number
-        }[]
-      }
       scan_message_body: {
         Args: { body: string }
         Returns: Database["public"]["Enums"]["moderation_flag_reason"][]
@@ -2491,12 +2340,7 @@ export type Database = {
         | "bank_account"
         | "off_platform_solicitation"
       moderation_flag_status: "pending" | "confirmed" | "dismissed"
-      payment_ledger_kind:
-        | "hold"
-        | "stage_release"
-        | "commission"
-        | "penalty"
-        | "refund"
+      payment_ledger_kind: "hold" | "stage_release" | "refund"
       payment_status:
         | "pending"
         | "held"
@@ -2683,13 +2527,7 @@ export const Constants = {
         "off_platform_solicitation",
       ],
       moderation_flag_status: ["pending", "confirmed", "dismissed"],
-      payment_ledger_kind: [
-        "hold",
-        "stage_release",
-        "commission",
-        "penalty",
-        "refund",
-      ],
+      payment_ledger_kind: ["hold", "stage_release", "refund"],
       payment_status: [
         "pending",
         "held",

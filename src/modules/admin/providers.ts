@@ -4,11 +4,11 @@ import { ensureAuthUser, trySendPasswordSetupCode } from "@/modules/auth/provisi
 import { adminDb, audit, AdminError } from "./context";
 
 /**
- * Provider management.
+ * Vendor management.
  *
- * Approval is where a provider's deposit percentage and any penalty override are
- * set — by Admin, on the agreement, never by the provider. This
- * is the only place those values are written.
+ * Approving a vendor means one thing now: they are allowed to sell on Nexa.
+ * There are no terms to set at approval — no deposit, no commission, no penalty.
+ * Money is decided later, per booking, when an admin pays the vendor.
  */
 
 export async function listProviders(status?: string) {
@@ -26,10 +26,9 @@ export async function listProviders(status?: string) {
 export async function getProviderDetail(providerId: string) {
   const db = adminDb();
 
-  const [provider, agreement, contact, wallet, reliability, listings, bookings, reviews, strikes, payouts] =
+  const [provider, contact, wallet, reliability, listings, bookings, reviews, strikes, payouts] =
     await Promise.all([
       db.from("providers").select("*, cities ( name )").eq("id", providerId).maybeSingle(),
-      db.from("provider_agreements").select("*").eq("provider_id", providerId).eq("is_active", true).maybeSingle(),
       db.from("provider_contacts").select("contact_phone, contact_email").eq("provider_id", providerId).maybeSingle(),
       db.from("provider_wallets").select("*").eq("provider_id", providerId).maybeSingle(),
       db.from("provider_reliability").select("*").eq("provider_id", providerId).maybeSingle(),
@@ -43,7 +42,6 @@ export async function getProviderDetail(providerId: string) {
   if (!provider.data) return null;
   return {
     provider: provider.data,
-    agreement: agreement.data,
     contact: contact.data,
     wallet: wallet.data,
     reliability: reliability.data,
@@ -56,36 +54,11 @@ export async function getProviderDetail(providerId: string) {
 }
 
 /**
- * Verify and approve. Sets the deposit % (and any overrides) on a fresh
- * agreement, flips the provider to approved — which promotes their profile to
- * the provider role via the DB trigger and unlocks Business Studio.
+ * Approve a vendor: mark them approved, and that is all. The DB trigger promotes
+ * their profile to the provider role, which unlocks Business Studio for them.
  */
-export async function approveProvider(
-  actorId: string,
-  providerId: string,
-  terms: {
-    depositPercent: number;
-    commissionOverride?: number | null;
-    latePenaltyOverride?: number | null;
-  },
-): Promise<void> {
+export async function approveProvider(actorId: string, providerId: string): Promise<void> {
   const db = adminDb();
-
-  if (terms.depositPercent < 0 || terms.depositPercent > 100) {
-    throw new AdminError("Deposit percent must be between 0 and 100");
-  }
-
-  // One active agreement at a time; retire any prior.
-  await db.from("provider_agreements").update({ is_active: false }).eq("provider_id", providerId).eq("is_active", true);
-  const { error: agErr } = await db.from("provider_agreements").insert({
-    provider_id: providerId,
-    deposit_percent: terms.depositPercent,
-    commission_percent_override: terms.commissionOverride ?? null,
-    late_penalty_percent_per_30min_override: terms.latePenaltyOverride ?? null,
-    signed_at: new Date().toISOString(),
-    recorded_by: actorId,
-  });
-  if (agErr) throw new AdminError(`Could not record the agreement: ${agErr.message}`);
 
   const { error } = await db
     .from("providers")
@@ -93,7 +66,7 @@ export async function approveProvider(
     .eq("id", providerId);
   if (error) throw new AdminError(error.message);
 
-  await audit(actorId, "approve_provider", "provider", providerId, null, terms);
+  await audit(actorId, "approve_provider", "provider", providerId);
 }
 
 export async function rejectProvider(actorId: string, providerId: string, reason: string): Promise<void> {
@@ -135,19 +108,17 @@ export interface ManualProviderResult {
 }
 
 /**
- * Add a provider manually. Reuses the auth user when the email
- * already has one — a vendor who first signed up as a customer is the common
- * case, and creating a second account for that email is impossible — then the
- * provider row and its agreement. The provider is created already approved,
- * since Admin is doing the vetting in person.
+ * Add a vendor by hand. Reuses the auth user when the email already has one — a
+ * vendor who first signed up as a customer is the common case — then creates the
+ * vendor, already approved, since the vetting was done in person.
  *
  * The account never gets a password from us: the vendor is emailed a code and
  * sets their own at /reset. Without that email the login exists but is unusable,
- * so a send failure comes back as a warning Admin can act on.
+ * so a send failure comes back as a warning the admin can act on.
  */
 export async function addProviderManually(
   actorId: string,
-  input: { email: string; businessName: string; depositPercent: number; cityId?: string | null },
+  input: { email: string; businessName: string; cityId?: string | null },
 ): Promise<ManualProviderResult> {
   const db = adminDb();
 
@@ -165,7 +136,7 @@ export async function addProviderManually(
     .eq("user_id", user.id)
     .maybeSingle();
   if (alreadyProvider) {
-    throw new AdminError(`${input.email} already runs "${alreadyProvider.business_name}" on Nexa. Open that provider instead.`);
+    throw new AdminError(`${input.email} already runs "${alreadyProvider.business_name}" on Nexa. Open that vendor instead.`);
   }
 
   const slug = input.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Math.random().toString(36).slice(2, 6);
@@ -175,9 +146,9 @@ export async function addProviderManually(
     .insert({ user_id: user.id, business_name: input.businessName, slug, city_id: input.cityId ?? null, status: "pending" })
     .select("id")
     .single();
-  if (provErr || !provider) throw new AdminError(`Could not create the provider: ${provErr?.message}`);
+  if (provErr || !provider) throw new AdminError(`Could not create the vendor: ${provErr?.message}`);
 
-  await approveProvider(actorId, provider.id, { depositPercent: input.depositPercent });
+  await approveProvider(actorId, provider.id);
   await audit(actorId, "add_provider_manually", "provider", provider.id, null, { email: input.email });
 
   const warning = await trySendPasswordSetupCode({ email: input.email, name: input.businessName });

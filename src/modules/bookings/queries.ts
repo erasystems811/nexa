@@ -33,8 +33,7 @@ export async function getMyOrder(bookingId: string) {
     .from("bookings")
     .select(
       `id, reference, status, fulfillment_type, scheduled_start, scheduled_end,
-       address, notes, agreed_price_kobo,
-       stage_1_release_percent, commission_percent, stage_1_at, stage_2_at,
+       address, notes, agreed_price_kobo, stage_2_at,
        created_at, accepted_at, completed_at,
        listings ( title, slug ),
        providers ( id, business_name, slug )`,

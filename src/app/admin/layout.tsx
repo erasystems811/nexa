@@ -7,7 +7,7 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
 import type { Permission } from "@/modules/admin";
 
-/** Nexa Admin Console. Internal staff only.endum */
+/** Nexa Admin Console. Internal staff only. */
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -17,19 +17,17 @@ export default async function AdminLayout({
 
   await recordLogin(staff.userId).catch(() => {});
 
+  // Eight tabs, each one a thing a person actually does. Customers, staff, the
+  // activity log and flagged messages are reachable from the page they belong
+  // to — they are not day-to-day work and do not earn a tab.
   const tabs: { href: string; label: string; perm: Permission | null }[] = [
-    { href: "/", label: "Home", perm: null },
-    { href: "/providers", label: "Providers", perm: P.providersView },
+    { href: "/", label: "Dashboard", perm: null },
+    { href: "/providers", label: "Vendors", perm: P.providersView },
     { href: "/listings", label: "Listings", perm: P.listingsView },
-    { href: "/orders", label: "Orders", perm: P.ordersView },
-    { href: "/payments", label: "Payments", perm: P.paymentsView },
+    { href: "/orders", label: "Bookings", perm: P.ordersView },
+    { href: "/payments", label: "Money", perm: P.paymentsView },
     { href: "/subscriptions", label: "Subscriptions", perm: P.subscriptionsView },
-    { href: "/disputes", label: "Disputes", perm: P.disputesView },
-    { href: "/moderation", label: "Flags", perm: P.moderationView },
-    { href: "/customers", label: "Customers", perm: P.customersView },
-    { href: "/reports", label: "Reports", perm: P.reportsView },
-    { href: "/activity", label: "Activity", perm: P.staffManage },
-    { href: "/staff", label: "Staff", perm: P.staffManage },
+    { href: "/disputes", label: "Support", perm: P.disputesView },
     { href: "/settings", label: "Settings", perm: P.settingsManage },
   ];
   const visible = tabs.filter((t) => t.perm === null || can(staff, t.perm));

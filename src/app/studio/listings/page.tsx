@@ -44,8 +44,7 @@ export default async function StudioListings() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{l.title}</p>
                     <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
-                      {l.categories?.name} · {l.price_type === "fixed" ? "Fixed" : "Negotiable"} ·{" "}
-                      {l.payment_type === "full" ? "Full payment" : "Deposit"}
+                      {l.categories?.name} · {l.price_type === "fixed" ? "Fixed" : "Negotiable"}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">

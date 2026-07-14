@@ -55,6 +55,16 @@ export function surfaceForHost(host: string | null | undefined, root = rootDomai
 
 const AUTH_ROUTES = ["/login", "/register", "/verify", "/reset", "/account"];
 
+/**
+ * Routes that mean the same thing on every surface and must never be rewritten
+ * into one.
+ *
+ * /apply is how a business asks to join, and the vendor surface is exactly where
+ * somebody who is not a vendor yet lands — rewriting it to /studio/apply would
+ * 404 the one page they came for. /vendor-access is what that person is shown.
+ */
+const PUBLIC_ROUTES = ["/apply", "/vendor-access"];
+
 function isAsset(path: string): boolean {
   return (
     path.startsWith("/_next") ||
@@ -68,6 +78,10 @@ function isAuthRoute(path: string): boolean {
   return AUTH_ROUTES.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
+function isPublicRoute(path: string): boolean {
+  return PUBLIC_ROUTES.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
 
 export type RouteAction =
   | { kind: "pass" }
@@ -76,7 +90,7 @@ export type RouteAction =
   | { kind: "notFound" };
 
 export function resolveRoute(surface: Surface, path: string): RouteAction {
-  if (isAsset(path) || isAuthRoute(path)) return { kind: "pass" };
+  if (isAsset(path) || isAuthRoute(path) || isPublicRoute(path)) return { kind: "pass" };
 
   for (const [s, base] of Object.entries(SURFACE_BASE) as [Surface, string][]) {
     if (s === surface || base === "") continue;

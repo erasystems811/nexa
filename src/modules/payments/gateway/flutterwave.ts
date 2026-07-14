@@ -25,7 +25,7 @@ import {
  *                 settlement account is Nexa's. The money sits in Nexa's own
  *                 balance. That, and nothing more elaborate, is the hold.
  *   releaseFunds  a Transfer out of that balance into the provider's bank
- *                 account, one stage at a time.
+ *                 account, for whatever amount an admin released.
  *   refund        a refund of the original charge, back to where it came from.
  *
  * Hosted checkout only. The direct card-charge endpoint is the one call that
@@ -144,15 +144,15 @@ export class FlutterwaveGateway implements PaymentGateway {
   // -------------------------------------------------------------------------
 
   /**
-   * Pays one stage's share to the provider's bank account out of Nexa's
+   * Pays the admin's chosen amount to the provider's bank account out of Nexa's
    * Flutterwave balance. This is a Transfer, not a "release" of some
    * provider-held escrow — Flutterwave has no notion of which of Nexa's naira
    * belonged to which booking, and does not need one. The ledger does.
    *
    * `idempotencyKey` becomes the transfer's `reference`, which Flutterwave
-   * enforces as unique per account. A retried webhook or a double-clicked admin
-   * button is therefore rejected by Flutterwave rather than paid twice, and that
-   * rejection is read here as "already sent" instead of as a failure.
+   * enforces as unique per account. A double-clicked admin button is therefore
+   * rejected by Flutterwave rather than paid twice, and that rejection is read
+   * here as "already sent" instead of as a failure.
    */
   async releaseFunds(request: ReleaseFundsRequest): Promise<ReleaseFundsResult> {
     if (request.amountKobo <= 0) {
@@ -173,7 +173,6 @@ export class FlutterwaveGateway implements PaymentGateway {
         meta: {
           ...request.metadata,
           provider_id: request.beneficiary.id,
-          stage: request.stage,
           source_reference: request.gatewayReference,
         },
       });
@@ -217,9 +216,9 @@ export class FlutterwaveGateway implements PaymentGateway {
       throw new GatewayError(`Refusing to refund ${request.amountKobo} kobo`, this.name);
     }
 
-    // Flutterwave's refund endpoint takes no idempotency key. `idempotencyKey`
-    // is honoured one level up: the payments service refuses to refund the same
-    // penalty share or cancellation twice, off the ledger.
+    // Flutterwave's refund endpoint takes no idempotency key. `idempotencyKey` is
+    // honoured one level up: the payments service derives it from the booking and
+    // the amount, so the same cancellation cannot be refunded twice.
     const data = await this.call<RefundData>(`/transactions/${transactionId}/refund`, {
       amount: koboToNaira(request.amountKobo),
       comments: request.reason.slice(0, 255),
@@ -370,8 +369,8 @@ function koboToNaira(kobo: Kobo): number {
 /**
  * Flutterwave's transfer `reference` is the idempotency key, but it is not a
  * free-form string: keep it to characters the API reliably accepts. The payments
- * service's key is `bookingId:stage:providerId`, which is stable for a given
- * payment and stays stable through this.
+ * service's key is `bookingId:alreadyReleasedKobo:providerId`, which is stable
+ * for a given release attempt and survives this untouched.
  */
 function transferReference(idempotencyKey: string): string {
   return `nexa_${idempotencyKey.replace(/[^A-Za-z0-9_-]/g, "_")}`;
@@ -382,7 +381,7 @@ function isDuplicateReference(error: GatewayError): boolean {
 }
 
 function narration(request: ReleaseFundsRequest): string {
-  return `Nexa payout stage ${request.stage} ${request.gatewayReference}`.slice(0, 100);
+  return `Nexa payout ${request.gatewayReference}`.slice(0, 100);
 }
 
 /**

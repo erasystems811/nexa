@@ -53,7 +53,6 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
             category_id: listing.category_id,
             description: listing.description ?? undefined,
             price_type: listing.price_type,
-            payment_type: listing.payment_type,
             price: listing.price_kobo ? koboToNaira(listing.price_kobo) : undefined,
             price_min: listing.price_min_kobo ? koboToNaira(listing.price_min_kobo) : undefined,
             price_max: listing.price_max_kobo ? koboToNaira(listing.price_max_kobo) : undefined,

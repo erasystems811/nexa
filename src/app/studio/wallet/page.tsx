@@ -1,23 +1,19 @@
-import { requireProvider, getWallet, getAgreement } from "@/modules/provider";
+import { requireProvider, getWallet } from "@/modules/provider";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { BankForm } from "./bank-form";
 
+/** The only three things that can happen to money, since 0030. */
 const KIND_LABEL: Record<string, string> = {
-  stage_release: "Payment released",
-  refund: "Refund",
-  penalty: "Penalty",
-  commission: "Commission",
-  hold: "Held",
+  hold: "Held by Nexa",
+  stage_release: "Paid to you",
+  refund: "Refunded to the customer",
 };
 
 /** Wallet & payouts. */
 export default async function StudioWallet() {
   const provider = await requireProvider();
-  const [{ wallet, payouts, ledger }, agreement] = await Promise.all([
-    getWallet(provider.id),
-    getAgreement(provider.id),
-  ]);
+  const { wallet, payouts, ledger } = await getWallet(provider.id);
 
   return (
     <>
@@ -29,20 +25,14 @@ export default async function StudioWallet() {
         <Stat label="Withdrawn" value={formatKobo(wallet.withdrawn_kobo)} />
       </div>
 
-      {agreement ? (
-        <Card className="mt-4">
-          <h2 className="text-sm font-semibold">Your terms</h2>
-          <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-            Set by Admin at onboarding. To change them, contact Nexa.
-          </p>
-          <dl className="mt-3 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-[color:var(--color-ink-muted)]">Deposit</dt>
-              <dd>{agreement.deposit_percent}%</dd>
-            </div>
-          </dl>
-        </Card>
-      ) : null}
+      <Card className="mt-4">
+        <h2 className="text-sm font-semibold">How you get paid</h2>
+        <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">
+          The customer pays and Nexa holds the whole amount. When the job is done
+          and the customer gives you their completion code, Nexa pays you. There is
+          no deposit and nothing is deducted.
+        </p>
+      </Card>
 
       <Card className="mt-4">
         <h2 className="mb-3 text-sm font-semibold">Payout account</h2>

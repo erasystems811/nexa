@@ -30,22 +30,13 @@ function fail(e: unknown): AdminActionState {
 
 // ---- providers ------------------------------------------------------------
 
-export async function approveProviderAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
-  try {
-    const id = await actor(P.providersApprove);
-    await admin.approveProvider(id, String(formData.get("provider_id")), {
-      depositPercent: Number(formData.get("deposit_percent") ?? 0),
-      commissionOverride: formData.get("commission_override") ? Number(formData.get("commission_override")) : null,
-      latePenaltyOverride: formData.get("late_penalty_override") ? Number(formData.get("late_penalty_override")) : null,
-    });
-    revalidatePath("/admin/providers");
-    return { ok: true };
-  } catch (e) {
-    return fail(e);
-  }
+export async function approveProviderAction(providerId: string): Promise<void> {
+  await admin.approveProvider(await actor(P.providersApprove), providerId);
+  revalidatePath("/admin/providers");
+  revalidatePath(`/admin/providers/${providerId}`);
 }
-export async function rejectProviderAction(providerId: string, reason: string): Promise<void> {
-  await admin.rejectProvider(await actor(P.providersApprove), providerId, reason);
+export async function rejectProviderAction(providerId: string, reason?: string): Promise<void> {
+  await admin.rejectProvider(await actor(P.providersApprove), providerId, reason ?? "");
   revalidatePath("/admin/providers");
 }
 export async function suspendProviderAction(providerId: string, suspended: boolean): Promise<void> {
@@ -65,7 +56,6 @@ export async function addProviderAction(_prev: AdminActionState, formData: FormD
     const result = await admin.addProviderManually(await actor(P.providersApprove), {
       email: String(formData.get("email")),
       businessName: String(formData.get("business_name")),
-      depositPercent: Number(formData.get("deposit_percent") ?? 0),
     });
     revalidatePath("/admin/providers");
     return { ok: true, warning: result.warning };
@@ -109,23 +99,45 @@ export async function overrideStatusAction(_prev: AdminActionState, formData: Fo
   }
 }
 
-// ---- payments -------------------------------------------------------------
+// ---- money ----------------------------------------------------------------
 
-export async function applyPenaltyAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
+/** Naira typed into a form -> kobo. A blank or nonsense amount is caught here. */
+function amountKobo(formData: FormData, field = "amount"): number {
+  const raw = String(formData.get(field) ?? "").trim();
+  const naira = Number(raw);
+  if (!raw || !Number.isFinite(naira)) throw new admin.AdminError(`"${raw}" is not an amount`);
+  return Math.round(naira * 100);
+}
+
+/**
+ * Pay the vendor out of the money Nexa is holding on this booking. The admin
+ * picks the amount; the module refuses anything above what is still held.
+ */
+export async function payVendorAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
   try {
     const bookingId = String(formData.get("booking_id"));
-    await admin.adminApplyPenalty(await actor(P.paymentsPenalty), bookingId, Number(formData.get("late_minutes") ?? 0));
+    await admin.releaseToVendor(await actor(P.paymentsPayout), bookingId, amountKobo(formData));
     revalidatePath(`/admin/orders/${bookingId}`);
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin");
     return { ok: true };
   } catch (e) {
     return fail(e);
   }
 }
+
 export async function refundAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
   try {
     const bookingId = String(formData.get("booking_id"));
-    await admin.adminRefund(await actor(P.paymentsRefund), bookingId, Math.round(Number(formData.get("amount") ?? 0) * 100), String(formData.get("reason") ?? ""));
+    await admin.adminRefund(
+      await actor(P.paymentsRefund),
+      bookingId,
+      amountKobo(formData),
+      String(formData.get("reason") ?? ""),
+    );
     revalidatePath(`/admin/orders/${bookingId}`);
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin");
     return { ok: true };
   } catch (e) {
     return fail(e);

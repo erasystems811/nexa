@@ -7,7 +7,16 @@ import { AddProvider } from "./add-provider";
 
 const STATUSES = ["pending", "approved", "suspended", "rejected", "removed"] as const;
 
-/** Provider management. */
+const STATUS_LABEL: Record<string, string> = {
+  changes_requested: "Changes requested",
+  pending: "Waiting for approval",
+  approved: "Approved",
+  suspended: "Suspended",
+  rejected: "Rejected",
+  removed: "Removed",
+};
+
+/** Vendors. */
 export default async function ProvidersPage({
   searchParams,
 }: {
@@ -19,12 +28,12 @@ export default async function ProvidersPage({
 
   return (
     <>
-      <PageHeader title="Providers" />
+      <PageHeader title="Vendors" subtitle="The businesses selling on Nexa." />
 
       <div className="mb-4 flex flex-wrap gap-2">
         <FilterLink label="All" href={"/providers" as Route} active={!status} />
         {STATUSES.map((s) => (
-          <FilterLink key={s} label={s} href={`/providers?status=${s}` as Route} active={status === s} />
+          <FilterLink key={s} label={STATUS_LABEL[s] ?? s} href={`/providers?status=${s}` as Route} active={status === s} />
         ))}
       </div>
 
@@ -43,15 +52,15 @@ export default async function ProvidersPage({
                     {p.is_on_probation ? " · probation" : ""}
                   </p>
                 </div>
-                <span className="rounded-full bg-[color:var(--color-surface-sunk)] px-2.5 py-1 text-[11px] font-medium capitalize">
-                  {p.status}
+                <span className="shrink-0 rounded-full bg-[color:var(--color-surface-sunk)] px-2.5 py-1 text-[11px] font-medium">
+                  {STATUS_LABEL[p.status] ?? p.status}
                 </span>
               </Card>
             </Link>
           </li>
         ))}
         {providers.length === 0 ? (
-          <Card className="text-sm text-[color:var(--color-ink-muted)]">No providers here.</Card>
+          <Card className="text-sm text-[color:var(--color-ink-muted)]">No vendors here.</Card>
         ) : null}
       </ul>
     </>
@@ -62,7 +71,7 @@ function FilterLink({ label, href, active }: { label: string; href: Route; activ
   return (
     <Link
       href={href}
-      className={`rounded-full border px-3 py-1.5 text-xs capitalize ${active ? "border-[color:var(--color-ink)] bg-[color:var(--color-ink)] text-white" : "border-[color:var(--color-line)]"}`}
+      className={`rounded-full border px-3 py-1.5 text-xs ${active ? "border-[color:var(--color-ink)] bg-[color:var(--color-ink)] text-white" : "border-[color:var(--color-line)]"}`}
     >
       {label}
     </Link>

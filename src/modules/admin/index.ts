@@ -1,9 +1,9 @@
 /**
  * Admin — the Admin Console's server logic. Internal ops only.
  *
- * Owns: vendor verification queues, service approval, booking monitoring,
- * dispute resolution, the suspension/appeal/strike workflow, payment
- * interventions, the monthly subscription fee, reports, and audit_log.
+ * Owns: vendor approval, listing approval, booking monitoring, PAYING VENDORS
+ * out of the money Nexa is holding, refunds, dispute resolution, the
+ * suspension/appeal/strike workflow, the monthly vendor fee, and audit_log.
  *
  * Runs on the service role AFTER requireRole("admin") in the server action —
  * the role check is the gate, the service role is what executes once past it,
@@ -43,8 +43,9 @@ export {
 export { listOrders, getOrderDetail, overrideStatus } from "./orders";
 export { listCustomers, getCustomerDetail } from "./customers";
 export {
-  paymentOverview, recentLedger, pendingPayouts,
-  adminApplyPenalty, adminRefund,
+  moneyOverview, vendorsWaitingToBePaid, recentMoneyMoves, bookingMoney,
+  releaseToVendor, adminRefund,
+  type MoneyOverview, type BookingMoney,
 } from "./payments";
 export {
   listSubscriptions, subscriptionOverview, getProviderSubscription,
@@ -53,5 +54,4 @@ export {
   type SubscriptionStatus,
 } from "./subscriptions";
 export { listDisputes, getDisputeDetail, resolveDispute } from "./disputes";
-export { reports } from "./reports";
 export { listFlags, resolveFlag, convertFlagToStrike } from "./moderation";

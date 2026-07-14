@@ -15,8 +15,7 @@ export async function listProviderOrders(providerId: string) {
     .from("bookings")
     .select(
       `id, reference, status, fulfillment_type, scheduled_start,
-       agreed_price_kobo,
-       stage_1_at, accepted_at,
+       agreed_price_kobo, accepted_at,
        listings ( title )`,
     )
     .eq("provider_id", providerId)
@@ -52,9 +51,9 @@ export async function reject(
 }
 
 /**
- * The vendor has started the job. This moves no money — the deposit already
- * went out when they accepted, and the balance waits on the customer's code.
- * It exists so the customer can see that work is under way.
+ * The vendor has started the job. This moves no money — Nexa is holding the
+ * whole amount and pays the vendor once the job is done. It exists so the
+ * customer can see that work is under way.
  */
 export async function startWork(providerId: string, bookingId: string): Promise<void> {
   const booking = await assertOwned(providerId, bookingId);

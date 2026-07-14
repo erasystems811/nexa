@@ -6,14 +6,15 @@
  * cannot reach a processor even by accident.
  *
  *   Booking logic  ->  payments.holdFunds  ->  PaymentGateway  ->  Flutterwave
- *                                                     ^
- *                                          swappable here, only here
+ *   Admin Console  ->  payments.releaseFunds / refund                  ^
+ *                                                      swappable here, only here
+ *
+ * Booking logic holds money. Only the Admin Console gets it out again.
  */
 export {
   holdFunds,
   recordHold,
   releaseFunds,
-  applyLatePenalty,
   refund,
   PaymentsError,
   type HoldFundsInput,
@@ -22,12 +23,4 @@ export {
   type RefundInput,
 } from "./service";
 
-export {
-  calculatePayout,
-  calculateLatePenalty,
-  calculateRefund,
-  type BookingTerms,
-  type PayoutBreakdown,
-  type PenaltyBreakdown,
-  type CancellationTier,
-} from "./calculations";
+export { calculateRefund, type CancellationTier } from "./calculations";

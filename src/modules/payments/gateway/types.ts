@@ -40,9 +40,8 @@ export interface HoldFundsResult {
 
 export interface ReleaseFundsRequest {
   gatewayReference: string;
+  /** However much of the hold an admin decided to send. There are no stages. */
   amountKobo: Kobo;
-  /** 1 = the deposit, released on acceptance. 2 = the balance, released on the code. */
-  stage: 1 | 2;
   beneficiary: {
     kind: "provider";
     id: string;
@@ -50,8 +49,9 @@ export interface ReleaseFundsRequest {
     accountNumber: string;
   };
   /**
-   * Caller-generated, stable for a given (booking, stage, beneficiary). A
-   * retried webhook or a double-clicked admin button must not pay twice.
+   * Caller-generated and derived from the escrow's state, not random. A
+   * double-clicked admin button must not pay twice; two deliberate partial
+   * releases must both go through.
    */
   idempotencyKey: string;
   metadata?: Record<string, unknown>;
@@ -87,7 +87,7 @@ export interface PaymentGateway {
   /** Takes the customer's money and holds it. Nothing reaches the provider yet. */
   holdFunds(request: HoldFundsRequest): Promise<HoldFundsResult>;
 
-  /** Moves a stage's share of held funds to a provider. */
+  /** Moves some or all of the held funds to a provider. */
   releaseFunds(request: ReleaseFundsRequest): Promise<ReleaseFundsResult>;
 
   /** Returns money to the customer, in whole or in part. */

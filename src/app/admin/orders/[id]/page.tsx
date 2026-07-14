@@ -1,28 +1,28 @@
 import { notFound } from "next/navigation";
-import { requireView, PERMISSIONS as P } from "@/modules/admin";
-import { getOrderDetail } from "@/modules/admin";
+import { requireView, currentStaff, can, getOrderDetail, PERMISSIONS as P } from "@/modules/admin";
 import { noShowAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 import { ActionButton } from "../../action-button";
-import { OrderInterventions } from "./interventions";
+import { PayVendor, RefundCustomer, ChangeStatus } from "./pay-vendor";
 
-const KIND: Record<string, string> = {
-  hold: "Held from customer",
-  stage_release: "Paid to vendor",
-  commission: "Nexa commission",
-  penalty: "Late penalty",
-  refund: "Refunded to customer",
+/** Plain names for every movement of money on this booking. */
+const MOVE: Record<string, string> = {
+  hold: "Paid by the customer, held by Nexa",
+  stage_release: "Paid to the vendor",
+  refund: "Sent back to the customer",
 };
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await requireView(P.ordersView);
+  const staff = await currentStaff();
   const d = await getOrderDetail(id);
   if (!d) notFound();
 
-  const { booking, payment, codes, ledger } = d;
+  const { booking, money, codes, ledger } = d;
+  const holding = money && money.isPaid && money.stillHeldKobo > 0;
 
   return (
     <>
@@ -34,65 +34,84 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       <div className="mb-4 flex items-center gap-2">
         <StatusPill status={booking.status} />
         {["paid_held", "accepted", "in_progress"].includes(booking.status) ? (
-          <ActionButton label="Record no-show" variant="danger" confirm="Record a no-show? The provider is suspended pending appeal and the booking is refunded." run={noShowAction.bind(null, booking.id)} />
+          <ActionButton
+            label="Vendor never showed up"
+            variant="danger"
+            confirm="Record a no-show? The vendor is suspended pending appeal and the customer is refunded."
+            run={noShowAction.bind(null, booking.id)}
+          />
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* The money, first and biggest — it is why an admin opens this page. */}
+      {money ? (
         <Card>
-          <h2 className="text-sm font-semibold">Booking</h2>
-          <dl className="mt-2 space-y-1 text-sm">
-            <Row k="Customer" v={(booking.profiles as unknown as { full_name: string | null } | null)?.full_name ?? "—"} />
-            <Row k="When" v={new Date(booking.scheduled_start).toLocaleString("en-NG")} />
-            <Row k="Fulfillment" v={booking.fulfillment_type.replace(/_/g, " ")} />
-            <Row k="Price" v={formatKobo(booking.agreed_price_kobo)} />
+          <h2 className="text-sm font-semibold">The money on this booking</h2>
+          <dl className="mt-3 space-y-2 text-sm">
+            <Row k="The customer paid" v={formatKobo(money.customerPaidKobo)} />
+            <Row k="Paid to the vendor so far" v={formatKobo(money.paidToVendorKobo)} />
+            {money.refundedKobo > 0 ? (
+              <Row k="Sent back to the customer" v={formatKobo(money.refundedKobo)} />
+            ) : null}
+            <div className="flex items-baseline justify-between gap-3 border-t border-[color:var(--color-line)] pt-2">
+              <dt className="text-sm font-semibold">Nexa is still holding</dt>
+              <dd className="text-xl font-semibold tabular-nums">{formatKobo(money.stillHeldKobo)}</dd>
+            </div>
           </dl>
+          {!money.isPaid ? (
+            <p className="mt-2 text-xs text-[color:var(--color-ink-muted)]">
+              The customer has not paid yet — nothing is held.
+            </p>
+          ) : null}
         </Card>
-        <Card>
-          <h2 className="text-sm font-semibold">Payment</h2>
-          {payment ? (
-            <dl className="mt-2 space-y-1 text-sm">
-              <Row k="Status" v={payment.status} />
-              <Row k="Held" v={formatKobo(payment.held_kobo)} />
-              <Row k="Released" v={formatKobo(payment.released_kobo)} />
-              <Row k="Commission" v={formatKobo(payment.commission_kobo)} />
-              {payment.penalty_kobo > 0 ? <Row k="Penalty" v={formatKobo(payment.penalty_kobo)} /> : null}
-            </dl>
-          ) : (
-            <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">No payment.</p>
-          )}
+      ) : (
+        <Card className="text-sm text-[color:var(--color-ink-muted)]">
+          No money has been taken for this booking.
         </Card>
-      </div>
+      )}
 
-      {codes.length > 0 ? (
-        <Card className="mt-3">
-          <h2 className="text-sm font-semibold">Confirmation codes</h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            {codes.map((c) => (
-              <li key={c.stage} className="flex justify-between font-mono">
-                <span>Stage {c.stage}</span>
-                <span className={c.consumed_at ? "text-[color:var(--color-ink-muted)] line-through" : ""}>{c.code}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      {holding && can(staff, P.paymentsPayout) ? (
+        <PayVendor bookingId={booking.id} stillHeldKobo={money.stillHeldKobo} />
+      ) : null}
+      {holding && can(staff, P.paymentsRefund) ? (
+        <RefundCustomer bookingId={booking.id} stillHeldKobo={money.stillHeldKobo} />
       ) : null}
 
-      <OrderInterventions bookingId={booking.id} />
+      <Card className="mt-3">
+        <h2 className="text-sm font-semibold">Booking</h2>
+        <dl className="mt-2 space-y-1 text-sm">
+          <Row
+            k="Customer"
+            v={(booking.profiles as unknown as { full_name: string | null } | null)?.full_name ?? "—"}
+          />
+          <Row k="When" v={new Date(booking.scheduled_start).toLocaleString("en-NG")} />
+          <Row k="Agreed price" v={formatKobo(booking.agreed_price_kobo)} />
+          {codes.length > 0 ? (
+            <Row
+              k="Customer's confirmation code"
+              v={codes.map((c) => (c.consumed_at ? `${c.code} (used)` : c.code)).join(" · ")}
+            />
+          ) : null}
+        </dl>
+      </Card>
 
       {ledger.length > 0 ? (
         <Card className="mt-3">
-          <h2 className="text-sm font-semibold">Money trail</h2>
+          <h2 className="text-sm font-semibold">What has happened to the money</h2>
           <ul className="mt-2 space-y-1 text-sm">
             {ledger.map((l, i) => (
-              <li key={i} className="flex justify-between">
-                <span className="text-[color:var(--color-ink-muted)]">{KIND[l.kind] ?? l.kind}{l.stage ? ` (stage ${l.stage})` : ""}</span>
-                <span className={`tabular-nums ${l.amount_kobo < 0 ? "text-[color:var(--color-danger)]" : ""}`}>{formatKobo(l.amount_kobo)}</span>
+              <li key={i} className="flex justify-between gap-3">
+                <span className="text-[color:var(--color-ink-muted)]">{MOVE[l.kind] ?? l.kind}</span>
+                <span className={`shrink-0 tabular-nums ${l.amount_kobo < 0 ? "text-[color:var(--color-danger)]" : ""}`}>
+                  {formatKobo(l.amount_kobo)}
+                </span>
               </li>
             ))}
           </ul>
         </Card>
       ) : null}
+
+      {can(staff, P.ordersOverride) ? <ChangeStatus bookingId={booking.id} /> : null}
     </>
   );
 }

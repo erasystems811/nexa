@@ -5,6 +5,7 @@ import { listCategories } from "@/modules/marketplace";
 import { formatKobo } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
+import { BackBar } from "@/components/back-bar";
 
 /** Search & category browse.+ */
 export default async function SearchPage({
@@ -29,7 +30,7 @@ export default async function SearchPage({
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-6">
-      <Link href="/" className="text-sm text-[color:var(--color-ink-muted)]">← Nexa</Link>
+      <BackBar />
       <div className="mt-3">
         <PageHeader
           title={active ? active.name : "Search"}

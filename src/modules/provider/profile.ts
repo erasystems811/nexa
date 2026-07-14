@@ -9,8 +9,13 @@ import { ProviderError } from "./context";
  *
  * Contact phone and email live in provider_contacts, unreadable by the
  * public. A provider edits their own; a customer never sees them.
- * Deposit %, penalty overrides, verification, and featured status are Admin's,
- * enforced by guard_provider_self_approval — not editable here.
+ * Verification and featured status are Admin's, enforced by
+ * guard_provider_self_approval — not editable here.
+ *
+ * There is no agreement to read any more: 0030 dropped provider_agreements
+ * along with every percentage it carried. Nexa holds the whole amount a customer
+ * pays and settles the vendor once the job is done, so there are no terms to
+ * negotiate per vendor.
  */
 
 export interface ProfileUpdate {
@@ -54,16 +59,4 @@ export async function updateContact(
     .update(patch)
     .eq("provider_id", providerId);
   if (error) throw new ProviderError(error.message);
-}
-
-/** The provider's own agreement — deposit %, any overrides. Read-only to them. */
-export async function getAgreement(providerId: string) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("provider_agreements")
-    .select("deposit_percent, commission_percent_override, late_penalty_percent_per_30min_override, signed_at")
-    .eq("provider_id", providerId)
-    .eq("is_active", true)
-    .maybeSingle();
-  return data;
 }

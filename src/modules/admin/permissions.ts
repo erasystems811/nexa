@@ -32,24 +32,19 @@ export const PERMISSIONS = {
   disputesResolve: "disputes.resolve",
   // Reviews.
   reviewsView: "reviews.view",
-  // Money.
+  // Money. An admin holds it, pays it to the vendor, or sends it back.
   paymentsView: "payments.view",
   paymentsRefund: "payments.refund",
   paymentsPayout: "payments.payout",
-  paymentsPenalty: "payments.penalty",
-  // The monthly platform fee — Nexa's second revenue line beside commission.
+  // The monthly vendor fee.
   subscriptionsView: "subscriptions.view",
   subscriptionsManage: "subscriptions.manage",
   // Settings.
   settingsManage: "settings.manage",
-  settingsCommission: "settings.commission",
   // Moderation (contact-info flags).
   moderationView: "moderation.view",
   moderationResolve: "moderation.resolve",
   moderationStrike: "moderation.strike",
-  // Reports.
-  reportsView: "reports.view",
-  reportsExport: "reports.export",
   // Staff administration.
   staffManage: "staff.manage",
   // Flagged-off features (Marketing) — the permission exists now; the features
@@ -80,19 +75,15 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "disputes.view": "View disputes",
   "disputes.resolve": "Resolve disputes",
   "reviews.view": "View reviews",
-  "payments.view": "View escrow & revenue",
-  "payments.refund": "Issue refunds",
-  "payments.payout": "Approve payouts",
-  "payments.penalty": "Apply penalties",
+  "payments.view": "See the money Nexa is holding",
+  "payments.refund": "Refund customers",
+  "payments.payout": "Pay vendors",
   "subscriptions.view": "View vendor subscriptions",
   "subscriptions.manage": "Record subscription payments, cancel & reactivate",
-  "settings.manage": "Change platform settings & features",
-  "settings.commission": "Change commission",
+  "settings.manage": "Change settings",
   "moderation.view": "View flagged messages",
   "moderation.resolve": "Confirm / dismiss flags",
   "moderation.strike": "Convert a flag to a strike",
-  "reports.view": "View reports",
-  "reports.export": "Export reports",
   "staff.manage": "Manage staff & permissions",
   "promotions.manage": "Manage promotions",
   "coupons.manage": "Manage coupons",
@@ -139,9 +130,8 @@ export const ROLE_BUNDLES: Record<Exclude<StaffRole, "super_admin">, Permission[
     P.paymentsRefund, P.moderationView, P.moderationResolve, P.ordersView,
   ],
   finance: [
-    P.paymentsView, P.paymentsRefund, P.paymentsPayout, P.paymentsPenalty,
+    P.paymentsView, P.paymentsRefund, P.paymentsPayout, P.ordersView,
     P.subscriptionsView, P.subscriptionsManage,
-    P.reportsView, P.reportsExport,
   ],
   marketing: [P.promotionsManage, P.couponsManage, P.featuredManage, P.notificationsSend],
 };

@@ -22,10 +22,9 @@ import type {
  *
  * Deliberately holds NO in-memory state: every hold succeeds and every release
  * and refund is accepted. Balance integrity is not the gateway's job here — the
- * payments service enforces it against the database (held_kobo, released_kobo,
- * the stage-released timestamps), which is the real source of truth. An
- * in-memory ledger would also not survive a serverless deployment, where each
- * request may run in a fresh instance.
+ * payments service enforces it against the database (held_kobo vs released_kobo),
+ * which is the real source of truth. An in-memory ledger would also not survive a
+ * serverless deployment, where each request may run in a fresh instance.
  */
 export class MockGateway implements PaymentGateway {
   readonly name = "mock";

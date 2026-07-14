@@ -126,14 +126,12 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * The customer has paid. Turn the pending payment row into a real hold.
+ * The customer has paid. Turn the pending payment row into a real hold — the
+ * whole agreed price, into Nexa's hands, where it stays until an admin releases
+ * it.
  *
- * The ledger is not touched here. `payments.holdFunds` already wrote the `hold`
- * entry when the checkout was opened, and the ledger is append-only — writing it
- * again would double the escrow balance that every Admin Console screen derives
- * from it. What was missing was the money: `held_kobo` and the status, which this
- * sets from the payment row's own figures rather than from anything the callback
- * claims.
+ * `held_kobo` and the status are set from the payment row's own figures, never
+ * from anything the callback claims.
  *
  * `gateway_reference` is overwritten with Flutterwave's numeric transaction id.
  * Until now it held the tx_ref (the booking reference), because the payment-link
@@ -153,9 +151,7 @@ async function recordCompletedCharge(
 
   const { data: payment, error } = await db
     .from("payments")
-    .select(
-      "id, booking_id, status, amount_kobo, commission_kobo, held_kobo, gateway_reference, bookings ( customer_id )",
-    )
+    .select("id, booking_id, status, amount_kobo, held_kobo, gateway_reference, bookings ( customer_id )")
     .eq("gateway", GATEWAY)
     .eq("gateway_reference", txRef)
     .maybeSingle();
@@ -232,7 +228,6 @@ async function recordCompletedCharge(
       paymentId: payment.id,
       bookingId: payment.booking_id,
       amountKobo: payment.amount_kobo,
-      commissionKobo: payment.commission_kobo,
       customerId,
     });
   }

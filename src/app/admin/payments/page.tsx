@@ -1,64 +1,92 @@
-import { requireView, PERMISSIONS as P } from "@/modules/admin";
-import { paymentOverview, recentLedger, pendingPayouts } from "@/modules/admin";
+import Link from "next/link";
+import type { Route } from "next";
+import { requireView, moneyOverview, vendorsWaitingToBePaid, recentMoneyMoves, PERMISSIONS as P } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 
-const KIND: Record<string, string> = {
-  hold: "Held", stage_release: "Released", commission: "Commission",
-  penalty: "Penalty", refund: "Refund", caution_hold: "Caution held", caution_refund: "Caution refund", caution_claim: "Caution claim",
+const MOVE: Record<string, string> = {
+  hold: "Paid by a customer",
+  stage_release: "Paid to a vendor",
+  refund: "Sent back to a customer",
 };
 
-/** Payment management. */
-export default async function PaymentsPage() {
+/** Money. What Nexa is holding, who is waiting for it, where it has gone. */
+export default async function MoneyPage() {
   await requireView(P.paymentsView);
-  const [o, ledger, payouts] = await Promise.all([paymentOverview(), recentLedger(60), pendingPayouts()]);
+  const [o, waiting, moves] = await Promise.all([
+    moneyOverview(),
+    vendorsWaitingToBePaid(),
+    recentMoneyMoves(40),
+  ]);
 
   return (
     <>
-      <PageHeader title="Payments" subtitle="Escrow, commission, penalties, refunds — read from the ledger." />
+      <PageHeader title="Money" />
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="In escrow" value={formatKobo(o.inEscrow)} />
-        <Stat label="Commission" value={formatKobo(o.commission)} />
-        <Stat label="Released" value={formatKobo(o.released)} />
-        <Stat label="Refunded" value={formatKobo(o.refunded)} />
-        <Stat label="Penalties" value={formatKobo(o.penalties)} />
+      <Card className="bg-[color:var(--color-ink)] text-white">
+        <p className="text-xs text-white/70">Money Nexa is holding right now</p>
+        <p className="mt-1 text-3xl font-semibold tabular-nums">{formatKobo(o.holdingKobo)}</p>
+        <p className="mt-2 text-xs text-white/70">
+          Across {o.holdingCount} booking{o.holdingCount === 1 ? "" : "s"} that are not settled yet.
+        </p>
+      </Card>
+
+      <section className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Stat label="Paid to vendors" value={formatKobo(o.paidToVendorsKobo)} />
+        <Stat label="Sent back to customers" value={formatKobo(o.refundedKobo)} />
+        <Stat label="Nexa has kept" value={formatKobo(o.keptKobo)} />
       </section>
 
-      {payouts.length > 0 ? (
-        <Card className="mt-4">
-          <h2 className="text-sm font-semibold">Pending payouts ({payouts.length})</h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            {payouts.map((p) => (
-              <li key={p.id} className="flex justify-between">
-                <span className="text-[color:var(--color-ink-muted)]">{p.provider_id ? "Provider" : "Legacy delivery"}</span>
-                <span className="tabular-nums">{formatKobo(p.amount_kobo)}</span>
-              </li>
-            ))}
-          </ul>
+      <h2 className="mt-8 mb-2 text-sm font-semibold">Vendors waiting to be paid</h2>
+      {waiting.length === 0 ? (
+        <Card className="text-sm text-[color:var(--color-ink-muted)]">
+          Nobody is waiting. Every finished job has been settled.
         </Card>
-      ) : null}
+      ) : (
+        <ul className="space-y-2">
+          {waiting.map((w) => (
+            <li key={w.bookingId}>
+              <Link href={`/orders/${w.bookingId}` as Route}>
+                <Card className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{w.vendor}</p>
+                    <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">{w.reference}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-semibold tabular-nums">{formatKobo(w.stillHeldKobo)}</p>
+                    <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">held · open to pay</p>
+                  </div>
+                </Card>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <Card className="mt-4">
-        <h2 className="text-sm font-semibold">Recent ledger</h2>
-        {ledger.length === 0 ? (
+      <Card className="mt-6">
+        <h2 className="text-sm font-semibold">Recent movements</h2>
+        {moves.length === 0 ? (
           <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">No money has moved yet.</p>
         ) : (
           <ul className="mt-2 space-y-1 text-sm">
-            {ledger.map((l) => (
-              <li key={l.id} className="flex justify-between">
-                <span className="text-[color:var(--color-ink-muted)]">{KIND[l.kind] ?? l.kind}</span>
-                <span className={`tabular-nums ${l.amount_kobo < 0 ? "text-[color:var(--color-danger)]" : ""}`}>{formatKobo(l.amount_kobo)}</span>
+            {moves.map((m) => (
+              <li key={m.id} className="flex justify-between gap-3">
+                <span className="text-[color:var(--color-ink-muted)]">{MOVE[m.kind] ?? m.kind}</span>
+                <span
+                  className={`shrink-0 tabular-nums ${m.amount_kobo < 0 ? "text-[color:var(--color-danger)]" : ""}`}
+                >
+                  {formatKobo(m.amount_kobo)}
+                </span>
               </li>
             ))}
           </ul>
         )}
       </Card>
 
-      <Card className="mt-4 text-xs text-[color:var(--color-ink-muted)]">
-        Commission %, stage-1 release %, and the 30/70 penalty split are all
-        <a href="/settings" className="underline"> Settings</a> — editable, never hardcoded.
-      </Card>
+      <p className="mt-4 text-xs leading-relaxed text-[color:var(--color-ink-muted)]">
+        A customer pays the whole price to Nexa. It stays with Nexa until you open the booking and pay
+        the vendor — all of it, or part of it. Whatever you never pay out, Nexa keeps.
+      </p>
     </>
   );
 }
@@ -66,7 +94,7 @@ export default async function PaymentsPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <Card>
-      <p className="text-[11px] uppercase tracking-wider text-[color:var(--color-ink-muted)]">{label}</p>
+      <p className="text-xs text-[color:var(--color-ink-muted)]">{label}</p>
       <p className="mt-1 text-base font-semibold tabular-nums">{value}</p>
     </Card>
   );

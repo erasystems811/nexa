@@ -83,6 +83,11 @@ export async function saveBankAction(_prev: FormState, formData: FormData): Prom
 
 // ---- listings -------------------------------------------------------------
 
+/**
+ * payment_type is no longer a choice a vendor makes. There is no deposit — Nexa
+ * holds the whole amount — so every listing is written as "full" and the column
+ * survives only because the schema is not mine to change.
+ */
 function readListingForm(formData: FormData) {
   const priceType = String(formData.get("price_type") ?? "fixed") as "fixed" | "negotiable";
   const toKobo = (name: string) => {
@@ -94,7 +99,7 @@ function readListingForm(formData: FormData) {
     categoryId: String(formData.get("category_id") ?? ""),
     description: String(formData.get("description") ?? "") || undefined,
     priceType,
-    paymentType: String(formData.get("payment_type") ?? "full") as PaymentType,
+    paymentType: "full" as PaymentType,
     priceKobo: toKobo("price"),
     priceMinKobo: toKobo("price_min"),
     priceMaxKobo: toKobo("price_max"),
@@ -216,8 +221,8 @@ export async function rejectOrderAction(bookingId: string): Promise<void> {
 }
 
 /**
- * The vendor tells the customer the job is under way. Moves no money: the
- * deposit went out on acceptance, and the balance waits on the customer's code.
+ * The vendor tells the customer the job is under way. Moves no money: Nexa is
+ * holding the whole amount and pays the vendor on the customer's code.
  */
 export async function startWorkAction(bookingId: string): Promise<void> {
   const p = await provider();

@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calculatePayout, holdFunds, refund, releaseFunds } from "@/modules/payments";
+import { holdFunds, refund } from "@/modules/payments";
 import { publicEnv } from "@/lib/env";
 import { assertTransition } from "./state";
 import type { BookingStatus, Database } from "@/lib/db/types";
@@ -28,12 +28,16 @@ export class BookingsError extends Error {
  * The money, end to end:
  *
  *   checkout         the customer pays the FULL agreed price into Nexa
- *   acceptBooking    the vendor says yes  ->  the deposit share goes to their
- *                      bank, so they can buy materials before the job
- *   confirmWithCode  the customer hands over their one code at the end  ->
- *                      the balance, less commission, goes to the vendor
+ *   acceptBooking    the vendor says yes. Moves NO money.
+ *   startWork        the vendor has begun. Moves NO money.
+ *   confirmWithCode  the customer hands over their one code — the booking is
+ *                      COMPLETE, and still no money has moved
+ *   (later)          an ADMIN releases what the vendor has earned, in full or in
+ *                      part, from the Admin Console
  *
- * A vendor can never be paid by tapping "done". That is the whole platform.
+ * Nothing in this file can pay a vendor. That is deliberate: the code proves the
+ * job was done, and a human decides what leaves escrow. rejectBooking is the one
+ * exception, and it only sends money BACK to the customer.
  */
 
 export interface CheckoutInput {
@@ -56,10 +60,6 @@ export interface CheckoutResult {
  * The row is inserted with the *caller's* client so RLS and the pricing trigger
  * both apply. Everything after the hold runs on the service role, because a
  * customer must not be able to mark their own booking paid.
- *
- * A listing with payment_type 'deposit' is ordinary now, and needs no second
- * collection: the customer still pays 100% up front. "Deposit" describes what
- * the VENDOR receives on acceptance, not what the customer pays at checkout.
  */
 export async function checkout(
   input: CheckoutInput,
@@ -98,29 +98,20 @@ export async function checkout(
       // Overwritten by the pricing trigger. Present because the column is NOT NULL.
       agreed_price_kobo: 0,
       fulfillment_type: "onsite_service",
-      commission_percent: 0,
-      stage_1_release_percent: 0,
     })
-    .select("id, reference, agreed_price_kobo, commission_percent")
+    .select("id, reference, agreed_price_kobo")
     .single();
 
   if (bookingError || !booking) {
     throw new BookingsError(bookingError?.message ?? "Could not create the booking");
   }
 
-  const { commissionKobo } = calculatePayout({
-    agreedPriceKobo: booking.agreed_price_kobo,
-    commissionPercent: booking.commission_percent,
-    stage1ReleasePercent: 0,
-    latePenaltyPercentPer30Min: 0,
-  });
-
   try {
     const { checkoutUrl, status } = await holdFunds({
       bookingId: booking.id,
       reference: booking.reference,
+      // The whole price. Nexa holds all of it, and works out nobody's cut.
       amountKobo: booking.agreed_price_kobo,
-      commissionKobo,
       customer,
       redirectUrl: `${publicEnv.NEXT_PUBLIC_SITE_URL}/orders/${booking.id}`,
     });
@@ -130,9 +121,8 @@ export async function checkout(
     // A real gateway has, at this point, done nothing but hand the customer a
     // link. Marking the booking paid_held here would be a lie with teeth: the
     // trigger would mint a completion code for money nobody has paid, and the
-    // vendor would see a booking to accept — and the deposit release would then
-    // fail against an empty escrow. The webhook advances the booking when the
-    // charge actually completes. The mock gateway settles inline, so it lands
+    // vendor would see a booking to accept. The webhook advances the booking when
+    // the charge actually completes. The mock gateway settles inline, so it lands
     // here immediately.
     //
     // The code is minted by a trigger on the paid_held transition: exactly one,
@@ -186,68 +176,32 @@ async function transition(bookingId: string, to: BookingStatus) {
 }
 
 /**
- * STAGE 1. The vendor confirms — and that acceptance is itself the checkpoint
- * that releases the deposit.
+ * The vendor confirms they will do the job.
  *
- * A vendor cannot buy the flowers, hire the extra hands or fuel the generator on
- * a promise. So the moment they commit to the job, their deposit share — the
- * booking's frozen stage_1_release_percent of the provider's gross — leaves
- * Nexa's escrow for their bank account. The customer's free-cancellation window
- * closes at the same instant, which is exactly what makes it safe
- * to send.
- *
- * The release comes before the status write on purpose. If the transfer fails,
- * the booking stays at paid_held, nothing has moved, and the vendor can simply
- * tap accept again. Reading stage_1_released_at first makes that retry safe in
- * the other direction too: a transfer that landed but whose status write did not
- * is not sent twice.
+ * It moves NO money. Nexa holds everything the customer paid until the job is
+ * done and an admin releases it — an acceptance is a promise, not a delivery, and
+ * nothing about it says what a vendor has earned. The customer's
+ * free-cancellation window closes here; that is all that changes.
  */
 export async function acceptBooking(bookingId: string): Promise<void> {
   const db = createAdminClient();
 
   const { data: booking } = await db
     .from("bookings")
-    .select("id, status, provider_id, agreed_price_kobo, commission_percent, stage_1_release_percent")
+    .select("id, status")
     .eq("id", bookingId)
     .single();
 
   if (!booking) throw new BookingsError("No such booking");
   assertTransition(booking.status, "accepted");
 
-  const { data: payment } = await db
-    .from("payments")
-    .select("stage_1_released_at")
-    .eq("booking_id", bookingId)
-    .maybeSingle();
-
-  const { stage1Kobo } = calculatePayout({
-    agreedPriceKobo: booking.agreed_price_kobo,
-    commissionPercent: booking.commission_percent,
-    stage1ReleasePercent: booking.stage_1_release_percent,
-    latePenaltyPercentPer30Min: 0,
-  });
-
-  if (stage1Kobo > 0 && !payment?.stage_1_released_at) {
-    await releaseFunds({
-      bookingId,
-      stage: 1,
-      amountKobo: stage1Kobo,
-      beneficiary: await providerBeneficiary(booking.provider_id),
-    });
-  }
-
   await transition(bookingId, "accepted");
-
-  await db
-    .from("bookings")
-    .update({ stage_1_at: new Date().toISOString() })
-    .eq("id", bookingId);
 }
 
 /**
- * Provider declines. "Customer refunded automatically, no admin needed."
- *. Nothing has been released yet — a rejection can only reach a
- * booking that was never accepted — so the whole price goes back.
+ * Provider declines. The customer is refunded automatically, with no admin in the
+ * loop: nothing has ever been released — a rejection can only reach a booking
+ * that was never accepted — so the whole price goes straight back.
  */
 export async function rejectBooking(bookingId: string, reason?: string): Promise<void> {
   const db = createAdminClient();
@@ -277,20 +231,21 @@ export async function startWork(bookingId: string): Promise<void> {
 }
 
 /**
- * STAGE 2, and the end of the booking. Always gated on the customer's code —
- * this is the sentence in that the whole platform rests on: money
- * moves "only when a real, verifiable checkpoint has passed", "never on a
- * provider simply tapping 'done' without the required checkpoint."
+ * The end of the booking, and the proof that the job was done: the customer's
+ * ONE confirmation code, handed to the vendor and entered here. A vendor can
+ * never complete a booking by tapping "done".
  *
- * What is released is the balance: the provider's gross less whatever went out
- * as the deposit. Commission never leaves escrow at all — it is Nexa's.
+ * It moves no money. The code is evidence, not a payment instruction — an admin
+ * reads it as "this job happened" and then decides, in the Admin Console, how
+ * much of what Nexa is holding the vendor is paid. Keeping the two apart is what
+ * lets a dispute be settled before the money is gone.
  */
 export async function confirmWithCode(bookingId: string, code: string): Promise<void> {
   const db = createAdminClient();
 
   const { data: booking } = await db
     .from("bookings")
-    .select("id, status, provider_id, agreed_price_kobo, commission_percent, stage_1_release_percent")
+    .select("id, status")
     .eq("id", bookingId)
     .single();
 
@@ -298,22 +253,6 @@ export async function confirmWithCode(bookingId: string, code: string): Promise<
   assertTransition(booking.status, "completed");
 
   await consumeCode(bookingId, 2, code);
-
-  const { stage2Kobo } = calculatePayout({
-    agreedPriceKobo: booking.agreed_price_kobo,
-    commissionPercent: booking.commission_percent,
-    stage1ReleasePercent: booking.stage_1_release_percent,
-    latePenaltyPercentPer30Min: 0,
-  });
-
-  if (stage2Kobo > 0) {
-    await releaseFunds({
-      bookingId,
-      stage: 2,
-      amountKobo: stage2Kobo,
-      beneficiary: await providerBeneficiary(booking.provider_id),
-    });
-  }
 
   await db
     .from("bookings")
@@ -346,24 +285,4 @@ async function consumeCode(bookingId: string, stage: 2, code?: string): Promise<
   if (!data || data.length === 0) {
     throw new BookingsError("That confirmation code is not valid, or has already been used");
   }
-}
-
-async function providerBeneficiary(providerId: string) {
-  const db = createAdminClient();
-  const { data: wallet } = await db
-    .from("provider_wallets")
-    .select("bank_code, bank_account_number")
-    .eq("provider_id", providerId)
-    .single();
-
-  if (!wallet?.bank_code || !wallet.bank_account_number) {
-    throw new BookingsError("That provider has no payout account on file");
-  }
-
-  return {
-    kind: "provider" as const,
-    id: providerId,
-    bankCode: wallet.bank_code,
-    accountNumber: wallet.bank_account_number,
-  };
 }

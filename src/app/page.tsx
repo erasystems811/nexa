@@ -20,6 +20,9 @@ export default async function HomePage() {
           <Logo markClassName="size-10 rounded-[1.1rem]" textClassName="text-lg" />
         </Link>
         <nav className="flex items-center gap-5 text-sm">
+          <Link href="/apply" className="hidden text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)] sm:block">
+            Become a vendor
+          </Link>
           {session ? (
             <>
               <Link href="/orders" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">My events</Link>
@@ -74,6 +77,19 @@ export default async function HomePage() {
               ? "Tell us the event, budget and guest count - we'll assemble a package."
               : "Coming soon - tell us the event, and we'll assemble the whole package for you."}
           </p>
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <div className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-6 text-center shadow-card">
+          <h2 className="text-lg font-semibold">Do you provide an event service?</h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-[color:var(--color-ink-muted)]">
+            Caterers, DJs, photographers, decorators, transport, security and more. List your
+            business on Nexa and get booked.
+          </p>
+          <Link href="/apply" className="mt-4 inline-block rounded-full bg-[color:var(--color-ink)] px-6 py-3 text-sm font-medium text-white">
+            Apply to become a vendor
+          </Link>
         </div>
       </section>
 

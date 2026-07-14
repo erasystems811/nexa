@@ -6,9 +6,9 @@
  * Calls `@/modules/payments` for every movement of money, and never a payment
  * processor. It does not know Flutterwave exists.
  *
- * The rule this module exists to enforce: the booking completes, and the vendor
- * gets the balance, only when the CUSTOMER's confirmation code is entered —
- * never when a vendor taps "done".
+ * The rule this module exists to enforce: a booking completes only when the
+ * CUSTOMER's confirmation code is entered — never when a vendor taps "done".
+ * Completing pays nobody. An admin releases the vendor's money afterwards.
  */
 export {
   checkout,

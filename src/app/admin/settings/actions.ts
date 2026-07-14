@@ -44,11 +44,8 @@ export async function updateSettingAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  // Commission is the most sensitive setting; it needs the commission permission.
   const key = String(formData.get("key")) as SettingKey;
-  const userId = await requirePermission(
-    key === "commission_percent" ? P.settingsCommission : P.settingsManage,
-  );
+  const userId = await requirePermission(P.settingsManage);
 
   const raw = String(formData.get("value") ?? "");
   const value = Number(raw);

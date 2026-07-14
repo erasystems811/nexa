@@ -4,6 +4,7 @@ import { listMyOrders } from "@/modules/bookings";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
+import { BackBar } from "@/components/back-bar";
 
 /** My Orders. */
 export default async function OrdersPage() {
@@ -12,6 +13,7 @@ export default async function OrdersPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
+      <BackBar className="mb-4" />
       <PageHeader title="My orders" subtitle="Live status for everything you have booked." />
 
       {orders.length === 0 ? (

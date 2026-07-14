@@ -2,11 +2,11 @@ import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getListingBySlug } from "@/modules/marketplace";
-import { checkpointsFor } from "@/modules/bookings";
-import { discussListingAction } from "@/modules/bookings/actions";
 import { getSession } from "@/modules/auth";
 import { formatKobo } from "@/lib/money";
 import { Button, Card, PageHeader } from "@/components/ui";
+import { BackBar } from "@/components/back-bar";
+import { ChatOnWhatsApp, PrivacyNote } from "@/components/chat-cta";
 
 /** Listing page. */
 export default async function ListingPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -17,12 +17,12 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const session = await getSession();
   const category = listing.categories;
   const provider = listing.providers;
-  const checkpoints = checkpointsFor(category.fulfillment_type);
   const isFixed = listing.price_type === "fixed";
 
   const cover = (provider as unknown as { cover_url: string | null }).cover_url;
+  const listingPath = `/l/${listing.slug}`;
   const bookPath = `/book/${listing.id}` as Route;
-  const loginPath = `/login?next=${encodeURIComponent(bookPath)}` as Route;
+  const loginToBookPath = `/login?next=${encodeURIComponent(bookPath)}` as Route;
 
   return (
     <main className="mx-auto max-w-2xl pb-16">
@@ -31,7 +31,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
           // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
           <img src={cover} alt={listing.title} className="h-full w-full object-cover" />
         ) : null}
-        <Link href={`/p/${provider.slug}`} className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium shadow-sm">← Back</Link>
+        <BackBar variant="overlay" fallback={`/p/${provider.slug}` as Route} />
       </div>
 
       <div className="px-5 pt-5">
@@ -52,7 +52,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
         </div>
 
         <p className="mt-4 text-xs text-[color:var(--color-ink-muted)]">
-          <Link href={`/p/${provider.slug}`} className="underline">
+          <Link href={`/p/${provider.slug}` as Route} className="underline">
             {provider.business_name}
           </Link>{" "}
           · {category.name}
@@ -66,47 +66,42 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
       <Card className="mt-4">
         <h2 className="text-sm font-medium">How payment works</h2>
         <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">
-          Nexa holds your money. It is released in two stages, and never because
-          someone tapped &ldquo;done&rdquo;.
+          There is no deposit, and nothing is deducted. Nexa holds your money from the moment you
+          pay.
         </p>
         <ol className="mt-3 space-y-2 text-sm">
           <li className="flex gap-3">
             <span className="shrink-0 font-medium tabular-nums">1.</span>
-            <span>{checkpoints.stage1}</span>
+            <span>You pay. Nexa holds the whole amount — the vendor gets nothing yet.</span>
           </li>
           <li className="flex gap-3">
             <span className="shrink-0 font-medium tabular-nums">2.</span>
-            <span>{checkpoints.stage2}</span>
+            <span>
+              The job is done and you are happy, so you give the vendor your completion code.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="shrink-0 font-medium tabular-nums">3.</span>
+            <span>Nexa pays the vendor.</span>
           </li>
         </ol>
       </Card>
 
-      <div className="mt-6">
-        {!session ? (
-          <div>
-            <Link href={loginPath}>
-              <Button className="w-full">Continue to booking</Button>
-            </Link>
-            <p className="mt-2 text-center text-xs text-[color:var(--color-ink-muted)]">
-              You only sign in if your one-time session has expired.
-            </p>
-          </div>
-        ) : isFixed ? (
-          <Link href={bookPath}>
+      {/* Two ways to act, on every listing: talk to them, or book them. */}
+      <div className="mt-6 space-y-3">
+        {isFixed ? (
+          <Link href={session ? bookPath : loginToBookPath} className="block">
             <Button className="w-full">Book this</Button>
           </Link>
         ) : (
-          // Section 08: a negotiable listing has no price to pay yet. Talk first.
-          <form action={discussListingAction}>
-            <input type="hidden" name="listingId" value={listing.id} />
-            <Button type="submit" className="w-full">
-              Request price
-            </Button>
-            <p className="mt-2 text-center text-xs text-[color:var(--color-ink-muted)]">
-              A booking is created once the provider sends an offer and you accept it.
-            </p>
-          </form>
+          <p className="rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-line)] p-4 text-center text-xs text-[color:var(--color-ink-muted)]">
+            This vendor prices this job on request. Chat, agree a number, and the booking is created
+            once you accept their offer.
+          </p>
         )}
+
+        <ChatOnWhatsApp listingId={listing.id} signedIn={Boolean(session)} next={listingPath} />
+        <PrivacyNote />
       </div>
       </div>
     </main>

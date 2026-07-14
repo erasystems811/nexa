@@ -1,8 +1,8 @@
 /**
  * Settings — platform settings and feature flags
  *
- * Nothing else in the codebase should hardcode a commission, a release
- * percentage, a subscription fee, or a "is this feature live" boolean.
+ * Nothing else in the codebase should hardcode a payout schedule, a
+ * subscription fee, or a "is this feature live" boolean.
  */
 export {
   FLAGS,

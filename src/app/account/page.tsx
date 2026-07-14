@@ -1,16 +1,13 @@
-import Link from "next/link";
 import { requireSession, signOut } from "@/modules/auth";
 import { Button, Card, PageHeader } from "@/components/ui";
+import { BackBar } from "@/components/back-bar";
 
 export default async function AccountPage() {
   const { profile, email } = await requireSession();
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
-      <Link href="/" className="mb-6 inline-flex items-center text-sm font-medium text-[color:var(--color-ink)]">
-        <span aria-hidden="true" className="mr-2">&larr;</span>
-        Home
-      </Link>
+      <BackBar className="mb-6" />
       <PageHeader title="Account" subtitle={email ?? undefined} />
 
       <Card>

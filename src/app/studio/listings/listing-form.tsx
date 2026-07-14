@@ -15,7 +15,6 @@ interface Defaults {
   category_id?: string;
   description?: string;
   price_type?: "fixed" | "negotiable";
-  payment_type?: "full" | "deposit";
   price?: number;
   price_min?: number;
   price_max?: number;
@@ -23,11 +22,12 @@ interface Defaults {
 }
 
 /**
- * Create and edit share this form./08: a listing declares both a
- * payment type (full or deposit) and a price type (Fixed or Negotiable).
+ * Create and edit share this form. A listing declares a price type — Fixed, or
+ * Negotiable, which means the customer chats first and the two of you agree a
+ * number.
  *
- * The deposit *percentage* is not here — it is set per provider by Admin on the
- * agreement. A "deposit" listing uses that agreed percentage.
+ * There is no deposit to choose. The customer pays, Nexa holds the whole amount,
+ * and Nexa pays the vendor once the job is done.
  */
 export function ListingForm({
   categories,
@@ -107,18 +107,6 @@ export function ListingForm({
           <Field label="To (₦)" name="price_max" type="number" min="0" step="any" defaultValue={defaults.price_max} />
         </div>
       )}
-
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Payment type</span>
-        <select
-          name="payment_type"
-          defaultValue={defaults.payment_type ?? "full"}
-          className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
-        >
-          <option value="full">Full payment</option>
-          <option value="deposit">Deposit (percentage set by Admin)</option>
-        </select>
-      </label>
 
       {isRental ? (
         <Field

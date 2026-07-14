@@ -6,22 +6,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { PlatformSetting, UserRole } from "@/lib/db/types";
 
 /**
- * Platform settings.re explicit that commission, the
- * stage-1 release percentage, and the vendor subscription fee are Admin Console
- * values "editable at any time without a code deployment".
+ * Platform settings — Admin Console values "editable at any time without a code
+ * deployment". So there are no constants for them in this file. The defaults
+ * below exist only to keep arithmetic total if a row is somehow missing; the row
+ * is the source of truth.
  *
- * So there are no constants for them in this file. The defaults below exist
- * only to keep arithmetic total if a row is somehow missing; the row is the
- * source of truth.
+ * 0030 deleted every percentage: there is no commission, no deposit range, no
+ * stage-1 release share, and no late penalty. Nexa holds the whole amount and
+ * pays the vendor once the job is done, so nothing here computes anyone's cut.
  */
 
 export const SETTINGS = {
-  commissionPercent: "commission_percent",
-  stage1ReleasePercent: "stage_1_release_percent",
-  depositPercentMin: "deposit_percent_min",
-  depositPercentMax: "deposit_percent_max",
-  latePenaltyPercentPer30Min: "late_penalty_percent_per_30min",
-  penaltyCustomerSharePercent: "penalty_customer_share_percent",
+  deliveryFeeKobo: "delivery_fee_kobo",
   payoutScheduleDays: "payout_schedule_days",
   providerProbationBookings: "provider_probation_bookings",
   cancellationFreeWindowHours: "cancellation_free_window_hours",
@@ -32,12 +28,7 @@ export const SETTINGS = {
 export type SettingKey = (typeof SETTINGS)[keyof typeof SETTINGS];
 
 const FALLBACKS: Record<SettingKey, number> = {
-  commission_percent: 10,
-  stage_1_release_percent: 50,
-  deposit_percent_min: 10,
-  deposit_percent_max: 70,
-  late_penalty_percent_per_30min: 1,
-  penalty_customer_share_percent: 30,
+  delivery_fee_kobo: 150_000,
   payout_schedule_days: 7,
   provider_probation_bookings: 3,
   cancellation_free_window_hours: 0,
