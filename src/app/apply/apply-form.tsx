@@ -41,15 +41,18 @@ export function ApplyForm({
       <Card>
         <h2 className="text-lg font-semibold">Application received</h2>
         <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-          Nexa will review your business and email{" "}
+          Someone at Nexa will look at your business and the identification you sent, and email{" "}
           <span className="font-medium text-[color:var(--color-ink)]">{state.email}</span> with the
-          decision. If you are approved, that email carries the link that lets you set a password and
-          sign in to Business Studio.
+          decision.
         </p>
         <p className="mt-3 text-sm text-[color:var(--color-ink-muted)]">
-          Nothing else is needed from you right now.
+          You can sign in with the password you just chose to check on it at any time. The moment
+          you are approved, Business Studio opens and you can build your listings.
         </p>
-        <Link href="/" className="mt-5 block">
+        <Link href="/login" className="mt-5 block">
+          <Button className="w-full">Sign in</Button>
+        </Link>
+        <Link href="/" className="mt-3 block">
           <Button variant="ghost" className="w-full">
             Back to Nexa
           </Button>
@@ -73,7 +76,15 @@ export function ApplyForm({
         name="email"
         type="email"
         required
-        hint="This becomes your Nexa sign-in once you are approved."
+        hint="This is what you sign in with."
+      />
+      <Field
+        label="Choose a password"
+        name="password"
+        type="password"
+        required
+        minLength={8}
+        hint="At least 8 characters. You can sign in straight away and check on your application."
       />
 
       <label className="block">

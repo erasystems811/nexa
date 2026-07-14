@@ -46,6 +46,7 @@ export async function applyAction(_prev: ApplyState, formData: FormData): Promis
       businessName: String(formData.get("business_name") ?? ""),
       phone: String(formData.get("phone") ?? ""),
       email,
+      password: String(formData.get("password") ?? ""),
       categoryId: String(formData.get("category_id") ?? ""),
       cityId: String(formData.get("city_id") ?? ""),
       description: String(formData.get("description") ?? ""),

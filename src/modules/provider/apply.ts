@@ -5,6 +5,7 @@ import { ensureAuthUser } from "@/modules/auth/provisioning";
 import { ProviderError } from "./context";
 import { storeIdDocument, validateIdSet, type IdSubmission } from "./identification";
 import { sendApplicationReceived } from "@/modules/email/resend";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * The public vendor application — how a business asks to join Nexa.
@@ -37,6 +38,8 @@ export interface ApplicationInput {
   categoryId: string;
   cityId: string;
   description: string;
+  /** They choose it here, so signing in never depends on an email arriving. */
+  password: string;
   /** Two, of two different kinds. validateIdSet is what says so. */
   ids: IdSubmission[];
 }
@@ -57,6 +60,9 @@ function validate(input: ApplicationInput): void {
   if (input.phone.replace(/\D/g, "").length < 10) {
     throw new ProviderError("Enter the phone number customers reach you on");
   }
+  if (input.password.length < 8) {
+    throw new ProviderError("Choose a password of at least 8 characters");
+  }
   if (!input.categoryId) throw new ProviderError("Choose the service you offer");
   if (!input.cityId) throw new ProviderError("Choose the city you work in");
   if (input.description.trim().length < 20) {
@@ -72,7 +78,11 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
   const email = input.email.trim().toLowerCase();
   const businessName = input.businessName.trim();
 
-  const { user } = await ensureAuthUser({ email, fullName: businessName }).catch((e: unknown) => {
+  const { user } = await ensureAuthUser({
+    email,
+    fullName: businessName,
+    password: input.password,
+  }).catch((e: unknown) => {
     throw new ProviderError(
       `We could not start your application: ${e instanceof Error ? e.message : "unknown error"}`,
     );
@@ -151,4 +161,17 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
     // Swallowed on purpose.
   }
   return { providerId: provider.id };
+}
+
+/**
+ * The signed-in person's own vendor application, if they have one.
+ *
+ * Read with their own client, so `providers_read_own` is what permits it — a
+ * page has no business holding the service role. Returns null for someone who
+ * never applied.
+ */
+export async function myApplication(): Promise<{ status: string } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("providers").select("status").maybeSingle();
+  return data;
 }

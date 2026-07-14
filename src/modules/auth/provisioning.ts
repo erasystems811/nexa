@@ -49,7 +49,20 @@ export interface EnsuredUser {
  * account gets no password on purpose — the person sets their own from the code
  * we email them, so a password an admin typed never exists to be leaked.
  */
-export async function ensureAuthUser(input: { email: string; fullName: string }): Promise<EnsuredUser> {
+export async function ensureAuthUser(input: {
+  email: string;
+  fullName: string;
+  /**
+   * A password the person chose themselves.
+   *
+   * Without one, the account can only be entered via an emailed link — which
+   * means onboarding silently depends on an email provider being configured and
+   * an email actually arriving. A vendor who picks their own password at the
+   * moment they apply needs neither, and can sign in to check on themselves five
+   * minutes later.
+   */
+  password?: string;
+}): Promise<EnsuredUser> {
   const admin = createAdminClient();
   const email = input.email.trim().toLowerCase();
 
@@ -58,6 +71,7 @@ export async function ensureAuthUser(input: { email: string; fullName: string })
 
   const { data, error } = await admin.auth.admin.createUser({
     email,
+    password: input.password,
     email_confirm: true,
     user_metadata: { full_name: input.fullName },
   });
