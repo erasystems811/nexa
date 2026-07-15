@@ -59,14 +59,41 @@ export async function listAllListings(status?: string) {
   return data ?? [];
 }
 
+/**
+ * Everything an admin needs to judge a listing before it goes live: the full
+ * text the vendor wrote, and — the point of this — the photos they uploaded.
+ *
+ * The photos sit in the private provider-media bucket, so a signed URL is minted
+ * for each one here. Without it the admin was approving a listing they could not
+ * actually see, which is how a wrong or misleading photo reaches a customer.
+ */
 export async function getListingForReview(listingId: string) {
   const db = adminDb();
   const [listing, media] = await Promise.all([
-    db.from("listings").select("*, providers ( business_name ), categories ( name, fulfillment_type )").eq("id", listingId).maybeSingle(),
-    db.from("listing_media").select("id, kind, storage_path, status").eq("listing_id", listingId),
+    db
+      .from("listings")
+      .select("*, providers ( id, business_name, slug ), categories ( name, fulfillment_type )")
+      .eq("id", listingId)
+      .maybeSingle(),
+    db
+      .from("listing_media")
+      .select("id, kind, storage_path, status, alt_text, sort_order")
+      .eq("listing_id", listingId)
+      .order("sort_order"),
   ]);
+
   if (!listing.data) return null;
-  return { listing: listing.data, media: media.data ?? [] };
+
+  const withUrls = await Promise.all(
+    (media.data ?? []).map(async (m) => {
+      const { data: signed } = await db.storage
+        .from("provider-media")
+        .createSignedUrl(m.storage_path, 60 * 60);
+      return { ...m, url: signed?.signedUrl ?? null };
+    }),
+  );
+
+  return { listing: listing.data, media: withUrls };
 }
 
 type ListingDecision = "approved" | "rejected" | "changes_requested" | "hidden";

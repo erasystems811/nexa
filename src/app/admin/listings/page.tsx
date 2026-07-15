@@ -85,7 +85,12 @@ export default async function ListingsPage({
                 <Card>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">{l.title}</p>
+                      <Link
+                        href={`/listings/${l.id}` as Route}
+                        className="text-sm font-medium underline-offset-2 hover:underline"
+                      >
+                        {l.title}
+                      </Link>
                       <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
                         {provider ?? "Unknown vendor"}
                       </p>
@@ -109,6 +114,13 @@ export default async function ListingsPage({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
+                    <Link
+                      href={`/listings/${l.id}` as Route}
+                      className="inline-flex h-9 items-center rounded-lg border border-[color:var(--color-line)] px-3 text-xs font-medium hover:bg-[color:var(--color-surface-sunk)]"
+                    >
+                      Open &amp; inspect
+                    </Link>
+
                     {l.status === "pending_approval" || l.status === "changes_requested" ? (
                       <ActionButton
                         label="Approve — put it live"
