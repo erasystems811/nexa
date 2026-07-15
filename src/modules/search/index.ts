@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { listingCovers } from "@/modules/marketplace/covers";
 
 /**
  * Search — discovery over listings and providers.
@@ -78,7 +79,7 @@ export async function searchVendors(filters: {
   let query = supabase
     .from("listings")
     .select(
-      `provider_id,
+      `id, provider_id,
        categories!inner ( slug ),
        providers!inner ( id, business_name, slug, logo_url, cover_url, is_featured, cities ( name, slug ) )`,
     )
@@ -90,6 +91,7 @@ export async function searchVendors(filters: {
   const { data } = await query;
 
   const rows = (data ?? []) as unknown as Array<{
+    id: string;
     providers: {
       id: string;
       business_name: string;
@@ -103,8 +105,9 @@ export async function searchVendors(filters: {
 
   if (rows.length === 0) return [];
 
-  // One entry per vendor, counting how many of their services this view covers.
-  const byVendor = new Map<string, VendorResult & { isFeatured: boolean }>();
+  // One entry per vendor, counting how many of their services this view covers,
+  // and remembering one listing per vendor to borrow a photo from.
+  const byVendor = new Map<string, VendorResult & { isFeatured: boolean; listingId: string }>();
   for (const r of rows) {
     const p = r.providers;
     const existing = byVendor.get(p.id);
@@ -123,10 +126,21 @@ export async function searchVendors(filters: {
       reviewCount: 0,
       serviceCount: 1,
       isFeatured: p.is_featured,
+      listingId: r.id,
     });
   }
 
   const vendors = [...byVendor.values()];
+
+  // A vendor with no cover of their own borrows their first service's photo —
+  // the picture they actually uploaded, which is what a customer expects to see.
+  const needCover = vendors.filter((v) => !v.coverUrl);
+  if (needCover.length > 0) {
+    const covers = await listingCovers(needCover.map((v) => v.listingId));
+    for (const v of needCover) {
+      v.coverUrl = covers.get(v.listingId) ?? null;
+    }
+  }
 
   const { data: ratings } = await supabase
     .from("provider_ratings")
@@ -148,7 +162,7 @@ export async function searchVendors(filters: {
   });
 
   const limited = filters.limit ? vendors.slice(0, filters.limit) : vendors;
-  return limited.map(({ isFeatured: _isFeatured, ...v }) => v);
+  return limited.map(({ isFeatured: _isFeatured, listingId: _listingId, ...v }) => v);
 }
 
 export async function searchListings(filters: ListingFilters): Promise<ListingResult[]> {

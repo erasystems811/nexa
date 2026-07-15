@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { listingCovers } from "./covers";
 
 /**
  * Marketplace — the customer read model.
@@ -139,7 +140,12 @@ export async function getProviderBySlug(slug: string) {
       .limit(10),
   ]);
 
-  return { provider, listings: listings ?? [], rating: rating ?? null, reviews: reviews ?? [] };
+  // Each item on the menu carries the photo the vendor uploaded to it.
+  const rows = listings ?? [];
+  const covers = await listingCovers(rows.map((l) => l.id));
+  const withCovers = rows.map((l) => ({ ...l, coverUrl: covers.get(l.id) ?? null }));
+
+  return { provider, listings: withCovers, rating: rating ?? null, reviews: reviews ?? [] };
 }
 
 export async function getListingBySlug(slug: string) {
@@ -157,5 +163,11 @@ export async function getListingBySlug(slug: string) {
     .eq("status", "approved")
     .maybeSingle();
 
-  return data;
+  if (!data) return null;
+
+  // The listing's own photos, signed for a customer to see. The hero used to be
+  // the provider's cover_url, which no vendor fills in; these are the pictures
+  // they actually uploaded.
+  const covers = await listingCovers([data.id]);
+  return { ...data, coverUrl: covers.get(data.id) ?? null };
 }

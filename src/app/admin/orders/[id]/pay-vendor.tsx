@@ -18,45 +18,45 @@ import { formatKobo, koboToNaira } from "@/lib/money";
  */
 export function PayVendor({
   bookingId,
-  stillHeldKobo,
+  vendorPayKobo,
+  nexaCommissionKobo,
+  stillOwedVendorKobo,
   commissionPercent,
 }: {
   bookingId: string;
-  stillHeldKobo: number;
-  /** Only decides what the box opens with. It is not enforced anywhere. */
+  vendorPayKobo: number;
+  nexaCommissionKobo: number;
+  stillOwedVendorKobo: number;
   commissionPercent: number;
 }) {
   const [state, action, pending] = useActionState(payVendorAction, {} as AdminActionState);
-  const maxNaira = koboToNaira(stillHeldKobo);
-
-  // The suggestion: everything Nexa holds, less its commission. Rounded to whole
-  // naira so the box never opens with a number nobody would type.
-  const suggestedKobo = Math.round(stillHeldKobo * (1 - commissionPercent / 100));
-  const suggestedNaira = Math.floor(koboToNaira(suggestedKobo));
-
-  const [naira, setNaira] = useState(String(suggestedNaira));
+  const maxNaira = koboToNaira(stillOwedVendorKobo);
+  const [naira, setNaira] = useState(String(Math.floor(maxNaira)));
 
   const entered = Number(naira);
   const tooMuch = Number.isFinite(entered) && entered > maxNaira;
-  const keptKobo = Number.isFinite(entered) && !tooMuch ? stillHeldKobo - Math.round(entered * 100) : 0;
+  const alreadyPaidKobo = vendorPayKobo - stillOwedVendorKobo;
 
   return (
     <Card className="mt-4 border-[color:var(--color-ink)]">
       <h2 className="text-base font-semibold">Pay the vendor</h2>
       <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">
-        Nexa is holding <strong className="text-[color:var(--color-ink)]">{formatKobo(stillHeldKobo)}</strong> on this
-        booking. Send the vendor all of it, or less — whatever you do not send, Nexa keeps.
+        This vendor&rsquo;s pay on this booking is{" "}
+        <strong className="text-[color:var(--color-ink)]">{formatKobo(vendorPayKobo)}</strong>
+        {commissionPercent > 0 ? (
+          <>
+            {" "}&mdash; the customer&rsquo;s payment less Nexa&rsquo;s {commissionPercent}% commission of{" "}
+            <strong className="text-[color:var(--color-ink)]">{formatKobo(nexaCommissionKobo)}</strong>, which Nexa keeps.
+          </>
+        ) : (
+          "."
+        )}
+        {alreadyPaidKobo > 0 ? ` You have already sent them ${formatKobo(alreadyPaidKobo)}.` : ""}
       </p>
-
-      {commissionPercent > 0 ? (
-        <p className="mt-2 text-xs text-[color:var(--color-ink-muted)]">
-          Filled in for you at your {commissionPercent}% commission, which leaves Nexa{" "}
-          <strong className="text-[color:var(--color-ink)]">
-            {formatKobo(stillHeldKobo - suggestedKobo)}
-          </strong>
-          . Change the number if this booking is different.
-        </p>
-      ) : null}
+      <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
+        Send everything that&rsquo;s left, or part of it as a deposit before the job is done. The
+        commission is never part of this.
+      </p>
 
       <form action={action} className="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="booking_id" value={bookingId} />
@@ -76,7 +76,7 @@ export function PayVendor({
         </label>
         <button
           type="submit"
-          disabled={pending || tooMuch}
+          disabled={pending || tooMuch || entered <= 0}
           className="h-12 rounded-full bg-[color:var(--color-ink)] px-6 text-sm font-medium text-white disabled:opacity-40"
         >
           {pending ? "Sending…" : "Release to vendor"}
@@ -85,13 +85,9 @@ export function PayVendor({
 
       {tooMuch ? (
         <p className="mt-2 text-xs text-[color:var(--color-danger)]">
-          Nexa is only holding {formatKobo(stillHeldKobo)} on this booking. You cannot pay out more than that.
+          The most you can pay this vendor now is {formatKobo(stillOwedVendorKobo)}. The rest is Nexa&rsquo;s commission.
         </p>
-      ) : (
-        <p className="mt-2 text-xs text-[color:var(--color-ink-muted)]">
-          Nexa keeps {formatKobo(keptKobo)} of what it is holding.
-        </p>
-      )}
+      ) : null}
 
       {state.error ? <div className="mt-3"><Alert>{state.error}</Alert></div> : null}
       {state.ok ? <div className="mt-3"><Alert tone="success">Sent to the vendor&rsquo;s bank account.</Alert></div> : null}

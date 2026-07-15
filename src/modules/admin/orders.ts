@@ -22,6 +22,8 @@ export async function listOrders(status?: string) {
 
 export async function getOrderDetail(bookingId: string) {
   const db = adminDb();
+  const { data: commissionRow } = await db.from("platform_settings").select("value").eq("key", "commission_percent").maybeSingle();
+  const commission = Math.min(100, Math.max(0, Number(commissionRow?.value ?? 0)));
   const [booking, payment, codes, ledger] = await Promise.all([
     db.from("bookings").select("*, listings ( title ), providers ( business_name ), profiles!bookings_customer_id_fkey ( full_name )").eq("id", bookingId).maybeSingle(),
     db.from("payments").select("*").eq("booking_id", bookingId).maybeSingle(),
@@ -33,7 +35,8 @@ export async function getOrderDetail(bookingId: string) {
     booking: booking.data,
     payment: payment.data,
     /** What the customer paid, what has gone out, and what Nexa still holds. */
-    money: bookingMoney(payment.data),
+    money: bookingMoney(payment.data, commission),
+    commissionPercent: commission,
     codes: codes.data ?? [],
     ledger: ledger.data ?? [],
   };

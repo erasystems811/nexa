@@ -77,7 +77,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       {holding && can(staff, P.paymentsPayout) ? (
         <PayVendor
           bookingId={booking.id}
-          stillHeldKobo={money.stillHeldKobo}
+          vendorPayKobo={money.vendorPayKobo}
+          nexaCommissionKobo={money.nexaCommissionKobo}
+          stillOwedVendorKobo={money.stillOwedVendorKobo}
           commissionPercent={commissionPercent}
         />
       ) : null}
