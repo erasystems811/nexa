@@ -120,7 +120,7 @@ export async function getConversation(conversationId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("conversations")
-    .select("id, customer_id, provider_id, listing_id, booking_id")
+    .select("id, customer_id, provider_id, listing_id, booking_id, providers ( business_name ), listings ( title )")
     .eq("id", conversationId)
     .maybeSingle();
   return data;
