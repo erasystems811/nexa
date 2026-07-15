@@ -6,7 +6,7 @@ export default async function AccountPage() {
   const { profile, email } = await requireSession();
 
   return (
-    <main className="mx-3 my-3 max-w-2xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-10 sm:mx-auto sm:my-8">
+    <main className="mx-auto max-w-2xl px-5 py-10">
       <BackBar className="mb-6" />
       <PageHeader title="Account" subtitle={email ?? undefined} />
 

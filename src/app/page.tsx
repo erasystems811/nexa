@@ -19,7 +19,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main className="mx-3 my-3 max-w-3xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white px-5 pb-16 shadow-card sm:mx-auto sm:my-8">
+    <main className="mx-auto max-w-3xl px-5 pb-16">
       <header className="flex items-center justify-between py-5">
         <Link href="/" aria-label="Nexa home">
           <Logo markClassName="size-10 rounded-[1.1rem]" textClassName="text-lg" />

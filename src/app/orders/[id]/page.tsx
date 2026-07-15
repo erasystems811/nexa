@@ -24,7 +24,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const code = codes[0] ?? null;
 
   return (
-    <main className="mx-3 my-3 max-w-2xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-8 sm:mx-auto sm:my-8">
+    <main className="mx-auto max-w-2xl px-5 py-8">
       <BackBar fallback="/orders" className="mb-4" />
       <PageHeader title={booking.listings.title} subtitle={booking.providers.business_name} />
 

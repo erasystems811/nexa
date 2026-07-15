@@ -53,7 +53,7 @@ export default async function SearchPage({
     : `vendor${count === 1 ? "" : "s"}`;
 
   return (
-    <main className="mx-3 my-3 max-w-3xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-6 sm:mx-auto sm:my-8">
+    <main className="mx-auto max-w-3xl px-5 py-6">
       <BackBar />
       <div className="mt-3">
         <PageHeader

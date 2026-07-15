@@ -29,7 +29,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const loginToBookPath = `/login?next=${encodeURIComponent(bookPath)}` as Route;
 
   return (
-    <main className="mx-3 my-3 max-w-2xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card pb-16 sm:mx-auto sm:my-8">
+    <main className="mx-auto max-w-2xl pb-16">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-[color:var(--color-surface-sunk)]">
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element -- external provider imagery

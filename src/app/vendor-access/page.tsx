@@ -26,8 +26,7 @@ export default async function VendorAccessPage() {
   const turnedDown = application?.status === "rejected";
 
   return (
-    <main className="flex min-h-dvh flex-col justify-center px-3 py-8">
-      <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-[color:var(--color-line)] bg-white px-6 py-10 shadow-card">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-12">
       {/* The mark, but not a link. This is the vendor surface; there is nothing
           on the customer site a vendor came here to reach. */}
       <span className="mb-8 flex justify-center" aria-label="Nexa for vendors">
@@ -80,7 +79,6 @@ export default async function VendorAccessPage() {
           </p>
         ) : null}
       </Card>
-    </div>
     </main>
   );
 }

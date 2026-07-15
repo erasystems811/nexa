@@ -22,13 +22,8 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      {/*
-        The marketplace sits on the sunk grey, not on the page. Every customer
-        screen is a white card floating on it — which is what stops Nexa reading
-        as words typed onto paper. Admin and Studio each paint their own
-        full-height background over this, so they are untouched.
-      */}
-      <body className="min-h-dvh bg-[color:var(--color-surface-sunk)] text-[color:var(--color-ink)]">
+      {/* Plain white. Content sits directly on the page — no card frame. */}
+      <body className="min-h-dvh bg-white text-[color:var(--color-ink)]">
         {children}
       </body>
     </html>

@@ -12,8 +12,7 @@ export function VerifyForm({ email }: { email: string }) {
   const [state, formAction, pending] = useActionState(verifySignupCode, initialState);
 
   return (
-    <main className="flex min-h-dvh flex-col justify-center px-3 py-8">
-      <div className="mx-auto w-full max-w-sm rounded-[1.75rem] border border-[color:var(--color-line)] bg-white px-6 py-10 shadow-card">
+    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
       <Link href="/" aria-label="Nexa home">
         <Logo markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
       </Link>
@@ -48,7 +47,6 @@ export function VerifyForm({ email }: { email: string }) {
           Create account again
         </Link>
       </p>
-    </div>
     </main>
   );
 }

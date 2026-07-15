@@ -43,7 +43,7 @@ export default async function BookPage({ params }: { params: Promise<{ listingId
   const total = priceKobo;
 
   return (
-    <main className="mx-3 my-3 max-w-2xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-8 sm:mx-auto sm:my-8">
+    <main className="mx-auto max-w-2xl px-5 py-8">
       <BackBar fallback={`/l/${listing.slug}` as Route} className="mb-4" />
       <PageHeader title={listing.title} subtitle={listing.providers.business_name} />
 
