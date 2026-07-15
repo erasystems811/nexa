@@ -14,7 +14,7 @@ export default async function HomePage() {
     listCategories(),
     isEnabled(FLAGS.planMyEvent, session?.profile.role),
     categoryImages(),
-    recentListings(8),
+    recentListings(24),
   ]);
 
   return (
@@ -87,15 +87,7 @@ export default async function HomePage() {
 
       {listings.length > 0 ? (
         <section className="mt-12">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-[color:var(--color-ink-muted)]">
-              Fresh on Nexa
-            </h2>
-            <Link href="/search" className="text-xs font-medium text-[color:var(--color-accent)]">
-              See all
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((l) => {
               const provider = l.providers as unknown as {
                 business_name: string;

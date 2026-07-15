@@ -14,6 +14,8 @@
 export {
   holdFunds,
   recordHold,
+  settleVendorPayout,
+  vendorCanBePaid,
   releaseFunds,
   refund,
   PaymentsError,

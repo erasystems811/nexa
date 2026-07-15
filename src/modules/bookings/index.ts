@@ -16,6 +16,7 @@ export {
   rejectBooking,
   startWork,
   confirmWithCode,
+  raiseDispute,
   BookingsError,
   type CheckoutInput,
   type CheckoutResult,

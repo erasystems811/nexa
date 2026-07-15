@@ -224,6 +224,18 @@ export async function resolveDisputeAction(disputeId: string, outcome: "resolved
   revalidatePath("/admin/disputes");
 }
 
+export async function payVendorInDisputeAction(disputeId: string, note?: string): Promise<void> {
+  await admin.payVendorAndResolve(await actor(P.disputesResolve), disputeId, note ?? "");
+  revalidatePath("/admin/disputes");
+  revalidatePath("/admin");
+}
+
+export async function refundCustomerInDisputeAction(disputeId: string, note?: string): Promise<void> {
+  await admin.refundCustomerAndResolve(await actor(P.disputesResolve), disputeId, note ?? "");
+  revalidatePath("/admin/disputes");
+  revalidatePath("/admin");
+}
+
 // ---- moderation -----------------------------------------------------------
 
 export async function resolveFlagAction(flagId: string, decision: "confirmed" | "dismissed"): Promise<void> {

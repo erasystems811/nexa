@@ -18,7 +18,6 @@ import type { PlatformSetting, UserRole } from "@/lib/db/types";
 
 export const SETTINGS = {
   commissionPercent: "commission_percent",
-  payoutScheduleDays: "payout_schedule_days",
   providerProbationBookings: "provider_probation_bookings",
   cancellationFreeWindowHours: "cancellation_free_window_hours",
   subscriptionFeeKobo: "subscription_fee_kobo",
@@ -29,7 +28,6 @@ export type SettingKey = (typeof SETTINGS)[keyof typeof SETTINGS];
 
 const FALLBACKS: Record<SettingKey, number> = {
   commission_percent: 0,
-  payout_schedule_days: 7,
   provider_probation_bookings: 3,
   cancellation_free_window_hours: 0,
   subscription_fee_kobo: 500_000,

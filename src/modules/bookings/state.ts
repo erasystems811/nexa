@@ -7,13 +7,14 @@ import type { BookingStatus, FulfillmentType } from "@/lib/db/types";
  *   paid_held    the customer has paid 100% into Nexa's escrow
  *   accepted     the vendor said yes. No money moved.
  *   in_progress  optional: the vendor has started the job. No money moved.
- *   completed    the customer gave up their confirmation code. The job is done —
- *                  and an ADMIN releases the vendor's money afterwards, from the
- *                  Admin Console, in full or in part.
+ *   completed    the vendor entered the customer's code. The job is done, and the
+ *                  vendor is paid then and there — everything held, less Nexa's
+ *                  commission.
+ *   disputed     the customer will not give the code. Nexa decides: pay the vendor
+ *                  without a code, or refund the customer.
  *
- * No status in this machine pays anybody. The lifecycle records what HAPPENED;
- * what the vendor is paid for it is a separate, human decision, and it is not a
- * state a booking passes through.
+ * Reaching `completed` pays the vendor. Nothing else in this machine moves money
+ * except `disputed`, which an admin resolves by hand.
  *
  * `accepted -> completed` is a legal edge because in_progress is a courtesy, not
  * a checkpoint: a booking must never be stuck uncompletable because a vendor did

@@ -58,5 +58,5 @@ export {
   SUBSCRIPTION_STATUSES, SUBSCRIPTION_STATUS_COPY,
   type SubscriptionStatus,
 } from "./subscriptions";
-export { listDisputes, getDisputeDetail, resolveDispute } from "./disputes";
+export { listDisputes, getDisputeDetail, resolveDispute, payVendorAndResolve, refundCustomerAndResolve } from "./disputes";
 export { listFlags, resolveFlag, convertFlagToStrike } from "./moderation";

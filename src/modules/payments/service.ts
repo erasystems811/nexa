@@ -149,6 +149,78 @@ export interface ReleaseFundsInput {
  * partial releases produce two different keys and both go through, which is the
  * whole point.
  */
+/**
+ * Pay the vendor what a completed booking earns them: everything Nexa is holding,
+ * less Nexa's commission, less anything already released early as a deposit.
+ *
+ * Commission is read here, at payout time, from the platform setting — Nexa keeps
+ * it automatically, so the happy path (a vendor enters the customer's code and is
+ * paid) needs no human. An admin releasing a deposit before completion is the
+ * only thing that makes `released_kobo` non-zero, and this simply pays the rest.
+ *
+ * Returns how much was sent. Zero is a valid answer — a booking already paid out
+ * in full by an admin has nothing left to release, and completing it is still
+ * correct.
+ */
+export async function settleVendorPayout(bookingId: string): Promise<number> {
+  const db = createAdminClient();
+
+  const [{ data: booking }, { data: payment }] = await Promise.all([
+    db.from("bookings").select("provider_id").eq("id", bookingId).maybeSingle(),
+    db.from("payments").select("held_kobo, released_kobo, refunded_kobo").eq("booking_id", bookingId).maybeSingle(),
+  ]);
+  if (!booking || !payment || payment.held_kobo <= 0) return 0;
+
+  const { data: setting } = await db
+    .from("platform_settings")
+    .select("value")
+    .eq("key", "commission_percent")
+    .maybeSingle();
+  const commissionPercent = Math.min(100, Math.max(0, Number(setting?.value ?? 0)));
+
+  const entitlement = Math.round(payment.held_kobo * (1 - commissionPercent / 100));
+  const stillHeld = payment.held_kobo - payment.released_kobo - (payment.refunded_kobo ?? 0);
+  const toRelease = Math.max(0, Math.min(stillHeld, entitlement - payment.released_kobo));
+  if (toRelease <= 0) return 0;
+
+  const { data: wallet } = await db
+    .from("provider_wallets")
+    .select("bank_code, bank_account_number")
+    .eq("provider_id", booking.provider_id)
+    .maybeSingle();
+  if (!wallet?.bank_code || !wallet.bank_account_number) {
+    throw new PaymentsError(
+      "Add your bank account in Business Studio first, so Nexa knows where to send your money.",
+    );
+  }
+
+  await releaseFunds({
+    bookingId,
+    amountKobo: toRelease,
+    beneficiary: {
+      kind: "provider",
+      id: booking.provider_id,
+      bankCode: wallet.bank_code,
+      accountNumber: wallet.bank_account_number,
+    },
+  });
+
+  return toRelease;
+}
+
+/** Just the check: is there a bank account to pay into? Lets the caller fail before it burns a single-use code. */
+export async function vendorCanBePaid(bookingId: string): Promise<boolean> {
+  const db = createAdminClient();
+  const { data: booking } = await db.from("bookings").select("provider_id").eq("id", bookingId).maybeSingle();
+  if (!booking) return false;
+  const { data: wallet } = await db
+    .from("provider_wallets")
+    .select("bank_code, bank_account_number")
+    .eq("provider_id", booking.provider_id)
+    .maybeSingle();
+  return Boolean(wallet?.bank_code && wallet.bank_account_number);
+}
+
 export async function releaseFunds(input: ReleaseFundsInput): Promise<void> {
   const gateway = getPaymentGateway();
   const db = createAdminClient();

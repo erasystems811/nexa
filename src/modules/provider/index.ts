@@ -44,7 +44,7 @@ export {
 } from "./listings";
 export { listMedia, uploadMedia, deleteMedia } from "./media";
 export { listAvailability, blockUnavailable, removeBlock } from "./availability";
-export { listProviderOrders, accept, reject, startWork } from "./orders";
+export { listProviderOrders, accept, reject, startWork, enterCompletionCode, reportProblem } from "./orders";
 export { getWallet, updateBankDetails } from "./wallet";
 export { listMyReviews, replyToReview } from "./reviews";
 export { mySubscription, isListable } from "./subscription";

@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { holdFunds, refund } from "@/modules/payments";
+import { holdFunds, refund, settleVendorPayout, vendorCanBePaid } from "@/modules/payments";
 import { publicEnv } from "@/lib/env";
 import { assertTransition } from "./state";
 import type { BookingStatus, Database } from "@/lib/db/types";
@@ -240,7 +240,7 @@ export async function startWork(bookingId: string): Promise<void> {
  * much of what Nexa is holding the vendor is paid. Keeping the two apart is what
  * lets a dispute be settled before the money is gone.
  */
-export async function confirmWithCode(bookingId: string, code: string): Promise<void> {
+export async function confirmWithCode(bookingId: string, code: string): Promise<{ paidKobo: number }> {
   const db = createAdminClient();
 
   const { data: booking } = await db
@@ -252,6 +252,16 @@ export async function confirmWithCode(bookingId: string, code: string): Promise<
   if (!booking) throw new BookingsError("No such booking");
   assertTransition(booking.status, "completed");
 
+  // Check there is somewhere to pay BEFORE consuming the code. The code is
+  // single-use: burning it and then discovering the vendor has no bank account
+  // would strand a completed-but-unpayable booking, and the code cannot be reused.
+  if (!(await vendorCanBePaid(bookingId))) {
+    throw new BookingsError(
+      "Add your bank account in Business Studio first, so Nexa knows where to send your money.",
+    );
+  }
+
+  // The code is the proof the job was done. Consuming it is the point of no return.
   await consumeCode(bookingId, 2, code);
 
   await db
@@ -262,12 +272,57 @@ export async function confirmWithCode(bookingId: string, code: string): Promise<
       completed_at: new Date().toISOString(),
     })
     .eq("id", bookingId);
+
+  // ...and the vendor is paid, then and there. Everything held, less Nexa's
+  // commission, less any deposit already released. No admin, no schedule, no wait.
+  const paidKobo = await settleVendorPayout(bookingId);
+  return { paidKobo };
 }
 
 /**
  * A code is single-use. Verifying it and marking it consumed has to be one
  * statement, or the same code could be reused.
  */
+/**
+ * The vendor says the customer will not hand over their completion code, and
+ * offers proof they did the job. Nexa steps in: the booking becomes disputed,
+ * so the money stops sitting in limbo, and an admin decides — nudge the customer,
+ * or pay the vendor without a code (see the Admin Console).
+ */
+export async function raiseDispute(input: {
+  bookingId: string;
+  raisedByUserId: string;
+  message: string;
+}): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: booking } = await db
+    .from("bookings")
+    .select("status")
+    .eq("id", input.bookingId)
+    .single();
+  if (!booking) throw new BookingsError("No such booking");
+
+  // Already resolved either way? Nothing to dispute.
+  if (["rejected", "cancelled", "completed"].includes(booking.status)) {
+    throw new BookingsError("This booking is already settled and cannot be disputed.");
+  }
+
+  const { error: disputeError } = await db.from("disputes").insert({
+    booking_id: input.bookingId,
+    raised_by: input.raisedByUserId,
+    reason: "vendor_no_code",
+    description: input.message,
+    status: "open",
+  });
+  if (disputeError) throw new BookingsError(`Could not raise the dispute: ${disputeError.message}`);
+
+  if (booking.status !== "disputed") {
+    await transition(input.bookingId, "disputed");
+  }
+}
+
+
 async function consumeCode(bookingId: string, stage: 2, code?: string): Promise<void> {
   if (!code) throw new BookingsError("A confirmation code is required");
 

@@ -10,6 +10,8 @@ import {
   accept,
   blockUnavailable,
   startWork,
+  enterCompletionCode,
+  reportProblem,
   createListing,
   deleteListing,
   deleteMedia,
@@ -258,6 +260,23 @@ export async function rejectOrderAction(bookingId: string): Promise<void> {
 export async function startWorkAction(bookingId: string): Promise<void> {
   const p = await provider();
   await startWork(p.id, bookingId);
+  revalidatePath("/studio/orders");
+}
+
+/**
+ * The vendor enters the customer's code and is paid. Returns how much was sent so
+ * the screen can say so.
+ */
+export async function enterCodeAction(bookingId: string, code: string): Promise<{ paidKobo: number }> {
+  const p = await provider();
+  const result = await enterCompletionCode(p.id, bookingId, code);
+  revalidatePath("/studio/orders");
+  return result;
+}
+
+export async function reportProblemAction(bookingId: string, message: string): Promise<void> {
+  const p = await provider();
+  await reportProblem(p.id, bookingId, message);
   revalidatePath("/studio/orders");
 }
 
