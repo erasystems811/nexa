@@ -19,7 +19,11 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const provider = listing.providers;
   const isFixed = listing.price_type === "fixed";
 
-  const cover = (provider as unknown as { cover_url: string | null }).cover_url;
+  // The listing's own uploaded photo first; the provider's banner only as a
+  // fallback for a listing with no image of its own.
+  const cover =
+    (listing as unknown as { coverUrl: string | null }).coverUrl ??
+    (provider as unknown as { cover_url: string | null }).cover_url;
   const listingPath = `/l/${listing.slug}`;
   const bookPath = `/book/${listing.id}` as Route;
   const loginToBookPath = `/login?next=${encodeURIComponent(bookPath)}` as Route;

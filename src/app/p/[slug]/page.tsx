@@ -85,16 +85,27 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         <section className="mt-8">
           <h2 className="mb-3 text-sm font-semibold">What they offer</h2>
           <ul className="space-y-3">
-            {listings.map((l) => (
-              <li key={l.id}>
-                <Link href={`/l/${l.slug}`} className="flex items-center justify-between rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-4 shadow-card transition hover:shadow-card-hover">
-                  <p className="text-sm font-medium">{l.title}</p>
-                  <p className="text-sm font-semibold text-[color:var(--color-accent)]">
-                    {l.price_type === "fixed" && l.price_kobo !== null ? formatKobo(l.price_kobo) : "On request"}
-                  </p>
-                </Link>
-              </li>
-            ))}
+            {listings.map((l) => {
+              const cover = (l as unknown as { coverUrl: string | null }).coverUrl;
+              return (
+                <li key={l.id}>
+                  <Link href={`/l/${l.slug}`} className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-3 shadow-card transition hover:shadow-card-hover">
+                    <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-[color:var(--color-surface-sunk)]">
+                      {cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- private storage, signed URL
+                        <img src={cover} alt="" className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{l.title}</p>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold text-[color:var(--color-accent)]">
+                      {l.price_type === "fixed" && l.price_kobo !== null ? formatKobo(l.price_kobo) : "On request"}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
             {listings.length === 0 ? (
               <li className="rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-line)] p-6 text-center text-sm text-[color:var(--color-ink-muted)]">No listings yet.</li>
             ) : null}
