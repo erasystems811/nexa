@@ -5,6 +5,7 @@ import { requireProvider, providerIsVerified } from "@/modules/provider";
 import { listCategories } from "@/modules/marketplace";
 import { createListingAction } from "@/modules/provider/actions";
 import { Button, Card, PageHeader } from "@/components/ui";
+import { StudioBack } from "@/components/studio-back";
 import { ListingForm } from "../listing-form";
 
 export default async function NewListing() {
@@ -20,6 +21,7 @@ export default async function NewListing() {
   if (!(await providerIsVerified(provider.id))) {
     return (
       <>
+        <StudioBack fallback={"/listings" as Route} className="mb-4" />
         <PageHeader title="New listing" />
         <Card>
           <h2 className="text-sm font-semibold">Nexa has to know who you are first</h2>
@@ -38,6 +40,7 @@ export default async function NewListing() {
 
   return (
     <>
+      <StudioBack fallback={"/listings" as Route} className="mb-4" />
       <PageHeader title="New listing" />
       <ListingForm categories={categories} action={createListingAction} submitLabel="Create listing" />
     </>

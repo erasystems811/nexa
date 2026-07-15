@@ -1,6 +1,8 @@
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { requireProvider, getMyListing, listAvailability } from "@/modules/provider";
 import { PageHeader } from "@/components/ui";
+import { StudioBack } from "@/components/studio-back";
 import { AvailabilityManager } from "./availability-manager";
 
 /** Availability calendar.: Available / Booked / Unavailable. */
@@ -15,6 +17,7 @@ export default async function AvailabilityPage({ params }: { params: Promise<{ i
 
   return (
     <>
+      <StudioBack fallback={`/listings/${id}` as Route} className="mb-4" />
       <PageHeader
         title="Availability"
         subtitle={listing.title}

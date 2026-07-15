@@ -6,6 +6,7 @@ import { listCategories } from "@/modules/marketplace";
 import { updateListingAction } from "@/modules/provider/actions";
 import { koboToNaira } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
+import { StudioBack } from "@/components/studio-back";
 import { ListingForm } from "../listing-form";
 import { ListingControls } from "./listing-controls";
 import { MediaManager } from "./media-manager";
@@ -24,6 +25,7 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
 
   return (
     <>
+      <StudioBack fallback={"/listings" as Route} className="mb-4" />
       <PageHeader
         title={listing.title}
         subtitle={listing.status === "approved" ? "Live" : listing.status.replace(/_/g, " ")}

@@ -3,7 +3,9 @@ import {
   myIdentityStatus,
   ACCEPTED_ID_MIME_TYPES,
 } from "@/modules/provider";
+import type { Route } from "next";
 import { Card, PageHeader } from "@/components/ui";
+import { StudioBack } from "@/components/studio-back";
 import { VerifyForm } from "./verify-form";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -24,6 +26,7 @@ export default async function VerificationPage() {
 
   return (
     <>
+      <StudioBack fallback={"/" as Route} label="Back to Studio" className="mb-4" />
       <PageHeader
         title="Prove who you are"
         subtitle={
