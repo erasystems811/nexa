@@ -122,13 +122,18 @@ export async function signIn(
     const env = serverEnv();
     const username = env.NEXA_SUPER_ADMIN_USERNAME?.trim();
     const email = env.NEXA_SUPER_ADMIN_EMAIL?.trim();
-    const adminPassword = env.NEXA_SUPER_ADMIN_PASSWORD;
+    // Trimmed, like the username and email above. Railway (and .env files)
+    // routinely leave a trailing newline or space on a pasted value, and a
+    // password compared raw would then never match what someone actually types.
+    // The trimmed value is the effective password everywhere below, so Supabase
+    // is set to the same thing the compare accepts.
+    const adminPassword = env.NEXA_SUPER_ADMIN_PASSWORD?.trim();
 
     if (!username || !email || !adminPassword) {
       return { error: "Admin login is not configured yet. Set the Nexa Super Admin env values in Railway." };
     }
 
-    if (parsed.data.identifier.toLowerCase() !== username.toLowerCase() || parsed.data.password !== adminPassword) {
+    if (parsed.data.identifier.toLowerCase() !== username.toLowerCase() || parsed.data.password.trim() !== adminPassword) {
       return { error: "Admin username and password do not match." };
     }
 
