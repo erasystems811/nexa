@@ -50,7 +50,6 @@ export const PERMISSIONS = {
   // Flagged-off features (Marketing) — the permission exists now; the features
   // stay behind their flags/18).
   promotionsManage: "promotions.manage",
-  couponsManage: "coupons.manage",
   featuredManage: "featured.manage",
   notificationsSend: "notifications.send",
 } as const;
@@ -86,7 +85,6 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "moderation.strike": "Convert a flag to a strike",
   "staff.manage": "Manage staff & permissions",
   "promotions.manage": "Manage promotions",
-  "coupons.manage": "Manage coupons",
   "featured.manage": "Manage featured vendors",
   "notifications.send": "Send notifications",
 };
@@ -133,7 +131,7 @@ export const ROLE_BUNDLES: Record<Exclude<StaffRole, "super_admin">, Permission[
     P.paymentsView, P.paymentsRefund, P.paymentsPayout, P.ordersView,
     P.subscriptionsView, P.subscriptionsManage,
   ],
-  marketing: [P.promotionsManage, P.couponsManage, P.featuredManage, P.notificationsSend],
+  marketing: [P.promotionsManage, P.featuredManage, P.notificationsSend],
 };
 
 /** The default permissions a role starts with. Super Admin means "everything". */

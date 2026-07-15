@@ -20,7 +20,6 @@ import type { FeatureFlag, UserRole } from "@/lib/db/types";
  */
 export const FLAGS = {
   contactInfoFlagging: "contact_info_flagging",
-  coupons: "coupons",
   negotiablePricing: "negotiable_pricing",
   planMyEvent: "plan_my_event",
   publicReliabilityScore: "public_reliability_score",
