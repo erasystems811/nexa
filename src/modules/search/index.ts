@@ -42,6 +42,115 @@ export interface ListingResult {
   reviewCount: number;
 }
 
+export interface VendorResult {
+  id: string;
+  slug: string;
+  businessName: string;
+  logoUrl: string | null;
+  coverUrl: string | null;
+  cityName: string | null;
+  avgRating: number | null;
+  reviewCount: number;
+  /** How many services this vendor offers in the current view. */
+  serviceCount: number;
+}
+
+/**
+ * The marketplace, as a customer browses it: one card per vendor, not one per
+ * service. A vendor is a business with a menu — Chowdeck's restaurants — so the
+ * browse page shows the business, and opening it (/p/slug) shows the menu.
+ *
+ * Built from approved listings on purpose: a vendor appears here only if they
+ * have at least one live service, so no card ever opens onto an empty menu. When
+ * a category is given, the vendor is included for having a service in it, and the
+ * count is their services in that category.
+ *
+ * Search — a typed query for a specific item — stays on searchListings, because
+ * that is the other half of the model: browse by business, search by service.
+ */
+export async function searchVendors(filters: {
+  categorySlug?: string;
+  citySlug?: string;
+  limit?: number;
+}): Promise<VendorResult[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("listings")
+    .select(
+      `provider_id,
+       categories!inner ( slug ),
+       providers!inner ( id, business_name, slug, logo_url, cover_url, is_featured, cities ( name, slug ) )`,
+    )
+    .eq("status", "approved");
+
+  if (filters.categorySlug) query = query.eq("categories.slug", filters.categorySlug);
+  if (filters.citySlug) query = query.eq("providers.cities.slug", filters.citySlug);
+
+  const { data } = await query;
+
+  const rows = (data ?? []) as unknown as Array<{
+    providers: {
+      id: string;
+      business_name: string;
+      slug: string;
+      logo_url: string | null;
+      cover_url: string | null;
+      is_featured: boolean;
+      cities: { name: string } | null;
+    };
+  }>;
+
+  if (rows.length === 0) return [];
+
+  // One entry per vendor, counting how many of their services this view covers.
+  const byVendor = new Map<string, VendorResult & { isFeatured: boolean }>();
+  for (const r of rows) {
+    const p = r.providers;
+    const existing = byVendor.get(p.id);
+    if (existing) {
+      existing.serviceCount += 1;
+      continue;
+    }
+    byVendor.set(p.id, {
+      id: p.id,
+      slug: p.slug,
+      businessName: p.business_name,
+      logoUrl: p.logo_url,
+      coverUrl: p.cover_url,
+      cityName: p.cities?.name ?? null,
+      avgRating: null,
+      reviewCount: 0,
+      serviceCount: 1,
+      isFeatured: p.is_featured,
+    });
+  }
+
+  const vendors = [...byVendor.values()];
+
+  const { data: ratings } = await supabase
+    .from("provider_ratings")
+    .select("provider_id, avg_rating, review_count")
+    .in("provider_id", vendors.map((v) => v.id));
+
+  const byId = new Map((ratings ?? []).map((r) => [r.provider_id, r] as const));
+  for (const v of vendors) {
+    const rating = byId.get(v.id);
+    v.avgRating = rating?.avg_rating ?? null;
+    v.reviewCount = rating?.review_count ?? 0;
+  }
+
+  // Featured first, then the better-reviewed, then the more prolific.
+  vendors.sort((a, b) => {
+    if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
+    if ((b.avgRating ?? 0) !== (a.avgRating ?? 0)) return (b.avgRating ?? 0) - (a.avgRating ?? 0);
+    return b.serviceCount - a.serviceCount;
+  });
+
+  const limited = filters.limit ? vendors.slice(0, filters.limit) : vendors;
+  return limited.map(({ isFeatured: _isFeatured, ...v }) => v);
+}
+
 export async function searchListings(filters: ListingFilters): Promise<ListingResult[]> {
   const supabase = await createClient();
 

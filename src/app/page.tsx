@@ -1,20 +1,21 @@
-import Link from "next/link";
-import { listCategories, categoryImages, recentListings } from "@/modules/marketplace";
-import { formatKobo } from "@/lib/money";
+import { listCategories, categoryImages } from "@/modules/marketplace";
+import { searchVendors } from "@/modules/search";
 import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
+import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { SearchBar } from "@/components/search-bar";
 import { CategoryIcon } from "@/components/category-icon";
+import { VendorCard } from "@/components/vendor-card";
 
 /** Marketplace home. */
 export default async function HomePage() {
   const session = await getSession();
-  const [categories, planMyEventLive, images, listings] = await Promise.all([
+  const [categories, planMyEventLive, images, vendors] = await Promise.all([
     listCategories(),
     isEnabled(FLAGS.planMyEvent, session?.profile.role),
     categoryImages(),
-    recentListings(24),
+    searchVendors({ limit: 24 }),
   ]);
 
   return (
@@ -85,53 +86,15 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {listings.length > 0 ? (
+      {vendors.length > 0 ? (
         <section className="mt-12">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {listings.map((l) => {
-              const provider = l.providers as unknown as {
-                business_name: string;
-                slug: string;
-                cover_url: string | null;
-                cities: { name: string } | null;
-              };
-              const category = l.categories as unknown as { name: string } | null;
-              const price =
-                l.price_type === "fixed" && l.price_kobo != null
-                  ? `From ${formatKobo(l.price_kobo)}`
-                  : "Price on request";
-              return (
-                <Link
-                  key={l.id}
-                  href={`/l/${l.slug}`}
-                  className="group overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-card"
-                >
-                  {provider.cover_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- Supabase storage, no loader configured
-                    <img
-                      src={provider.cover_url}
-                      alt=""
-                      className="h-32 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-32 w-full bg-[color:var(--color-surface-sunk)]" />
-                  )}
-                  <div className="p-4">
-                    <p className="text-sm font-semibold leading-snug">{l.title}</p>
-                    <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-                      {provider.business_name}
-                      {provider.cities?.name ? ` · ${provider.cities.name}` : ""}
-                    </p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="rounded-full bg-[color:var(--color-surface-sunk)] px-2.5 py-1 text-[11px] font-medium text-[color:var(--color-ink-muted)]">
-                        {category?.name ?? "Service"}
-                      </span>
-                      <span className="text-sm font-medium tabular-nums">{price}</span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+          <h2 className="mb-4 text-sm font-semibold text-[color:var(--color-ink-muted)]">
+            Vendors on Nexa
+          </h2>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            {vendors.map((v) => (
+              <VendorCard key={v.id} vendor={v} />
+            ))}
           </div>
         </section>
       ) : null}

@@ -1,41 +1,64 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { searchListings } from "@/modules/search";
+import { searchListings, searchVendors } from "@/modules/search";
 import { listCategories } from "@/modules/marketplace";
 import { formatKobo } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
 import { BackBar } from "@/components/back-bar";
 import { CategoryIcon } from "@/components/category-icon";
+import { VendorCard } from "@/components/vendor-card";
 
-/** Search & category browse.+ */
+/**
+ * Two jobs on one page:
+ *
+ *   Browsing — no typed query, maybe a category chip — shows VENDORS. One card
+ *   per business, opening onto their menu. This is how a customer explores.
+ *
+ *   Searching — a typed query — shows SERVICES, across every vendor that offers
+ *   one, because a customer looking for "jollof for 200" wants the dish, not a
+ *   restaurant. That is the item search the model is built around.
+ */
 export default async function SearchPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-
-  const results = await searchListings({
-    q: sp.q,
-    categorySlug: sp.category,
-    citySlug: sp.city,
-    minPriceKobo: sp.min ? Number(sp.min) * 100 : undefined,
-    maxPriceKobo: sp.max ? Number(sp.max) * 100 : undefined,
-    minRating: sp.rating ? Number(sp.rating) : undefined,
-    availableAt: sp.at,
-  });
+  const isSearching = Boolean(sp.q && sp.q.trim());
 
   const categories = await listCategories();
   const active = categories.find((c) => c.slug === sp.category);
+
+  const [listings, vendors] = await Promise.all([
+    isSearching
+      ? searchListings({
+          q: sp.q,
+          categorySlug: sp.category,
+          citySlug: sp.city,
+          minPriceKobo: sp.min ? Number(sp.min) * 100 : undefined,
+          maxPriceKobo: sp.max ? Number(sp.max) * 100 : undefined,
+          minRating: sp.rating ? Number(sp.rating) : undefined,
+          availableAt: sp.at,
+        })
+      : Promise.resolve([]),
+    isSearching
+      ? Promise.resolve([])
+      : searchVendors({ categorySlug: sp.category, citySlug: sp.city }),
+  ]);
+
+  const count = isSearching ? listings.length : vendors.length;
+  const noun = isSearching
+    ? `service${count === 1 ? "" : "s"}`
+    : `vendor${count === 1 ? "" : "s"}`;
 
   return (
     <main className="mx-3 my-3 max-w-3xl overflow-hidden rounded-[1.75rem] border border-[color:var(--color-line)] bg-white shadow-card px-5 py-6 sm:mx-auto sm:my-8">
       <BackBar />
       <div className="mt-3">
         <PageHeader
-          title={active ? active.name : "Search"}
-          subtitle={`${results.length} available ${results.length === 1 ? "listing" : "listings"}`}
+          title={isSearching ? `Results for “${sp.q}”` : active ? active.name : "Browse vendors"}
+          subtitle={`${count} ${noun}`}
         />
       </div>
 
@@ -48,13 +71,15 @@ export default async function SearchPage({
         ))}
       </nav>
 
-      {results.length === 0 ? (
+      {count === 0 ? (
         <div className="mt-8 rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-line)] p-8 text-center text-sm text-[color:var(--color-ink-muted)]">
-          Nothing matches that yet. Only approved listings from verified providers appear here.
+          {isSearching
+            ? "No service matches that yet. Try a different word, or browse the categories above."
+            : "No vendors here yet. Only verified vendors with a live service appear."}
         </div>
-      ) : (
+      ) : isSearching ? (
         <ul className="mt-6 grid grid-cols-2 gap-4">
-          {results.map((r) => (
+          {listings.map((r) => (
             <li key={r.id}>
               <Link href={`/l/${r.slug}`} className="group block overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-card transition hover:shadow-card-hover">
                 <div className="aspect-[4/3] overflow-hidden bg-[color:var(--color-surface-sunk)]">
@@ -73,6 +98,14 @@ export default async function SearchPage({
                   </p>
                 </div>
               </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="mt-6 grid grid-cols-2 gap-4">
+          {vendors.map((v) => (
+            <li key={v.id}>
+              <VendorCard vendor={v} />
             </li>
           ))}
         </ul>

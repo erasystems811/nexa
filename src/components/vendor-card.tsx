@@ -1,0 +1,55 @@
+import Link from "next/link";
+import type { Route } from "next";
+import type { VendorResult } from "@/modules/search";
+
+/**
+ * A vendor, as a customer sees it while browsing: one card for the whole
+ * business. Tapping it opens their menu of services at /p/slug. This is the unit
+ * of the marketplace — not the individual service — the way a food app shows
+ * restaurants, not dishes.
+ */
+export function VendorCard({ vendor }: { vendor: VendorResult }) {
+  return (
+    <Link
+      href={`/p/${vendor.slug}` as Route}
+      className="group block overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-card"
+    >
+      <div className="aspect-[16/10] overflow-hidden bg-[color:var(--color-surface-sunk)]">
+        {vendor.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
+          <img
+            src={vendor.coverUrl}
+            alt=""
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+        ) : null}
+      </div>
+
+      <div className="p-3">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-sm font-semibold">{vendor.businessName}</p>
+          <span title="Verified" className="shrink-0 text-xs text-[color:var(--color-accent)]">
+            ✓
+          </span>
+        </div>
+
+        <p className="mt-0.5 truncate text-xs text-[color:var(--color-ink-muted)]">
+          {vendor.cityName ? `${vendor.cityName} · ` : ""}
+          {vendor.serviceCount} {vendor.serviceCount === 1 ? "service" : "services"}
+        </p>
+
+        {vendor.reviewCount > 0 ? (
+          <p className="mt-1.5 text-xs font-medium">
+            <span className="text-[color:var(--color-star)]">★</span> {vendor.avgRating}
+            <span className="font-normal text-[color:var(--color-ink-muted)]">
+              {" "}
+              · {vendor.reviewCount} {vendor.reviewCount === 1 ? "review" : "reviews"}
+            </span>
+          </p>
+        ) : (
+          <p className="mt-1.5 text-xs text-[color:var(--color-ink-muted)]">New on Nexa</p>
+        )}
+      </div>
+    </Link>
+  );
+}
