@@ -5,6 +5,7 @@ import {
   type Permission,
 } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
+import { AdminBack } from "@/components/admin-back";
 import { PermissionEditor } from "./permission-editor";
 import { StaffControls } from "./staff-controls";
 
@@ -20,6 +21,7 @@ export default async function StaffMemberPage({ params }: { params: Promise<{ id
 
   return (
     <>
+      <AdminBack fallback="/staff" />
       <PageHeader
         title={(m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? m.email ?? "Staff"}
         subtitle={`${m.email ?? ""} · ${STAFF_ROLE_LABELS[m.staff_role]}${m.status === "suspended" ? " · suspended" : ""}`}

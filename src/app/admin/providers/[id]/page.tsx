@@ -12,6 +12,7 @@ import {
 import { bankName } from "@/modules/payments";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
+import { AdminBack } from "@/components/admin-back";
 import { ActionButton } from "../../action-button";
 
 const DOC_STATUS_LABEL: Record<string, string> = {
@@ -49,6 +50,7 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
 
   return (
     <>
+      <AdminBack fallback="/providers" />
       <PageHeader
         title={provider.business_name}
         subtitle={`${STATUS_LABEL[provider.status] ?? provider.status}${provider.is_on_probation ? " · on probation" : ""}`}

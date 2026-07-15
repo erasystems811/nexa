@@ -1,10 +1,9 @@
-import Link from "next/link";
-import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { requireView, getListingForReview, PERMISSIONS as P } from "@/modules/admin";
 import { decideListingAction, restoreListingAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
+import { AdminBack } from "@/components/admin-back";
 import { ActionButton } from "../../action-button";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -56,9 +55,7 @@ export default async function AdminListingDetail({ params }: { params: Promise<{
 
   return (
     <>
-      <Link href={"/listings" as Route} className="text-sm text-[color:var(--color-ink-muted)]">
-        &larr; All listings
-      </Link>
+      <AdminBack fallback="/listings" />
 
       <div className="mt-3">
         <PageHeader

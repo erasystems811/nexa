@@ -22,7 +22,8 @@ export function AdminBack({
   label = "Back",
   className,
 }: {
-  fallback: Route;
+  /** A clean admin path like "/providers"; cast here so call sites stay plain. */
+  fallback: string;
   label?: string;
   className?: string;
 }) {
@@ -41,7 +42,7 @@ export function AdminBack({
   return (
     <button
       type="button"
-      onClick={() => (canGoBack ? router.back() : router.push(fallback))}
+      onClick={() => (canGoBack ? router.back() : router.push(fallback as Route))}
       className={clsx(
         "mb-4 inline-flex h-9 items-center rounded-lg border border-[color:var(--color-line)] bg-white px-3 text-xs font-medium transition hover:bg-[color:var(--color-surface-sunk)]",
         className,

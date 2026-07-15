@@ -4,6 +4,7 @@ import { noShowAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
 import { getNumericSetting, SETTINGS } from "@/modules/settings";
 import { Card, PageHeader } from "@/components/ui";
+import { AdminBack } from "@/components/admin-back";
 import { StatusPill } from "@/components/status-pill";
 import { ActionButton } from "../../action-button";
 import { PayVendor, RefundCustomer, ChangeStatus } from "./pay-vendor";
@@ -30,6 +31,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
 
   return (
     <>
+      <AdminBack fallback="/orders" />
       <PageHeader
         title={booking.reference}
         subtitle={`${(booking.listings as unknown as { title: string } | null)?.title} · ${(booking.providers as unknown as { business_name: string } | null)?.business_name}`}

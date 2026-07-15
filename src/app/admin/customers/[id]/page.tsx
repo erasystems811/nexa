@@ -3,6 +3,7 @@ import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { getCustomerDetail } from "@/modules/admin";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
+import { AdminBack } from "@/components/admin-back";
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,6 +15,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   return (
     <>
+      <AdminBack fallback="/customers" />
       <PageHeader title={profile.full_name ?? "Customer"} subtitle={profile.phone ?? undefined} />
 
       <Card>
