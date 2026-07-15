@@ -18,7 +18,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 
 const BUCKET = "provider-media";
-const TTL_SECONDS = 60 * 60;
+// A week, not an hour. The customer pages re-sign on every render, so a fresh
+// load always has a fresh link — but if a page or its RSC is cached anywhere,
+// a one-hour link would go stale and the photo would break. A week outlives any
+// cache, and these are public-facing marketing photos, so a long-lived link
+// costs nothing.
+const TTL_SECONDS = 60 * 60 * 24 * 7;
 
 /**
  * listingId -> a signed URL of its first approved image. Listings with no

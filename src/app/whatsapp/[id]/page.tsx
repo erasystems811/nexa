@@ -34,11 +34,14 @@ export default async function WhatsappHandoffPage({
   const listingTitle =
     (conversation.listings as unknown as { title: string } | null)?.title ?? null;
 
-  const ref = id.slice(0, 8).toUpperCase();
   const about = listingTitle
     ? `"${listingTitle}"${vendorName ? ` from ${vendorName}` : ""}`
     : vendorName ?? "an event service";
-  const message = `Hi Nexa! I'd like to book ${about}. (Ref ${ref})`;
+  // The full conversation id has to be in the message: the webhook reads it back
+  // out ("Ref: <id>") to know which conversation the WhatsApp chat belongs to and
+  // which vendor to forward it to. Shortening it breaks the bot — nothing binds,
+  // nothing relays. It reads as a long code, but no human has to read it.
+  const message = `Hi Nexa! I'd like to book ${about}. Ref: ${id}`;
 
   // Normalised, not trusted: a number typed the way Nigerians say it (08022748369)
   // builds a wa.me link that goes nowhere.

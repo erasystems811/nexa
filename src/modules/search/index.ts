@@ -209,6 +209,11 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
 
   const byProvider = new Map((ratings ?? []).map((r) => [r.provider_id, r] as const));
 
+  // A search result's picture is the listing's own uploaded photo — the same
+  // photo the browse cards and the listing page show — not the provider banner,
+  // which no vendor fills in.
+  const covers = await listingCovers(rows.map((r) => r.id));
+
   let results: ListingResult[] = rows.map((r) => {
     const rating = byProvider.get(r.providers.id);
     return {
@@ -223,7 +228,7 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
       categorySlug: r.categories.slug,
       providerName: r.providers.business_name,
       providerSlug: r.providers.slug,
-      coverUrl: r.providers.cover_url,
+      coverUrl: covers.get(r.id) ?? r.providers.cover_url,
       avgRating: rating?.avg_rating ?? null,
       reviewCount: rating?.review_count ?? 0,
     };

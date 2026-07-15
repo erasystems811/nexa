@@ -320,7 +320,7 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
   const { data: thread } = await db
     .from("whatsapp_threads")
     .select(
-      "whatsapp_contact_id, provider_whatsapp_contact_id, conversations ( customer_id, providers ( user_id, business_name ), profiles ( full_name ) )",
+      "whatsapp_contact_id, provider_whatsapp_contact_id, conversations ( customer_id, provider_id, providers ( user_id, business_name ), profiles ( full_name ) )",
     )
     .eq("conversation_id", conversationId)
     .eq("status", "active")
@@ -344,11 +344,28 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
 
   const byId = new Map((contacts ?? []).map((contact) => [contact.id, contact.wa_id]));
 
+  // The vendor's WhatsApp is known from the thread once they've replied. Before
+  // that — on the very first customer message — it is not, and the relay would
+  // have nowhere to send. So fall back to the number the vendor gave on their
+  // application. This is what lets the bot reach a vendor COLD: the first message
+  // opens the conversation (via the approved template, since the vendor has never
+  // messaged Nexa and their 24-hour window is shut), and everything after it
+  // flows normally.
+  let vendorWaId = providerContactId ? byId.get(providerContactId) ?? null : null;
+  if (!vendorWaId && conversation.provider_id) {
+    const { data: providerContact } = await db
+      .from("provider_contacts")
+      .select("contact_phone")
+      .eq("provider_id", conversation.provider_id)
+      .maybeSingle();
+    vendorWaId = toWhatsAppNumber(providerContact?.contact_phone);
+  }
+
   return {
     customerId: conversation.customer_id,
     providerUserId: provider?.user_id ?? null,
     customerWaId: byId.get(customerContactId) ?? null,
-    vendorWaId: providerContactId ? byId.get(providerContactId) ?? null : null,
+    vendorWaId,
     customerName: customer?.full_name?.trim() || "there",
     vendorName: provider?.business_name?.trim() || "there",
   };
