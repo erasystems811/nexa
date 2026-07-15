@@ -46,6 +46,38 @@ export async function listCities() {
  * never from the reliability score, which stays hidden until Admin turns on
  * `public_reliability_score`.
  */
+/**
+ * The newest listings, for the homepage.
+ *
+ * A customer who lands on Nexa should see real, bookable things — not just a row
+ * of category tiles and a search box. Without this, a vendor's brand-new listing
+ * was invisible until someone happened to search for it, which is no way to run a
+ * marketplace: the whole point is that supply is discoverable the moment it goes
+ * live.
+ *
+ * RLS is what makes this safe to leave unfiltered: `listings_public_read` already
+ * hides anything not approved, and anything belonging to a suspended or unpaid
+ * vendor. So "newest approved listings" is exactly what a customer is allowed to
+ * see, and nothing more.
+ */
+export async function recentListings(limit = 8) {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("listings")
+    .select(
+      `id, slug, title, price_kobo, price_min_kobo, price_max_kobo, price_type,
+       categories ( name, slug ),
+       providers!inner ( business_name, slug, logo_url, cover_url, cities ( name ) )`,
+    )
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return data ?? [];
+}
+
+
 export async function featuredProviders(limit = 6) {
   const supabase = await createClient();
 
