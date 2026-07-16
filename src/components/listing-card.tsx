@@ -7,7 +7,7 @@ export function ListingCard({ listing }: { listing: ListingResult }) {
   return (
     <Link
       href={`/l/${listing.slug}`}
-      className="group block overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-card transition hover:shadow-card-hover"
+      className="group block overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]/30 hover:shadow-card-hover"
     >
       <Photo
         src={listing.coverUrl}

@@ -13,7 +13,7 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
   return (
     <Link
       href={`/p/${vendor.slug}` as Route}
-      className="group block overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-card"
+      className="group block overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]/30 hover:shadow-card-hover"
     >
       <Photo
         src={vendor.coverUrl}
@@ -27,7 +27,10 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
       <div className="p-3">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-semibold">{vendor.businessName}</p>
-          <span title="Verified" className="shrink-0 text-xs text-[color:var(--color-accent)]">
+          <span
+            title="Verified"
+            className="flex size-4 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent)] text-[9px] text-white"
+          >
             ✓
           </span>
         </div>

@@ -22,14 +22,19 @@ function cn(...inputs: ClassValue[]): string {
 export function Card({
   children,
   className,
+  hover,
 }: {
   children: ReactNode;
   className?: string;
+  /** A card that is also a link/button target lifts on hover, consistently. */
+  hover?: boolean;
 }) {
   return (
     <div
       className={cn(
         "rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-5",
+        hover &&
+          "transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]/30 hover:shadow-card-hover",
         className,
       )}
     >
@@ -38,20 +43,52 @@ export function Card({
   );
 }
 
+/** A small pill for a status, category, or trust signal — one shape used everywhere. */
+export function Badge({
+  children,
+  tone = "neutral",
+  className,
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "accent" | "success" | "warning";
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium",
+        tone === "neutral" && "bg-[color:var(--color-surface-sunk)] text-[color:var(--color-ink-muted)]",
+        tone === "accent" && "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent)]",
+        tone === "success" && "bg-emerald-50 text-[color:var(--color-success)]",
+        tone === "warning" && "bg-amber-50 text-amber-900",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function Button({
   className,
   variant = "primary",
   ...props
-}: ComponentPropsWithoutRef<"button"> & { variant?: "primary" | "ghost" }) {
+}: ComponentPropsWithoutRef<"button"> & { variant?: "primary" | "ghost" | "danger" }) {
   return (
     <button
       {...props}
       className={cn(
         "inline-flex h-12 items-center justify-center rounded-full px-6 text-sm font-medium",
-        "transition-opacity disabled:opacity-50",
-        variant === "primary" && "bg-[color:var(--color-accent)] text-white hover:opacity-90",
+        // The press: a button that doesn't visibly react to being pressed reads
+        // as unresponsive even when it isn't. This one small motion is most of
+        // what makes an interface feel physical rather than flat.
+        "transition-[opacity,transform] duration-150 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100",
+        variant === "primary" &&
+          "bg-[color:var(--color-accent)] text-white shadow-sm hover:opacity-90",
         variant === "ghost" &&
           "border border-[color:var(--color-line)] bg-white hover:bg-[color:var(--color-surface-sunk)]",
+        variant === "danger" &&
+          "border border-[color:var(--color-danger)]/20 bg-white text-[color:var(--color-danger)] hover:bg-red-50",
         className,
       )}
     />
@@ -68,7 +105,7 @@ export function Field({
       <span className="mb-1.5 block text-sm font-medium">{label}</span>
       <input
         {...props}
-        className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4 outline-none focus:border-[color:var(--color-ink)]"
+        className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4 outline-none transition-colors focus:border-[color:var(--color-accent)]"
       />
       {hint ? (
         <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">{hint}</span>

@@ -53,24 +53,29 @@ export default async function SearchPage({
     : `vendor${count === 1 ? "" : "s"}`;
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-6">
-      <BackBar />
-      <div className="mt-3">
-        <PageHeader
-          title={isSearching ? `Results for “${sp.q}”` : active ? active.name : "Browse vendors"}
-          subtitle={`${count} ${noun}`}
-        />
+    <main className="mx-auto max-w-3xl pb-6">
+      {/* Search and filters stay reachable while scrolling results — the same
+          pattern Spotify and Chowdeck use so refining never means scrolling back up. */}
+      <div className="sticky top-0 z-30 border-b border-[color:var(--color-line)]/60 bg-white/90 px-5 pb-3 pt-4 backdrop-blur-md">
+        <BackBar />
+        <div className="mt-3">
+          <PageHeader
+            title={isSearching ? `Results for “${sp.q}”` : active ? active.name : "Browse vendors"}
+            subtitle={`${count} ${noun}`}
+          />
+        </div>
+
+        <SearchBar defaultValue={sp.q ?? ""} />
+
+        <nav className="mt-4 -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+          <Chip href="/search" label="All" active={!sp.category} />
+          {categories.map((c) => (
+            <Chip key={c.id} href={`/search?category=${c.slug}` as Route} slug={c.slug} label={c.name} active={sp.category === c.slug} />
+          ))}
+        </nav>
       </div>
 
-      <SearchBar defaultValue={sp.q ?? ""} />
-
-      <nav className="mt-4 -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-        <Chip href="/search" label="All" active={!sp.category} />
-        {categories.map((c) => (
-          <Chip key={c.id} href={`/search?category=${c.slug}` as Route} slug={c.slug} label={c.name} active={sp.category === c.slug} />
-        ))}
-      </nav>
-
+      <div className="px-5">
       {count === 0 ? (
         <div className="mt-8 rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-line)] p-8 text-center text-sm text-[color:var(--color-ink-muted)]">
           {isSearching
@@ -88,6 +93,7 @@ export default async function SearchPage({
           ))}
         </ul>
       )}
+      </div>
     </main>
   );
 }
@@ -107,7 +113,7 @@ function Chip({
   return (
     <Link
       href={href}
-      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-medium transition ${active ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white" : "border-[color:var(--color-line)] text-[color:var(--color-ink)] hover:border-[color:var(--color-ink-muted)]"}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-medium transition active:scale-95 ${active ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white" : "border-[color:var(--color-line)] text-[color:var(--color-ink)] hover:border-[color:var(--color-ink-muted)]"}`}
     >
       {slug ? <CategoryIcon slug={slug} className="size-4" /> : null}
       {label}
