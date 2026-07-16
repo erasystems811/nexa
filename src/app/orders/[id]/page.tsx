@@ -5,6 +5,7 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 import { BackBar } from "@/components/back-bar";
+import { ResumePaymentButton } from "../resume-payment-button";
 
 /**
  * Booking detail.
@@ -32,6 +33,19 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <StatusPill status={booking.status} />
         <p className="font-mono text-xs text-[color:var(--color-ink-muted)]">{booking.reference}</p>
       </div>
+
+      {booking.status === "pending" ? (
+        <Card className="mt-4 border-[color:var(--color-accent)]">
+          <h2 className="text-sm font-medium">This booking is not paid yet</h2>
+          <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
+            Nothing is held and the vendor has not been notified until you pay. Finish now to lock it
+            in.
+          </p>
+          <div className="mt-3">
+            <ResumePaymentButton bookingId={booking.id} />
+          </div>
+        </Card>
+      ) : null}
 
       {code ? (
         <section className="mt-6">

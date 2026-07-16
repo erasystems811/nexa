@@ -1,11 +1,12 @@
 "use server";
 
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/modules/auth";
 import { getOrCreateConversation } from "@/modules/messaging";
 import { createClient } from "@/lib/supabase/server";
-import { acceptOffer, checkout, sendOffer, BookingsError } from ".";
+import { acceptOffer, checkout, resumePayment, sendOffer, BookingsError } from ".";
 
 export interface CheckoutState {
   error?: string;
@@ -29,6 +30,7 @@ export async function checkoutAction(
   if (scheduledStart.getTime() < Date.now()) return { error: "That time is in the past" };
 
   let bookingId: string;
+  let checkoutUrl: string | undefined;
   try {
     const result = await checkout(
       {
@@ -40,6 +42,7 @@ export async function checkoutAction(
       { id: userId, email: email ?? "", name: profile.full_name ?? undefined },
     );
     bookingId = result.bookingId;
+    checkoutUrl = result.checkoutUrl;
   } catch (error) {
     return {
       error: error instanceof BookingsError ? error.message : "Payment could not be completed",
@@ -47,6 +50,45 @@ export async function checkoutAction(
   }
 
   revalidatePath("/orders");
+  // A real gateway hands back a hosted checkout link: the customer types their
+  // card on Flutterwave's own page, then Flutterwave returns them to
+  // /orders/{id} (the redirect_url set in the payments service). The mock gateway
+  // settles inline and returns no link, so it falls through to the order page.
+  // Cast: this is an external Flutterwave URL, not one of the app's typed routes.
+  if (checkoutUrl) redirect(checkoutUrl as Route);
+  redirect(`/orders/${bookingId}`);
+}
+
+/**
+ * Finish paying for a booking the customer started and abandoned. Same shape as
+ * checkoutAction: on success it redirects (to the gateway link, or the order),
+ * and the redirect lives outside the try so its control-flow throw is not caught
+ * as a payment error.
+ */
+export async function resumePaymentAction(
+  _prev: CheckoutState,
+  formData: FormData,
+): Promise<CheckoutState> {
+  const { userId, email, profile } = await requireSession();
+  const bookingId = String(formData.get("bookingId") ?? "");
+
+  let checkoutUrl: string | undefined;
+  try {
+    const result = await resumePayment(bookingId, {
+      id: userId,
+      email: email ?? "",
+      name: profile.full_name ?? undefined,
+    });
+    checkoutUrl = result.checkoutUrl;
+  } catch (error) {
+    return {
+      error: error instanceof BookingsError ? error.message : "Payment could not be started",
+    };
+  }
+
+  revalidatePath("/orders");
+  revalidatePath(`/orders/${bookingId}`);
+  if (checkoutUrl) redirect(checkoutUrl as Route);
   redirect(`/orders/${bookingId}`);
 }
 

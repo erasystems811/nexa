@@ -12,6 +12,7 @@
  */
 export {
   checkout,
+  resumePayment,
   acceptBooking,
   rejectBooking,
   startWork,

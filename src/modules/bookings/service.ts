@@ -147,6 +147,51 @@ export async function checkout(
   }
 }
 
+/**
+ * Pay for a booking that was created but never paid — the "Not finished" case.
+ *
+ * The booking already exists and already has its price (the pricing trigger set
+ * it at creation), so this does not make a second booking. It asks the gateway
+ * for a fresh checkout link against the same booking and hands it back. Only a
+ * booking that is still `pending` — nobody has paid it — can be resumed; a paid,
+ * cancelled or completed one is refused.
+ */
+export async function resumePayment(
+  bookingId: string,
+  customer: { id: string; email: string; name?: string },
+  callerClient?: SupabaseClient<Database>,
+): Promise<CheckoutResult> {
+  const supabase = callerClient ?? (await createClient());
+
+  // The caller's own client: RLS makes sure this can only be the customer's own
+  // booking, so a resumed payment can never be pointed at someone else's.
+  const { data: booking, error } = await supabase
+    .from("bookings")
+    .select("id, reference, status, agreed_price_kobo")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (error || !booking) throw new BookingsError("That booking does not exist");
+  if (booking.status !== "pending") {
+    throw new BookingsError("This booking has already been paid for or closed.");
+  }
+
+  const { checkoutUrl, status } = await holdFunds({
+    bookingId: booking.id,
+    reference: booking.reference,
+    amountKobo: booking.agreed_price_kobo,
+    customer,
+    redirectUrl: `${publicEnv.NEXT_PUBLIC_SITE_URL}/orders/${booking.id}`,
+  });
+
+  // The mock gateway settles inline; a real one only hands back a link.
+  if (status === "held") {
+    await transition(booking.id, "paid_held");
+  }
+
+  return { bookingId: booking.id, reference: booking.reference, checkoutUrl };
+}
+
 /** Moves a booking through the state machine, or refuses to. */
 async function transition(bookingId: string, to: BookingStatus) {
   const db = createAdminClient();
