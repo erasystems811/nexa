@@ -37,8 +37,8 @@ function liveCode(order: Order): string | null {
 
 type Tab = "active" | "unfinished" | "past";
 const TABS: { key: Tab; label: string }[] = [
-  { key: "active", label: "Going on now" },
   { key: "unfinished", label: "Not finished" },
+  { key: "active", label: "Active" },
   { key: "past", label: "Past orders" },
 ];
 
@@ -94,7 +94,7 @@ export default async function OrdersPage({
           </div>
 
           {current === "active" ? (
-            <Section title="Going on now" empty="Nothing in progress right now.">
+            <Section title="Active" empty="Nothing in progress right now.">
               {active.map((o) => (
                 <OrderRow key={o.id} order={o} showCode />
               ))}

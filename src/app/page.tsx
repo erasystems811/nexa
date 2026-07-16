@@ -3,6 +3,7 @@ import { searchVendors } from "@/modules/search";
 import { getSession } from "@/modules/auth";
 import { FLAGS, isEnabled } from "@/modules/settings";
 import Link from "next/link";
+import Image from "next/image";
 import { Logo } from "@/components/logo";
 import { SearchBar } from "@/components/search-bar";
 import { CategoryIcon } from "@/components/category-icon";
@@ -62,14 +63,17 @@ export default async function HomePage() {
         <section className="mt-12">
           <h2 className="mb-4 text-sm font-semibold text-[color:var(--color-ink-muted)]">Browse by category</h2>
           <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
-            {categories.map((c) => (
+            {categories.map((c) => {
+              const image = images[c.slug];
+              return (
               <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
                 <div className="flex h-28 w-28 flex-col items-center justify-center gap-2.5 rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
-                  {images[c.slug] ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- Supabase storage, no loader configured
-                    <img
-                      src={images[c.slug]}
+                  {image ? (
+                    <Image
+                      src={image}
                       alt=""
+                      width={48}
+                      height={48}
                       className="size-12 rounded-xl object-cover"
                     />
                   ) : (
@@ -81,7 +85,8 @@ export default async function HomePage() {
                   <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : null}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import type { VendorResult } from "@/modules/search";
+import { Photo } from "@/components/photo";
 
 /**
  * A vendor, as a customer sees it while browsing: one card for the whole
@@ -14,16 +15,14 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
       href={`/p/${vendor.slug}` as Route}
       className="group block overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:shadow-card"
     >
-      <div className="aspect-[16/10] overflow-hidden bg-[color:var(--color-surface-sunk)]">
-        {vendor.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
-          <img
-            src={vendor.coverUrl}
-            alt=""
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-          />
-        ) : null}
-      </div>
+      <Photo
+        src={vendor.coverUrl}
+        alt=""
+        fill
+        sizes="(max-width: 640px) 50vw, 300px"
+        className="aspect-[16/10]"
+        imageClassName="transition duration-300 group-hover:scale-[1.03]"
+      />
 
       <div className="p-3">
         <div className="flex items-center gap-1.5">

@@ -7,6 +7,7 @@ import { formatKobo } from "@/lib/money";
 import { Button, Card, PageHeader } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { ChatOnWhatsApp, PrivacyNote } from "@/components/chat-cta";
+import { Photo } from "@/components/photo";
 
 /** Listing page. */
 export default async function ListingPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -30,11 +31,15 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
 
   return (
     <main className="mx-auto max-w-2xl pb-16">
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-[color:var(--color-surface-sunk)]">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
-          <img src={cover} alt={listing.title} className="h-full w-full object-cover" />
-        ) : null}
+      <div className="relative">
+        <Photo
+          src={cover}
+          alt={listing.title}
+          fill
+          priority
+          sizes="(max-width: 640px) 100vw, 672px"
+          className="aspect-[16/9]"
+        />
         <BackBar variant="overlay" fallback={`/p/${provider.slug}` as Route} />
       </div>
 

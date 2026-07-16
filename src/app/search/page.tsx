@@ -6,6 +6,7 @@ import { formatKobo } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
 import { BackBar } from "@/components/back-bar";
+import { Photo } from "@/components/photo";
 import { CategoryIcon } from "@/components/category-icon";
 import { VendorCard } from "@/components/vendor-card";
 
@@ -82,12 +83,14 @@ export default async function SearchPage({
           {listings.map((r) => (
             <li key={r.id}>
               <Link href={`/l/${r.slug}`} className="group block overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-card transition hover:shadow-card-hover">
-                <div className="aspect-[4/3] overflow-hidden bg-[color:var(--color-surface-sunk)]">
-                  {r.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- external demo/provider imagery
-                    <img src={r.coverUrl} alt={r.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
-                  ) : null}
-                </div>
+                <Photo
+                  src={r.coverUrl}
+                  alt={r.title}
+                  fill
+                  sizes="(max-width: 640px) 50vw, 300px"
+                  className="aspect-[4/3]"
+                  imageClassName="transition duration-300 group-hover:scale-[1.03]"
+                />
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold">{r.title}</p>
                   <p className="mt-0.5 truncate text-xs text-[color:var(--color-ink-muted)]">
