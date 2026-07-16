@@ -35,7 +35,18 @@ function liveCode(order: Order): string | null {
   return unused[0]?.code ?? null;
 }
 
-export default async function OrdersPage() {
+type Tab = "active" | "unfinished" | "past";
+const TABS: { key: Tab; label: string }[] = [
+  { key: "active", label: "Going on now" },
+  { key: "unfinished", label: "Not finished" },
+  { key: "past", label: "Past orders" },
+];
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   await requireSession();
   const orders = await listMyOrders();
 
@@ -44,6 +55,14 @@ export default async function OrdersPage() {
   const past = orders.filter(
     (o) => !ACTIVE.includes(o.status) && !UNFINISHED.includes(o.status),
   );
+
+  const { tab } = await searchParams;
+  const current: Tab = tab === "unfinished" || tab === "past" ? tab : "active";
+  const counts: Record<Tab, number> = {
+    active: active.length,
+    unfinished: unfinished.length,
+    past: past.length,
+  };
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
@@ -56,27 +75,52 @@ export default async function OrdersPage() {
           their payment once your event is done.
         </Card>
       ) : (
-        <div className="space-y-8">
-          <Section title="Going on now" empty="Nothing in progress right now.">
-            {active.map((o) => (
-              <OrderRow key={o.id} order={o} showCode />
+        <>
+          <div className="mb-6 flex gap-1 rounded-full bg-[color:var(--color-surface-sunk)] p-1">
+            {TABS.map((t) => (
+              <Link
+                key={t.key}
+                href={`/orders?tab=${t.key}` as Route}
+                className={`flex-1 rounded-full px-3 py-1.5 text-center text-xs font-medium transition ${
+                  current === t.key
+                    ? "bg-[color:var(--color-surface)] shadow-sm"
+                    : "text-[color:var(--color-ink-muted)]"
+                }`}
+              >
+                {t.label}
+                {counts[t.key] > 0 ? ` (${counts[t.key]})` : ""}
+              </Link>
             ))}
-          </Section>
+          </div>
 
-          {unfinished.length > 0 ? (
-            <Section title="Not finished" hint="You started these but never paid. Finish now — nothing is booked until you do.">
+          {current === "active" ? (
+            <Section title="Going on now" empty="Nothing in progress right now.">
+              {active.map((o) => (
+                <OrderRow key={o.id} order={o} showCode />
+              ))}
+            </Section>
+          ) : null}
+
+          {current === "unfinished" ? (
+            <Section
+              title="Not finished"
+              hint="You started these but never paid. Finish now — nothing is booked until you do."
+              empty="Nothing unpaid. You're all caught up."
+            >
               {unfinished.map((o) => (
                 <OrderRow key={o.id} order={o} resumable />
               ))}
             </Section>
           ) : null}
 
-          <Section title="Past orders" empty="No past orders yet.">
-            {past.map((o) => (
-              <OrderRow key={o.id} order={o} />
-            ))}
-          </Section>
-        </div>
+          {current === "past" ? (
+            <Section title="Past orders" empty="No past orders yet.">
+              {past.map((o) => (
+                <OrderRow key={o.id} order={o} />
+              ))}
+            </Section>
+          ) : null}
+        </>
       )}
     </main>
   );

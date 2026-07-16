@@ -16,7 +16,7 @@
  */
 export { ProviderError, currentProvider, requireProvider } from "./context";
 export { providerDashboard } from "./dashboard";
-export { updateProfile, getContact, updateContact, type ProfileUpdate } from "./profile";
+export { updateProfile, getContact, updateContact, uploadProfilePhoto, type ProfileUpdate } from "./profile";
 export { submitApplication, type ApplicationInput } from "./apply";
 export {
   ID_TYPES,

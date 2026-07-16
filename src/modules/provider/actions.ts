@@ -25,6 +25,7 @@ import {
   updateContact,
   updateListing,
   updateProfile,
+  uploadProfilePhoto,
   uploadMedia,
   type IdType,
 } from ".";
@@ -67,6 +68,25 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
     return { ok: true };
   } catch (e) {
     return fail(e);
+  }
+}
+
+/**
+ * Logo and cover are their own action: a photo upload should not fail if the
+ * text fields have a validation error, and vice versa.
+ */
+export async function uploadProfilePhotoAction(
+  kind: "logo" | "cover",
+  file: File,
+): Promise<{ url?: string; error?: string }> {
+  const p = await provider();
+  try {
+    const url = await uploadProfilePhoto(p.id, kind, file);
+    revalidatePath("/studio/profile");
+    revalidatePath(`/p/${p.slug}`);
+    return { url };
+  } catch (e) {
+    return { error: e instanceof ProviderError ? e.message : "Upload failed" };
   }
 }
 
