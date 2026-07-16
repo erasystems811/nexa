@@ -1,10 +1,8 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { getProviderBySlug } from "@/modules/marketplace";
 import { getSession } from "@/modules/auth";
 import { formatKobo } from "@/lib/money";
-import { Button } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { ChatOnWhatsApp, PrivacyNote } from "@/components/chat-cta";
 import { Photo } from "@/components/photo";
@@ -24,10 +22,6 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   const logo = (provider as unknown as { logo_url: string | null }).logo_url;
   const cityName = (provider.cities as unknown as { name: string } | null)?.name;
   const providerPath = `/p/${provider.slug}`;
-
-  // "Book this" on a vendor page means their first bookable listing; a vendor
-  // with nothing listed yet can still be chatted to.
-  const bookable = listings.find((l) => l.price_type === "fixed") ?? listings[0] ?? null;
 
   return (
     <main className="mx-auto max-w-2xl pb-16">
@@ -74,18 +68,14 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           <p className="mt-4 text-sm leading-relaxed text-[color:var(--color-ink-muted)]">{provider.description}</p>
         ) : null}
 
-        {/* Something to actually do. The vendor page used to offer nothing at all. */}
+        {/* No booking here — a vendor is a business, not a single purchase.
+            Talk to them first, or open one of their services below to book it. */}
         <div className="mt-5 space-y-3">
-          {bookable ? (
-            <Link href={`/l/${bookable.slug}` as Route} className="block">
-              <Button className="w-full">Book this vendor</Button>
-            </Link>
-          ) : null}
           <ChatOnWhatsApp
             providerId={provider.id}
             signedIn={Boolean(session)}
             next={providerPath}
-            variant={bookable ? "ghost" : "primary"}
+            variant="primary"
           />
           <PrivacyNote />
         </div>
