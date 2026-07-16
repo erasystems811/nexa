@@ -12,7 +12,8 @@ export async function listMyOrders() {
       `id, reference, status, fulfillment_type, scheduled_start,
        agreed_price_kobo, created_at,
        listings ( title, slug ),
-       providers ( business_name, slug )`,
+       providers ( business_name, slug ),
+       booking_confirmation_codes ( stage, code, consumed_at )`,
     )
     .order("scheduled_start", { ascending: false });
 

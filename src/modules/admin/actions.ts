@@ -137,6 +137,21 @@ export async function restoreListingAction(listingId: string): Promise<void> {
   revalidatePath("/admin/listings");
 }
 
+/**
+ * Approve (or reject) one photo. This is for a photo added to a listing that is
+ * already live: approving the listing does not come round again, so a new photo
+ * would sit "waiting" forever with nothing to release it. This releases it on
+ * its own, without touching the listing's status.
+ */
+export async function decideMediaAction(
+  mediaId: string,
+  listingId: string,
+  approved: boolean,
+): Promise<void> {
+  await admin.decideMedia(await actor(P.listingsApprove), mediaId, approved);
+  revalidatePath(`/admin/listings/${listingId}`);
+}
+
 // ---- orders ---------------------------------------------------------------
 
 export async function overrideStatusAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {

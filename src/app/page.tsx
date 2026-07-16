@@ -26,11 +26,11 @@ export default async function HomePage() {
         </Link>
         <nav className="flex items-center gap-5 text-sm">
           <Link href="/apply" className="hidden text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)] sm:block">
-            Become a vendor
+            Apply to be a vendor
           </Link>
           {session ? (
             <>
-              <Link href="/orders" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">My events</Link>
+              <Link href="/orders" className="text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]">My orders</Link>
               <Link href="/account" className="font-medium">Account</Link>
             </>
           ) : (
@@ -118,7 +118,7 @@ export default async function HomePage() {
             business on Nexa and get booked.
           </p>
           <Link href="/apply" className="mt-4 inline-block rounded-full bg-[color:var(--color-ink)] px-6 py-3 text-sm font-medium text-white">
-            Apply to become a vendor
+            Apply to be a vendor
           </Link>
         </div>
       </section>
@@ -138,7 +138,7 @@ export default async function HomePage() {
           </Link>
           <span className="mx-2">·</span>
           <Link href="/apply" className="underline hover:text-[color:var(--color-ink)]">
-            Become a vendor
+            Apply to be a vendor
           </Link>
         </p>
       </footer>

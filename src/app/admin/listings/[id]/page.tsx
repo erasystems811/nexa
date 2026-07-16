@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireView, getListingForReview, PERMISSIONS as P } from "@/modules/admin";
-import { decideListingAction, restoreListingAction } from "@/modules/admin/actions";
+import { decideListingAction, restoreListingAction, decideMediaAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { AdminBack } from "@/components/admin-back";
@@ -99,12 +99,27 @@ export default async function AdminListingDetail({ params }: { params: Promise<{
                 <p className="px-2 py-1 text-[11px] text-[color:var(--color-ink-muted)]">
                   {m.status === "approved" ? "Approved" : "Waiting for approval"}
                 </p>
+                {m.status !== "approved" ? (
+                  <div className="flex gap-1.5 border-t border-[color:var(--color-line)] p-1.5">
+                    <ActionButton
+                      label="Approve"
+                      variant="primary"
+                      run={decideMediaAction.bind(null, m.id, listing.id, true)}
+                    />
+                    <ActionButton
+                      label="Reject"
+                      variant="danger"
+                      run={decideMediaAction.bind(null, m.id, listing.id, false)}
+                    />
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
         )}
         <p className="mt-3 text-xs text-[color:var(--color-ink-muted)]">
-          Approving the listing approves its photos alongside it.
+          Approving the listing approves its photos alongside it. A photo added to a listing that is
+          already live is approved here, on its own.
         </p>
       </Card>
 
