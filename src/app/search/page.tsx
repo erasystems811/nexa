@@ -1,14 +1,13 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { searchListings, searchVendors } from "@/modules/search";
+import { searchListings, searchVendors, type ListingFilters } from "@/modules/search";
 import { listCategories } from "@/modules/marketplace";
-import { formatKobo } from "@/lib/money";
 import { PageHeader } from "@/components/ui";
 import { SearchBar } from "@/components/search-bar";
 import { BackBar } from "@/components/back-bar";
-import { Photo } from "@/components/photo";
 import { CategoryIcon } from "@/components/category-icon";
 import { VendorCard } from "@/components/vendor-card";
+import { ListingsGrid } from "./listings-grid";
 
 /**
  * Two jobs on one page:
@@ -31,18 +30,18 @@ export default async function SearchPage({
   const categories = await listCategories();
   const active = categories.find((c) => c.slug === sp.category);
 
+  const listingFilters: ListingFilters = {
+    q: sp.q,
+    categorySlug: sp.category,
+    citySlug: sp.city,
+    minPriceKobo: sp.min ? Number(sp.min) * 100 : undefined,
+    maxPriceKobo: sp.max ? Number(sp.max) * 100 : undefined,
+    minRating: sp.rating ? Number(sp.rating) : undefined,
+    availableAt: sp.at,
+  };
+
   const [listings, vendors] = await Promise.all([
-    isSearching
-      ? searchListings({
-          q: sp.q,
-          categorySlug: sp.category,
-          citySlug: sp.city,
-          minPriceKobo: sp.min ? Number(sp.min) * 100 : undefined,
-          maxPriceKobo: sp.max ? Number(sp.max) * 100 : undefined,
-          minRating: sp.rating ? Number(sp.rating) : undefined,
-          availableAt: sp.at,
-        })
-      : Promise.resolve([]),
+    isSearching ? searchListings(listingFilters) : Promise.resolve([]),
     isSearching
       ? Promise.resolve([])
       : searchVendors({ categorySlug: sp.category, citySlug: sp.city }),
@@ -79,31 +78,7 @@ export default async function SearchPage({
             : "No vendors here yet. Only verified vendors with a live service appear."}
         </div>
       ) : isSearching ? (
-        <ul className="mt-6 grid grid-cols-2 gap-4">
-          {listings.map((r) => (
-            <li key={r.id}>
-              <Link href={`/l/${r.slug}`} className="group block overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white shadow-card transition hover:shadow-card-hover">
-                <Photo
-                  src={r.coverUrl}
-                  alt={r.title}
-                  fill
-                  sizes="(max-width: 640px) 50vw, 300px"
-                  className="aspect-[4/3]"
-                  imageClassName="transition duration-300 group-hover:scale-[1.03]"
-                />
-                <div className="p-3">
-                  <p className="truncate text-sm font-semibold">{r.title}</p>
-                  <p className="mt-0.5 truncate text-xs text-[color:var(--color-ink-muted)]">
-                    {r.providerName} · {r.categoryName}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-[color:var(--color-accent)]">
-                    {r.priceType === "fixed" && r.priceKobo !== null ? `from ${formatKobo(r.priceKobo)}` : "Price on request"}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <ListingsGrid initial={listings} filters={listingFilters} />
       ) : (
         <ul className="mt-6 grid grid-cols-2 gap-4">
           {vendors.map((v) => (

@@ -24,6 +24,8 @@ export interface ListingFilters {
   /** ISO timestamp. Excludes listings the provider has marked unavailable. */
   availableAt?: string;
   limit?: number;
+  /** For "load more": how many results to skip. */
+  offset?: number;
 }
 
 export interface ListingResult {
@@ -186,7 +188,7 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
        providers!inner ( id, business_name, slug, logo_url, cover_url, cities ( slug ) )`,
     )
     .eq("status", "approved")
-    .limit(filters.limit ?? 40);
+    .range(filters.offset ?? 0, (filters.offset ?? 0) + (filters.limit ?? 40) - 1);
 
   // websearch_to_tsquery understands plain typed words ("chairs tables") the way
   // a customer actually types, not Postgres's own query syntax. This replaces a
