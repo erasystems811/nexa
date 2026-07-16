@@ -7,6 +7,7 @@ import { formatKobo } from "@/lib/money";
 import { Button } from "@/components/ui";
 import { BackBar } from "@/components/back-bar";
 import { ChatOnWhatsApp, PrivacyNote } from "@/components/chat-cta";
+import { Photo } from "@/components/photo";
 
 /** Provider profile.+/ */
 export default async function ProviderPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -16,7 +17,10 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
 
   const session = await getSession();
   const { provider, listings, rating, reviews } = result;
-  const cover = (provider as unknown as { cover_url: string | null }).cover_url;
+  // The vendor's own uploaded photo carries the page — their first service's
+  // image — falling back to a banner they set, if any.
+  const firstListingCover = (listings[0] as unknown as { coverUrl: string | null } | undefined)?.coverUrl ?? null;
+  const cover = firstListingCover ?? (provider as unknown as { cover_url: string | null }).cover_url;
   const logo = (provider as unknown as { logo_url: string | null }).logo_url;
   const cityName = (provider.cities as unknown as { name: string } | null)?.name;
   const providerPath = `/p/${provider.slug}`;
@@ -28,27 +32,32 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   return (
     <main className="mx-auto max-w-2xl pb-16">
       {/* Cover */}
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-[color:var(--color-surface-sunk)] sm:aspect-[21/9]">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
-          <img src={cover} alt={provider.business_name} className="h-full w-full object-cover" />
-        ) : null}
+      <div className="relative">
+        <Photo
+          src={cover}
+          alt={provider.business_name}
+          fill
+          priority
+          sizes="(max-width: 640px) 100vw, 672px"
+          className="aspect-[16/9] sm:aspect-[21/9]"
+        />
         <BackBar variant="overlay" fallback="/search" />
       </div>
 
-      <div className="px-5">
-        {/* Identity */}
-        <div className="-mt-8 flex items-end gap-3">
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-card">
+      <div className="px-5 pt-4">
+        {/* Identity — a round avatar that sits beside the name, never over it. */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-accent-soft)] text-lg font-semibold text-[color:var(--color-accent)]">
             {logo ? (
-              // eslint-disable-next-line @next/next/no-img-element -- external provider imagery
-              <img src={logo} alt="" className="h-full w-full object-cover" />
-            ) : null}
+              <Photo src={logo} alt="" fill sizes="56px" className="h-full w-full" />
+            ) : (
+              provider.business_name.charAt(0).toUpperCase()
+            )}
           </div>
-          <div className="pb-1">
+          <div className="min-w-0">
             <div className="flex items-center gap-1">
-              <h1 className="text-xl font-semibold tracking-tight">{provider.business_name}</h1>
-              <span title="Verified" className="text-[color:var(--color-accent)]">✓</span>
+              <h1 className="truncate text-xl font-semibold tracking-tight">{provider.business_name}</h1>
+              <span title="Verified" className="shrink-0 text-[color:var(--color-accent)]">✓</span>
             </div>
             {cityName ? <p className="text-xs text-[color:var(--color-ink-muted)]">{cityName}</p> : null}
           </div>
@@ -90,11 +99,8 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
               return (
                 <li key={l.id}>
                   <Link href={`/l/${l.slug}`} className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-3 shadow-card transition hover:shadow-card-hover">
-                    <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-[color:var(--color-surface-sunk)]">
-                      {cover ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- private storage, signed URL
-                        <img src={cover} alt="" className="h-full w-full object-cover" />
-                      ) : null}
+                    <div className="size-16 shrink-0">
+                      <Photo src={cover} alt="" fill sizes="64px" className="h-full w-full rounded-xl" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{l.title}</p>
