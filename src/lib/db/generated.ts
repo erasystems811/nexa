@@ -857,7 +857,7 @@ export type Database = {
           price_type: Database["public"]["Enums"]["price_type"]
           provider_id: string
           rejection_reason: string | null
-          search_vector: string | null
+          search_vector: unknown
           slug: string
           status: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -878,6 +878,7 @@ export type Database = {
           price_type?: Database["public"]["Enums"]["price_type"]
           provider_id: string
           rejection_reason?: string | null
+          search_vector?: unknown
           slug: string
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -898,6 +899,7 @@ export type Database = {
           price_type?: Database["public"]["Enums"]["price_type"]
           provider_id?: string
           rejection_reason?: string | null
+          search_vector?: unknown
           slug?: string
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
