@@ -76,14 +76,24 @@ export async function searchVendors(filters: {
 }): Promise<VendorResult[]> {
   const supabase = await createClient();
 
+  // A hard cap on the underlying row fetch, independent of the vendor-count
+  // limit applied after grouping below. Without one, this query has no ceiling
+  // at all — every approved listing in the marketplace, in one request, every
+  // time the page loads. At a few hundred listings that's invisible; at
+  // millions it is an outage. 600 rows comfortably covers far more distinct
+  // vendors than a browse page ever shows before pagination.
+  const ROW_SAFETY_CAP = 600;
+
   let query = supabase
     .from("listings")
     .select(
-      `id, provider_id,
+      `id, provider_id, created_at,
        categories!inner ( slug ),
        providers!inner ( id, business_name, slug, logo_url, cover_url, is_featured, cities ( name, slug ) )`,
     )
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(ROW_SAFETY_CAP);
 
   if (filters.categorySlug) query = query.eq("categories.slug", filters.categorySlug);
   if (filters.citySlug) query = query.eq("providers.cities.slug", filters.citySlug);
@@ -178,7 +188,11 @@ export async function searchListings(filters: ListingFilters): Promise<ListingRe
     .eq("status", "approved")
     .limit(filters.limit ?? 40);
 
-  if (filters.q) query = query.ilike("title", `%${filters.q}%`);
+  // websearch_to_tsquery understands plain typed words ("chairs tables") the way
+  // a customer actually types, not Postgres's own query syntax. This replaces a
+  // leading-wildcard ilike, which cannot use an index and scans every listing on
+  // every keystroke — fine at a few hundred rows, an outage risk at scale.
+  if (filters.q) query = query.textSearch("search_vector", filters.q, { type: "websearch" });
   if (filters.categorySlug) query = query.eq("categories.slug", filters.categorySlug);
   if (filters.citySlug) query = query.eq("providers.cities.slug", filters.citySlug);
   if (filters.minPriceKobo !== undefined) query = query.gte("price_kobo", filters.minPriceKobo);
