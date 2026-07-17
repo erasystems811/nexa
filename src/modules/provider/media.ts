@@ -70,6 +70,18 @@ export async function uploadMedia(
     await supabase.storage.from(BUCKET).remove([path]);
     throw new ProviderError(`Could not record the upload: ${rowError.message}`);
   }
+
+  // A new photo on a live listing is a change, so it goes back for review — the
+  // same way editing the price does. This is what puts the listing back in the
+  // Admin queue, so the new photo cannot slip onto the marketplace unseen.
+  // Allowed to the provider: guard_listing_status_change permits approved →
+  // pending_approval.
+  await supabase
+    .from("listings")
+    .update({ status: "pending_approval" })
+    .eq("id", listingId)
+    .eq("provider_id", providerId)
+    .eq("status", "approved");
 }
 
 export async function deleteMedia(providerId: string, mediaId: string): Promise<void> {
