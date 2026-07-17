@@ -35,7 +35,7 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
 
       <Card className="mt-4">
         <h2 className="mb-4 text-sm font-semibold">Media</h2>
-        <MediaManager listingId={listing.id} media={media} />
+        <MediaManager listingId={listing.id} media={media} live={listing.status === "approved"} />
       </Card>
 
       <div className="mt-4 flex justify-end">
@@ -59,6 +59,11 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
             price_min: listing.price_min_kobo ? koboToNaira(listing.price_min_kobo) : undefined,
             price_max: listing.price_max_kobo ? koboToNaira(listing.price_max_kobo) : undefined,
           }}
+          confirmOnSave={
+            listing.status === "approved"
+              ? "This listing is live. Saving changes sends it back to Nexa for approval, and it stays hidden from customers until Nexa approves it again. Save anyway?"
+              : undefined
+          }
         />
       </Card>
     </>

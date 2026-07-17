@@ -35,6 +35,7 @@ export function ListingForm({
   defaults = {},
   submitLabel,
   showPhotos = false,
+  confirmOnSave,
 }: {
   categories: Category[];
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
@@ -42,6 +43,9 @@ export function ListingForm({
   submitLabel: string;
   /** Create shows a photo picker so the listing arrives with its pictures. */
   showPhotos?: boolean;
+  /** When set, the vendor must confirm this before the form submits — used on a
+   *  live listing, where saving takes it offline for re-approval. */
+  confirmOnSave?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [priceType, setPriceType] = useState(defaults.price_type ?? "fixed");
@@ -143,7 +147,14 @@ export function ListingForm({
       {state.error ? <Alert>{state.error}</Alert> : null}
       {state.ok ? <Alert tone="success">Saved. It goes to Admin for approval before it&rsquo;s public.</Alert> : null}
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={pending}
+        onClick={(e) => {
+          if (confirmOnSave && !window.confirm(confirmOnSave)) e.preventDefault();
+        }}
+      >
         {pending ? "Saving…" : submitLabel}
       </Button>
       <p className="text-center text-xs text-[color:var(--color-ink-muted)]">

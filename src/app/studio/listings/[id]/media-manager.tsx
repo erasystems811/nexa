@@ -12,7 +12,16 @@ interface Media {
 }
 
 /** Media upload./13: every upload enters Pending Approval. */
-export function MediaManager({ listingId, media }: { listingId: string; media: Media[] }) {
+export function MediaManager({
+  listingId,
+  media,
+  live = false,
+}: {
+  listingId: string;
+  media: Media[];
+  /** True when the listing is live: a new photo takes it offline for re-approval. */
+  live?: boolean;
+}) {
   const [state, action, pending] = useActionState(
     uploadMediaAction.bind(null, listingId),
     {} as FormState,
@@ -64,6 +73,15 @@ export function MediaManager({ listingId, media }: { listingId: string; media: M
         <button
           type="submit"
           disabled={pending}
+          onClick={(e) => {
+            if (
+              live &&
+              !window.confirm(
+                "This listing is live. Adding a photo sends it back to Nexa for approval, and it stays hidden from customers until Nexa approves it again. Upload anyway?",
+              )
+            )
+              e.preventDefault();
+          }}
           className="h-10 shrink-0 rounded-lg bg-[color:var(--color-ink)] px-4 text-sm font-medium text-white disabled:opacity-40"
         >
           {pending ? "Uploading…" : "Upload"}
