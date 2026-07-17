@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendSignupVerificationCode } from "@/modules/email/resend";
 import { sendPasswordCode } from "./provisioning";
+import { authEmailFor, surfaceFromForm } from "./identity";
 import type { UserRole } from "@/lib/db/types";
 
 export interface AuthFormState {
@@ -150,7 +151,10 @@ export async function signIn(
     if (!emailParsed.success) {
       return { error: emailParsed.error.issues[0]?.message ?? "Enter a valid email address" };
     }
-    loginEmail = emailParsed.data.email;
+    // Sign in against THIS app's account for the typed email. The customer app
+    // looks up the bare email, the vendor app the tagged one — so the same email
+    // is a different account on each, and neither can sign into the other.
+    loginEmail = authEmailFor(surfaceFromForm(surface), emailParsed.data.email);
   }
 
   const supabase = await createClient();
@@ -188,17 +192,6 @@ export async function signIn(
   if (!adminIntent && role === "admin") {
     await supabase.auth.signOut();
     return { error: "Admin accounts must sign in from Nexa Admin." };
-  }
-
-  // The customer marketplace is its own app with its own accounts. A vendor
-  // account is a separate identity that belongs to the vendor app, and it cannot
-  // sign in here — this is what keeps the customer app from ever holding, or even
-  // seeing, a vendor session. Being a vendor is simply irrelevant to the customer
-  // app; to shop, you create a customer account, exactly like your clinic's
-  // hospital and super-admin logins.
-  if (!adminIntent && surface !== "studio" && role === "provider") {
-    await supabase.auth.signOut();
-    return { error: "That is a vendor account. Create a customer account to shop on Nexa." };
   }
 
   revalidatePath("/", "layout");
@@ -324,8 +317,16 @@ export async function requestPasswordReset(
     return { error: parsed.error.issues[0]?.message ?? "Enter a valid email address" };
   }
 
+  // Reset THIS app's account for the email. The code is generated against the
+  // account's stored (per-app) address but always delivered to the real inbox.
+  const surface = surfaceFromForm(formData.get("surface"));
+
   try {
-    await sendPasswordCode({ email: parsed.data.email, purpose: "reset" });
+    await sendPasswordCode({
+      email: parsed.data.email,
+      authEmail: authEmailFor(surface, parsed.data.email),
+      purpose: "reset",
+    });
   } catch {
     // Deliberate: no account, or email is down. Both look like success here.
   }
@@ -358,8 +359,9 @@ export async function completePasswordReset(
   }
 
   const supabase = await createClient();
+  const authEmail = authEmailFor(surfaceFromForm(formData.get("surface")), parsed.data.email);
   const { error: otpError } = await supabase.auth.verifyOtp({
-    email: parsed.data.email,
+    email: authEmail,
     token: parsed.data.code,
     type: "recovery",
   });

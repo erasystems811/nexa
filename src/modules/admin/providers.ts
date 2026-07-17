@@ -1,6 +1,7 @@
 import "server-only";
 
 import { ensureAuthUser, trySendPasswordSetupCode } from "@/modules/auth/provisioning";
+import { authEmailFor } from "@/modules/auth/identity";
 import { idTypeLabel, isIdentityVerified, REQUIRED_ID_COUNT } from "@/modules/provider";
 import { adminDb, audit, AdminError } from "./context";
 import { sendVerificationChangesRequested } from "@/modules/email/resend";
@@ -297,9 +298,13 @@ export async function addProviderManually(
 ): Promise<ManualProviderResult> {
   const db = adminDb();
 
+  // The vendor login is its own account, stored under the tagged vendor address —
+  // separate from any customer account for the same email.
+  const vendorAuthEmail = authEmailFor("studio", input.email);
+
   let user;
   try {
-    user = (await ensureAuthUser({ email: input.email, fullName: input.businessName })).user;
+    user = (await ensureAuthUser({ email: vendorAuthEmail, fullName: input.businessName })).user;
   } catch (e) {
     throw new AdminError(`Could not create the account: ${e instanceof Error ? e.message : "unknown error"}`);
   }
@@ -326,6 +331,6 @@ export async function addProviderManually(
   await approveProvider(actorId, provider.id);
   await audit(actorId, "add_provider_manually", "provider", provider.id, null, { email: input.email });
 
-  const warning = await trySendPasswordSetupCode({ email: input.email, name: input.businessName });
+  const warning = await trySendPasswordSetupCode({ email: input.email, authEmail: vendorAuthEmail, name: input.businessName });
   return { providerId: provider.id, warning };
 }

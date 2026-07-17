@@ -5,10 +5,21 @@ import { useActionState, useState } from "react";
 import { Logo } from "@/components/logo";
 import { Alert, Button, Field } from "@/components/ui";
 import { completePasswordReset, requestPasswordReset, type PasswordResetState } from "@/modules/auth/actions";
+import type { Surface } from "@/lib/surfaces";
 
 const initialState: PasswordResetState = {};
 
-export function ResetForm({ email, startAtCode }: { email: string; startAtCode: boolean }) {
+export function ResetForm({
+  email,
+  startAtCode,
+  surface,
+}: {
+  email: string;
+  startAtCode: boolean;
+  // Which app this reset belongs to. Reset on the vendor app targets the vendor
+  // account for the email; on the customer app, the customer account.
+  surface: Surface;
+}) {
   const [requestState, requestAction, requesting] = useActionState(requestPasswordReset, initialState);
   const [completeState, completeAction, completing] = useActionState(completePasswordReset, initialState);
   // Someone arriving from a set-password email already holds a code, so skip
@@ -32,6 +43,7 @@ export function ResetForm({ email, startAtCode }: { email: string; startAtCode: 
           </p>
 
           <form action={completeAction} className="mt-8 space-y-4">
+            <input type="hidden" name="surface" value={surface} />
             <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={knownEmail} required />
             <Field
               label="Reset code"
@@ -81,6 +93,7 @@ export function ResetForm({ email, startAtCode }: { email: string; startAtCode: 
           </p>
 
           <form action={requestAction} className="mt-8 space-y-4">
+            <input type="hidden" name="surface" value={surface} />
             <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={knownEmail} required />
 
             {requestState.error ? <Alert>{requestState.error}</Alert> : null}

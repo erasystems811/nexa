@@ -102,16 +102,25 @@ function resetUrl(email: string): string {
  * mechanism signup verification uses. Throws if there is no such account.
  */
 export async function sendPasswordCode(input: {
+  /** The real address the code is delivered to and shown in the reset form. */
   email: string;
+  /**
+   * The account's stored auth email, when it differs from the real one — a
+   * vendor account is stored under a tagged address. The code is generated
+   * against THIS, so it unlocks the right per-app account, but is still
+   * delivered to the real `email`. Defaults to `email`.
+   */
+  authEmail?: string;
   name?: string;
   purpose: "reset" | "setup";
 }): Promise<void> {
   const admin = createAdminClient();
   const email = input.email.trim().toLowerCase();
+  const authEmail = (input.authEmail ?? email).trim().toLowerCase();
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "recovery",
-    email,
+    email: authEmail,
     options: { redirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/reset` },
   });
   if (error) throw new Error(error.message);
@@ -130,13 +139,13 @@ export async function sendPasswordCode(input: {
  * unset or down, so the failure comes back as a warning the console shows,
  * not an exception. The person can still get in via Forgot password.
  */
-export async function trySendPasswordSetupCode(input: { email: string; name?: string }): Promise<string | undefined> {
+export async function trySendPasswordSetupCode(input: { email: string; authEmail?: string; name?: string }): Promise<string | undefined> {
   if (!isEmailConfigured()) {
     return `Email is not configured, so no set-password email went to ${input.email}. Configure Resend, or ask them to use "Forgot password?" on the sign-in page.`;
   }
 
   try {
-    await sendPasswordCode({ email: input.email, name: input.name, purpose: "setup" });
+    await sendPasswordCode({ email: input.email, authEmail: input.authEmail, name: input.name, purpose: "setup" });
     return undefined;
   } catch {
     return `The account is ready, but the set-password email to ${input.email} could not be sent. Ask them to use "Forgot password?" on the sign-in page.`;
