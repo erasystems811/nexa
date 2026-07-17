@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { surfaceForHost } from "@/lib/surfaces";
 import { ResetForm } from "./reset-form";
 
 function firstParam(value: string | string[] | undefined): string {
@@ -16,10 +18,12 @@ export default async function ResetPage({
   searchParams: Promise<{ email?: string | string[]; step?: string | string[] }>;
 }) {
   const params = await searchParams;
+  const surface = surfaceForHost((await headers()).get("host")) ?? "customer";
   return (
     <ResetForm
       email={firstParam(params.email)}
       startAtCode={firstParam(params.step) === "code"}
+      surface={surface}
     />
   );
 }
