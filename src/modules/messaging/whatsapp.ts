@@ -5,6 +5,9 @@ import { serverEnv } from "@/lib/env";
 import type { ModerationFlagReason } from "@/lib/db/types";
 import { toWhatsAppNumber } from "@/lib/phone";
 import { scanMessageBody } from "./safety";
+import { ensureWhatsappCustomer } from "@/modules/auth/whatsappProvisioning";
+import { runColdDiscovery } from "@/modules/discovery";
+import { acceptOfferAsAdmin } from "@/modules/bookings/offers";
 
 interface WhatsappTextMessage {
   waId: string;
@@ -77,7 +80,7 @@ async function bindThreadFromReference(input: {
   text: string;
   contactId: string;
   waId: string;
-}): Promise<{ conversationId: string; side: WhatsappSide; senderId: string } | null> {
+}): Promise<{ conversationId: string; side: WhatsappSide; senderId: string } | null | "wrong_number"> {
   const db = createAdminClient();
 
   const match = input.text.match(REFERENCE);
@@ -122,7 +125,7 @@ async function bindThreadFromReference(input: {
       to: input.waId,
       body: "This Nexa chat belongs to a different number. Please message from the phone number on your Nexa account.",
     });
-    return null;
+    return "wrong_number";
   }
 
   const senderId = side === "vendor" ? providerUserId : conversation.customer_id;
@@ -214,12 +217,14 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
       waId: input.waId,
     });
 
+    // A Ref pointing to somebody else's conversation - bindThreadFromReference
+    // has already told them why. Running discovery on top would be confusing.
+    if (bound === "wrong_number") return;
+
     if (!bound) {
-      await sendWhatsappText({
-        to: input.waId,
-        body:
-          "Thanks for messaging Nexa. Please open your Nexa booking link first so this WhatsApp chat can be linked safely.",
-      });
+      // No conversation to continue, and no (working) link to one - the
+      // stranger-with-no-account case discovery exists for.
+      await runColdDiscovery({ waId: input.waId, text: input.text, contactId: contact.id });
       return;
     }
 
@@ -252,6 +257,14 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
     origin: resolvedSide === "customer" ? "whatsapp_customer" : "whatsapp_vendor",
     external_message_id: input.externalMessageId,
   });
+
+  // A quote's "Accept" button may have failed to send earlier because the
+  // customer's 24-hour window was closed - this message just reopened it, so
+  // this is the moment to try again. Vendor messages don't reopen the
+  // customer's window, so only worth checking on the customer's own message.
+  if (resolvedSide === "customer") {
+    await resendPendingOfferButtonIfAny(conversationId);
+  }
 
   await db
     .from("whatsapp_threads")
@@ -442,7 +455,7 @@ async function sendWhatsappTemplate(input: { to: string; name: string }): Promis
  * `nudgeName` is used only if the 24-hour window has closed and the template has
  * to carry the message instead. Without it, a closed window is simply a failure.
  */
-async function sendWhatsappText(input: {
+export async function sendWhatsappText(input: {
   to: string;
   body: string;
   nudgeName?: string;
@@ -466,6 +479,293 @@ async function sendWhatsappText(input: {
   }
 
   throw new Error(`WhatsApp send failed: ${result.detail}`);
+}
+
+/**
+ * A tappable list of up to 10 rows. Meta enforces 24 chars per row title and
+ * 72 per row description - callers are expected to have already truncated,
+ * since only they know what's safe to cut (a price vs. a name, say).
+ *
+ * There is no template fallback for a closed window here: cold discovery only
+ * ever calls this in reply to a message that just arrived, so the window is
+ * guaranteed open.
+ */
+export async function sendWhatsappList(input: {
+  to: string;
+  body: string;
+  rows: Array<{ id: string; title: string; description: string }>;
+  buttonLabel?: string;
+}): Promise<void> {
+  const env = serverEnv();
+  if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) return;
+
+  const result = await callGraph({
+    to: input.to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: input.body },
+      action: {
+        button: input.buttonLabel ?? "View options",
+        sections: [{ rows: input.rows }],
+      },
+    },
+  });
+
+  if (!result.ok) throw new Error(`WhatsApp list send failed: ${result.detail}`);
+}
+
+/**
+ * Reply buttons (used for a quote's "Accept"). Unlike text, a button can never
+ * go out as a template - Meta's template mechanism only carries text/media
+ * bodies - so a closed window here is a real failure the caller must handle
+ * (see resendPendingOfferButtonIfAny, which is what retries it).
+ */
+export async function sendWhatsappButtons(input: {
+  to: string;
+  body: string;
+  buttons: Array<{ id: string; title: string }>;
+}): Promise<{ ok: boolean; windowClosed: boolean }> {
+  const env = serverEnv();
+  if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) return { ok: false, windowClosed: false };
+
+  const result = await callGraph({
+    to: input.to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: input.body },
+      action: {
+        buttons: input.buttons.map((b) => ({ type: "reply", reply: { id: b.id, title: b.title } })),
+      },
+    },
+  });
+
+  if (result.ok) return { ok: true, windowClosed: false };
+  if (result.errorCode === WINDOW_CLOSED) return { ok: false, windowClosed: true };
+
+  throw new Error(`WhatsApp button send failed: ${result.detail}`);
+}
+
+/**
+ * Opens (or reuses) the conversation for a listing a stranger just picked from
+ * a cold-discovery list. Deliberately not the same getOrCreateConversation
+ * used by the web app: that one runs under the caller's own session and RLS,
+ * and there is no session here - this is the platform acting as itself,
+ * exactly like the rest of this module already does for whatsapp_contacts and
+ * whatsapp_threads.
+ */
+async function getOrCreateConversationAsAdmin(input: {
+  customerId: string;
+  providerId: string;
+  listingId: string;
+}): Promise<string> {
+  const db = createAdminClient();
+
+  const { data: existing } = await db
+    .from("conversations")
+    .select("id")
+    .eq("customer_id", input.customerId)
+    .eq("provider_id", input.providerId)
+    .eq("listing_id", input.listingId)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  const { data, error } = await db
+    .from("conversations")
+    .insert({
+      customer_id: input.customerId,
+      provider_id: input.providerId,
+      listing_id: input.listingId,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) throw new Error(`Could not open the conversation: ${error?.message}`);
+  return data.id;
+}
+
+/**
+ * A stranger tapped a listing from their cold-discovery list. From here on
+ * this is an ordinary conversation - the thread is bound directly (no Ref
+ * needed, since there both sides are already known), so the customer's next
+ * plain-text message hits the ordinary bound-thread relay path above.
+ */
+export async function handleListingSelected(input: { waId: string; listingId: string }): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: contact } = await db
+    .from("whatsapp_contacts")
+    .select("id, display_name")
+    .eq("wa_id", input.waId)
+    .maybeSingle();
+
+  if (!contact) return;
+
+  const { data: listing } = await db
+    .from("listings")
+    .select("id, title, provider_id")
+    .eq("id", input.listingId)
+    .maybeSingle();
+
+  if (!listing) {
+    await sendWhatsappText({ to: input.waId, body: "That listing is no longer available. Try searching again." });
+    return;
+  }
+
+  const { profileId } = await ensureWhatsappCustomer({
+    waId: input.waId,
+    contactId: contact.id,
+    displayName: contact.display_name,
+  });
+
+  const conversationId = await getOrCreateConversationAsAdmin({
+    customerId: profileId,
+    providerId: listing.provider_id,
+    listingId: listing.id,
+  });
+
+  const { data: existingThread } = await db
+    .from("whatsapp_threads")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+
+  if (!existingThread) {
+    await db.from("whatsapp_threads").insert({
+      conversation_id: conversationId,
+      whatsapp_contact_id: contact.id,
+      status: "active",
+    });
+  }
+
+  const { data: provider } = await db
+    .from("providers")
+    .select("business_name")
+    .eq("id", listing.provider_id)
+    .maybeSingle();
+
+  await sendWhatsappText({
+    to: input.waId,
+    body: `You're connected with ${provider?.business_name ?? "the vendor"} about "${listing.title}". Ask away!`,
+  });
+}
+
+/**
+ * Sends (or re-sends) the WhatsApp-native "Accept" button for a pending offer,
+ * and stamps whatsapp_notified_at only once it actually goes out - a closed
+ * window leaves it null so resendPendingOfferButtonIfAny tries again later.
+ */
+async function sendOfferAcceptButton(input: {
+  offerId: string;
+  conversationId: string;
+  amountKobo: number;
+  listingId: string;
+}): Promise<void> {
+  const db = createAdminClient();
+
+  const context = await getWhatsappThreadContext(input.conversationId);
+  if (!context?.customerWaId) return;
+
+  const { data: listing } = await db
+    .from("listings")
+    .select("title")
+    .eq("id", input.listingId)
+    .maybeSingle();
+
+  const amountNaira = (input.amountKobo / 100).toLocaleString("en-NG");
+
+  const result = await sendWhatsappButtons({
+    to: context.customerWaId,
+    body: `${context.vendorName} quoted ₦${amountNaira} for "${listing?.title ?? "your request"}". Accept?`,
+    buttons: [{ id: input.offerId, title: "Accept" }],
+  });
+
+  if (result.windowClosed) {
+    // Can't carry a button as a template. Nudge them instead; the button
+    // itself goes out for real once they reply and resendPendingOfferButtonIfAny runs.
+    await sendWhatsappTemplate({ to: context.customerWaId, name: context.vendorName });
+    return;
+  }
+
+  if (result.ok) {
+    await db.from("price_offers").update({ whatsapp_notified_at: new Date().toISOString() }).eq("id", input.offerId);
+  }
+}
+
+/**
+ * Best-effort hook for sendOffer() (src/modules/bookings/offers.ts): if this
+ * conversation is WhatsApp-bound, the customer - who has no browser session -
+ * gets a native Accept button alongside the vendor's quote appearing in the
+ * relayed chat text.
+ */
+export async function notifyWhatsappOfferIfBound(input: {
+  conversationId: string;
+  offerId: string;
+  amountKobo: number;
+  listingId: string;
+}): Promise<void> {
+  if (!whatsappIsConfigured()) return;
+  await sendOfferAcceptButton(input);
+}
+
+/** Called after every inbound customer text - see handleIncomingWhatsappText. */
+async function resendPendingOfferButtonIfAny(conversationId: string): Promise<void> {
+  if (!whatsappIsConfigured()) return;
+
+  const db = createAdminClient();
+  const { data: offer } = await db
+    .from("price_offers")
+    .select("id, amount_kobo, listing_id")
+    .eq("conversation_id", conversationId)
+    .eq("status", "pending")
+    .is("whatsapp_notified_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!offer) return;
+
+  await sendOfferAcceptButton({
+    conversationId,
+    offerId: offer.id,
+    amountKobo: offer.amount_kobo,
+    listingId: offer.listing_id,
+  });
+}
+
+/**
+ * A tap on the offer's "Accept" button. There is no session to authorise this
+ * with, so the check is done by hand: the offer must still be pending, and the
+ * tapping number must resolve to the same customer the offer was made to -
+ * standing in for the RLS check `acceptOffer` normally relies on.
+ */
+export async function handleOfferButtonReply(input: { waId: string; buttonId: string }): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: offer } = await db
+    .from("price_offers")
+    .select("id, status, customer_id")
+    .eq("id", input.buttonId)
+    .maybeSingle();
+
+  if (!offer || offer.status !== "pending") return;
+
+  const { data: contact } = await db
+    .from("whatsapp_contacts")
+    .select("profile_id")
+    .eq("wa_id", input.waId)
+    .maybeSingle();
+
+  if (!contact?.profile_id || contact.profile_id !== offer.customer_id) return;
+
+  await acceptOfferAsAdmin(offer.id);
+
+  await sendWhatsappText({
+    to: input.waId,
+    body: "Offer accepted! Head to your Nexa orders to complete payment.",
+  });
 }
 
 function formatRelayText(from: WhatsappSide, body: string): string {

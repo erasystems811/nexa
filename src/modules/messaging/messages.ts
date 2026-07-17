@@ -5,6 +5,7 @@ import { MessagingError, type ChatMessage } from "./types";
 import type { ModerationFlagReason } from "@/lib/db/types";
 import { scanMessageBody } from "./safety";
 import { recordBlockedAttempt, relayDashboardMessageToWhatsapp } from "./whatsapp";
+import { isEnabled, FLAGS } from "@/modules/settings/flags";
 
 /**
  * Sending and reading messages.
@@ -53,11 +54,13 @@ export async function sendMessage(input: {
     throw new MessagingError(`Message not sent: ${error?.message}`);
   }
 
-  await relayDashboardMessageToWhatsapp({
-    conversationId: input.conversationId,
-    senderId: input.senderId,
-    body,
-  });
+  if (await isEnabled(FLAGS.whatsappMediatedChat)) {
+    await relayDashboardMessageToWhatsapp({
+      conversationId: input.conversationId,
+      senderId: input.senderId,
+      body,
+    });
+  }
 
   return toChatMessage(data);
 }
