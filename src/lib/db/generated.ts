@@ -1432,6 +1432,7 @@ export type Database = {
           note: string | null
           provider_id: string
           status: Database["public"]["Enums"]["price_offer_status"]
+          whatsapp_notified_at: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -1444,6 +1445,7 @@ export type Database = {
           note?: string | null
           provider_id: string
           status?: Database["public"]["Enums"]["price_offer_status"]
+          whatsapp_notified_at?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -1456,6 +1458,7 @@ export type Database = {
           note?: string | null
           provider_id?: string
           status?: Database["public"]["Enums"]["price_offer_status"]
+          whatsapp_notified_at?: string | null
         }
         Relationships: [
           {
@@ -2164,6 +2167,8 @@ export type Database = {
         Row: {
           consent_at: string | null
           created_at: string
+          discovery_message_count: number
+          discovery_window_started_at: string | null
           display_name: string | null
           id: string
           phone_hint: string | null
@@ -2174,6 +2179,8 @@ export type Database = {
         Insert: {
           consent_at?: string | null
           created_at?: string
+          discovery_message_count?: number
+          discovery_window_started_at?: string | null
           display_name?: string | null
           id?: string
           phone_hint?: string | null
@@ -2184,6 +2191,8 @@ export type Database = {
         Update: {
           consent_at?: string | null
           created_at?: string
+          discovery_message_count?: number
+          discovery_window_started_at?: string | null
           display_name?: string | null
           id?: string
           phone_hint?: string | null

@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { serverEnv } from "@/lib/env";
-import { handleIncomingWhatsappText } from "@/modules/messaging/whatsapp";
+import { handleIncomingWhatsappText, handleListingSelected, handleOfferButtonReply } from "@/modules/messaging/whatsapp";
+import { isEnabled, FLAGS } from "@/modules/settings/flags";
 
 /**
  * Meta's WhatsApp webhook.
@@ -63,6 +64,12 @@ export async function POST(request: NextRequest) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
+  // Still 200 when the feature is off, or Meta reads repeated non-2xx
+  // responses as "this webhook is broken" and disables it.
+  if (!(await isEnabled(FLAGS.whatsappMediatedChat))) {
+    return NextResponse.json({ ok: true });
+  }
+
   let payload: unknown;
   try {
     payload = JSON.parse(rawBody);
@@ -86,6 +93,11 @@ export async function POST(request: NextRequest) {
         messages?: Array<{
           type?: string;
           text?: { body?: string };
+          interactive?: {
+            type?: string;
+            list_reply?: { id?: string; title?: string };
+            button_reply?: { id?: string; title?: string };
+          };
           from?: string;
           id?: string;
         }>;
@@ -99,17 +111,34 @@ export async function POST(request: NextRequest) {
       }
 
       for (const message of Array.isArray(value.messages) ? value.messages : []) {
-        if (message.type !== "text" || !message.text?.body || !message.from || !message.id) {
+        if (!message.from || !message.id) continue;
+
+        if (message.type === "text" && message.text?.body) {
+          await handleIncomingWhatsappText({
+            waId: message.from,
+            displayName: contacts.get(message.from),
+            text: message.text.body,
+            externalMessageId: message.id,
+            businessPhoneId,
+          });
           continue;
         }
 
-        await handleIncomingWhatsappText({
-          waId: message.from,
-          displayName: contacts.get(message.from),
-          text: message.text.body,
-          externalMessageId: message.id,
-          businessPhoneId,
-        });
+        if (message.type === "interactive" && message.interactive?.list_reply?.id) {
+          await handleListingSelected({
+            waId: message.from,
+            listingId: message.interactive.list_reply.id,
+          });
+          continue;
+        }
+
+        if (message.type === "interactive" && message.interactive?.button_reply?.id) {
+          await handleOfferButtonReply({
+            waId: message.from,
+            buttonId: message.interactive.button_reply.id,
+          });
+          continue;
+        }
       }
     }
   }
