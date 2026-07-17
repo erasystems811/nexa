@@ -46,7 +46,9 @@ export interface ApplicationInput {
   ids: IdSubmission[];
 }
 
-const PROFILE_BUCKET = "provider-public";
+// The same public bucket Studio's profile-photo upload uses (0035), so an
+// applicant's photo and a later change from Studio live in one place.
+const PROFILE_BUCKET = "provider-profile-media";
 const ACCEPTED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -160,7 +162,7 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
     // The profile photo goes in the public bucket — it is the business's face,
     // shown to every customer — and its URL becomes the provider's logo.
     const ext = input.profilePhoto.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const photoPath = `${provider.id}/profile.${ext}`;
+    const photoPath = `${provider.id}/logo.${ext}`;
     const { error: photoError } = await db.storage
       .from(PROFILE_BUCKET)
       .upload(photoPath, input.profilePhoto, { contentType: input.profilePhoto.type, upsert: true });
