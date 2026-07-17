@@ -32,7 +32,10 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-5",
+        // "card" is a stable hook the Admin console's dark shell uses to strip
+        // the glass treatment back to a flat surface — blurring hundreds of
+        // rows in a dense staff table is wasted GPU cost, not polish.
+        "card rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-[color:var(--color-surface)]/80 p-5 shadow-card backdrop-blur-xl backdrop-saturate-150",
         hover &&
           "transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]/30 hover:shadow-card-hover",
         className,
@@ -59,8 +62,8 @@ export function Badge({
         "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium",
         tone === "neutral" && "bg-[color:var(--color-surface-sunk)] text-[color:var(--color-ink-muted)]",
         tone === "accent" && "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent)]",
-        tone === "success" && "bg-emerald-50 text-[color:var(--color-success)]",
-        tone === "warning" && "bg-amber-50 text-amber-900",
+        tone === "success" && "bg-[color:var(--color-success-soft)] text-[color:var(--color-success)]",
+        tone === "warning" && "bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)]",
         className,
       )}
     >
@@ -86,9 +89,9 @@ export function Button({
         variant === "primary" &&
           "bg-[color:var(--color-accent)] text-white shadow-sm hover:opacity-90",
         variant === "ghost" &&
-          "border border-[color:var(--color-line)] bg-white hover:bg-[color:var(--color-surface-sunk)]",
+          "border border-[color:var(--color-line)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-surface-sunk)]",
         variant === "danger" &&
-          "border border-[color:var(--color-danger)]/20 bg-white text-[color:var(--color-danger)] hover:bg-red-50",
+          "border border-[color:var(--color-danger)]/20 bg-[color:var(--color-surface)] text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]",
         className,
       )}
     />
@@ -105,7 +108,7 @@ export function Field({
       <span className="mb-1.5 block text-sm font-medium">{label}</span>
       <input
         {...props}
-        className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4 outline-none transition-colors focus:border-[color:var(--color-accent)]"
+        className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 outline-none transition-colors focus:border-[color:var(--color-accent)]"
       />
       {hint ? (
         <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">{hint}</span>
@@ -120,8 +123,8 @@ export function Alert({ children, tone = "danger" }: { children: ReactNode; tone
       role="status"
       className={cn(
         "rounded-xl px-4 py-3 text-sm",
-        tone === "danger" && "bg-red-50 text-[color:var(--color-danger)]",
-        tone === "success" && "bg-emerald-50 text-[color:var(--color-success)]",
+        tone === "danger" && "bg-[color:var(--color-danger-soft)] text-[color:var(--color-danger)]",
+        tone === "success" && "bg-[color:var(--color-success-soft)] text-[color:var(--color-success)]",
       )}
     >
       {children}

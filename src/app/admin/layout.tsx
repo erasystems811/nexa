@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession, signOut } from "@/modules/auth";
 import { currentStaff, recordLogin, can, PERMISSIONS as P } from "@/modules/admin";
-import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui";
-import { AdminNavTabs } from "./nav-tabs";
+import { AdminSidebar } from "./sidebar";
 import type { Permission } from "@/modules/admin";
 
 /** Nexa Admin Console. Internal staff only. */
@@ -34,22 +31,11 @@ export default async function AdminLayout({
   const visible = tabs.filter((t) => t.perm === null || can(staff, t.perm));
 
   return (
-    <div className="min-h-dvh bg-[color:var(--color-surface-sunk)]">
-      <header className="sticky top-0 z-20 border-b border-[color:var(--color-line)]/60 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
-          <Link href="/" aria-label="Nexa Admin home">
-            <Logo label="Nexa Admin" markClassName="size-8 rounded-xl" textClassName="text-sm" />
-          </Link>
-          <form action={signOut}>
-            <Button type="submit" variant="ghost" className="h-9 px-4 text-xs">
-              Sign out
-            </Button>
-          </form>
-        </div>
-        <AdminNavTabs tabs={visible} />
-      </header>
-
-      <div className="mx-auto max-w-4xl px-5 py-8">{children}</div>
+    <div className="admin-shell flex flex-col md:flex-row">
+      <AdminSidebar tabs={visible} signOutAction={signOut} />
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+        <div className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 md:px-8">{children}</div>
+      </div>
     </div>
   );
 }

@@ -85,7 +85,7 @@ export default async function SubscriptionsPage({
                     className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${
                       copy.visible
                         ? "bg-[color:var(--color-surface-sunk)]"
-                        : "bg-amber-50 text-amber-900"
+                        : "bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)]"
                     }`}
                   >
                     {copy.label}

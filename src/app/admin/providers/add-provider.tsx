@@ -22,7 +22,7 @@ export function AddProvider() {
   }
 
   return (
-    <form action={action} className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-4">
+    <form action={action} className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-4">
       <h2 className="text-sm font-semibold">Add a vendor</h2>
       <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
         Creates their account and approves them straight away. They get an email with a code to set their

@@ -104,7 +104,7 @@ export default async function ListingsPage({
                       <span
                         className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                           isLive
-                            ? "bg-emerald-50 text-[color:var(--color-success)]"
+                            ? "bg-[color:var(--color-success-soft)] text-[color:var(--color-success)]"
                             : "bg-[color:var(--color-surface-sunk)] text-[color:var(--color-ink-muted)]"
                         }`}
                       >

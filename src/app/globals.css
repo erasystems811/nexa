@@ -14,7 +14,11 @@
   --color-accent: #0f2f5f;       /* Deep Navy */
   --color-accent-soft: #eef3fb;
   --color-danger: #b42318;
+  --color-danger-soft: #fef2f1;
   --color-success: #067647;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #92400e;
+  --color-warning-soft: #fffbeb;
   --color-star: #e8a020;
 
   --radius-card: 1rem;
@@ -26,7 +30,11 @@
     scroll-behavior: smooth;
   }
   body {
-    background: var(--color-surface);
+    background:
+      radial-gradient(ellipse 70% 50% at 12% -10%, rgba(15, 47, 95, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 45% at 100% 0%, rgba(232, 160, 32, 0.05) 0%, transparent 55%),
+      var(--color-surface);
+    background-attachment: fixed;
     color: var(--color-ink);
     font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -52,6 +60,49 @@
   }
 }
 
+
+/*
+ * Admin Console — a deliberately different register from the warm, light
+ * customer/vendor surfaces: a dark ops console for internal staff. Reuses the
+ * exact token names the shared primitives (Card/Button/Field/Badge/Alert)
+ * already read via var(), shadowed inside this one scope, so every existing
+ * admin page re-themes automatically with zero per-page edits.
+ */
+.admin-shell {
+  --color-ink: #eef2f7;
+  --color-ink-muted: #8b96a8;
+  --color-line: rgba(255, 255, 255, 0.09);
+  --color-surface: #0f1826;
+  --color-surface-sunk: #070d16;
+
+  --color-accent: #5b8def;       /* brightened Deep Navy — legible on dark */
+  --color-accent-soft: rgba(91, 141, 239, 0.14);
+  --color-danger: #f2867a;
+  --color-danger-soft: rgba(242, 92, 74, 0.12);
+  --color-success: #4ade9b;
+  --color-success-soft: rgba(52, 211, 153, 0.12);
+  --color-warning: #e8a020;
+  --color-warning-soft: rgba(232, 160, 32, 0.12);
+  --color-star: #e8a020;
+
+  background: var(--color-surface-sunk);
+  color: var(--color-ink);
+  min-height: 100dvh;
+}
+.admin-shell ::selection {
+  background: var(--color-accent);
+  color: white;
+}
+.admin-shell ::-webkit-scrollbar { width: 6px; height: 6px; }
+.admin-shell ::-webkit-scrollbar-track { background: transparent; }
+.admin-shell ::-webkit-scrollbar-thumb { background: rgba(91, 141, 239, 0.3); border-radius: 99px; }
+.admin-shell ::-webkit-scrollbar-thumb:hover { background: rgba(91, 141, 239, 0.5); }
+/* Flat, not glass: a staff console renders far more cards per screen than any
+   customer page, and a solid surface reads clearer under dense data anyway. */
+.admin-shell .card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
 
 @layer utilities {
   /* Soft premium card shadow. */

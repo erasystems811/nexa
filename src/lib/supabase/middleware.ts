@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
-import { cookieDomain } from "@/lib/surfaces";
+import { authCookieName, cookieDomain, surfaceForHost } from "@/lib/surfaces";
 import type { Database } from "@/lib/db/types";
 import type { UserRole } from "@/lib/db/types";
 
@@ -21,10 +21,16 @@ export interface SessionContext {
 export async function updateSession(request: NextRequest): Promise<SessionContext> {
   let response = NextResponse.next({ request });
 
+  // Read and refresh the session under THIS surface's cookie name, so the
+  // middleware authorises each app against its own login and never against
+  // another app's.
+  const cookieName = authCookieName(surfaceForHost(request.headers.get("host")));
+
   const supabase = createServerClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      cookieOptions: { name: cookieName },
       cookies: {
         getAll() {
           return request.cookies.getAll();

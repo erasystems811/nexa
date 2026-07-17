@@ -45,7 +45,7 @@ export function ActionButton({
     variant === "primary"
       ? "bg-[color:var(--color-ink)] text-white hover:opacity-90"
       : variant === "danger"
-        ? "border border-[color:var(--color-line)] text-[color:var(--color-danger)] hover:bg-red-50"
+        ? "border border-[color:var(--color-line)] text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]"
         : "border border-[color:var(--color-line)] hover:bg-[color:var(--color-surface-sunk)]";
 
   return (
