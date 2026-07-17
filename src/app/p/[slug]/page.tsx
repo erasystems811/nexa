@@ -15,10 +15,9 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
 
   const session = await getSession();
   const { provider, listings, rating, reviews } = result;
-  // The vendor's own uploaded photo carries the page — their first service's
-  // image — falling back to a banner they set, if any.
-  const firstListingCover = (listings[0] as unknown as { coverUrl: string | null } | undefined)?.coverUrl ?? null;
-  const cover = firstListingCover ?? (provider as unknown as { cover_url: string | null }).cover_url;
+  // The vendor's own profile images only — their banner and their logo. Never a
+  // listing's photo: that belongs to the service, not the business.
+  const cover = (provider as unknown as { cover_url: string | null }).cover_url;
   const logo = (provider as unknown as { logo_url: string | null }).logo_url;
   const cityName = (provider.cities as unknown as { name: string } | null)?.name;
   const providerPath = `/p/${provider.slug}`;

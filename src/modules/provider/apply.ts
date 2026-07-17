@@ -40,9 +40,15 @@ export interface ApplicationInput {
   description: string;
   /** They choose it here, so signing in never depends on an email arriving. */
   password: string;
+  /** The business's profile photo — required, shown to customers as its face. */
+  profilePhoto: File;
   /** Two, of two different kinds. validateIdSet is what says so. */
   ids: IdSubmission[];
 }
+
+const PROFILE_BUCKET = "provider-public";
+const ACCEPTED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 function slugify(businessName: string): string {
   const base = businessName
@@ -67,6 +73,15 @@ function validate(input: ApplicationInput): void {
   if (!input.cityId) throw new ProviderError("Choose the city you work in");
   if (input.description.trim().length < 20) {
     throw new ProviderError("Tell us a little more about your business — a sentence or two");
+  }
+  if (!input.profilePhoto || input.profilePhoto.size === 0) {
+    throw new ProviderError("Add a profile photo for your business");
+  }
+  if (input.profilePhoto.size > MAX_IMAGE_BYTES) {
+    throw new ProviderError("That profile photo is too large. Keep it under 10MB");
+  }
+  if (!ACCEPTED_IMAGE.includes(input.profilePhoto.type)) {
+    throw new ProviderError("The profile photo must be a JPG, PNG or WEBP image");
   }
   validateIdSet(input.ids);
 }
@@ -141,6 +156,22 @@ export async function submitApplication(input: ApplicationInput): Promise<{ prov
         { onConflict: "provider_id" },
       );
     if (contactError) throw new ProviderError(contactError.message);
+
+    // The profile photo goes in the public bucket — it is the business's face,
+    // shown to every customer — and its URL becomes the provider's logo.
+    const ext = input.profilePhoto.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const photoPath = `${provider.id}/profile.${ext}`;
+    const { error: photoError } = await db.storage
+      .from(PROFILE_BUCKET)
+      .upload(photoPath, input.profilePhoto, { contentType: input.profilePhoto.type, upsert: true });
+    if (photoError) throw new ProviderError(`We could not upload your profile photo: ${photoError.message}`);
+
+    const publicUrl = `${db.storage.from(PROFILE_BUCKET).getPublicUrl(photoPath).data.publicUrl}`;
+    const { error: logoError } = await db
+      .from("providers")
+      .update({ logo_url: publicUrl })
+      .eq("id", provider.id);
+    if (logoError) throw new ProviderError(logoError.message);
 
     for (const submission of input.ids) {
       await storeIdDocument(db, provider.id, submission, "public_application");

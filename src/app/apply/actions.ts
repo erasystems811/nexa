@@ -40,6 +40,10 @@ function readIds(formData: FormData): IdSubmission[] {
 
 export async function applyAction(_prev: ApplyState, formData: FormData): Promise<ApplyState> {
   const email = String(formData.get("email") ?? "").trim();
+  const profilePhoto = formData.get("profile_photo");
+  if (!(profilePhoto instanceof File) || profilePhoto.size === 0) {
+    return { error: "Add a profile photo for your business" };
+  }
 
   try {
     await submitApplication({
@@ -50,6 +54,7 @@ export async function applyAction(_prev: ApplyState, formData: FormData): Promis
       categoryId: String(formData.get("category_id") ?? ""),
       cityId: String(formData.get("city_id") ?? ""),
       description: String(formData.get("description") ?? ""),
+      profilePhoto,
       ids: readIds(formData),
     });
   } catch (e) {

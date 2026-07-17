@@ -144,15 +144,10 @@ export async function searchVendors(filters: {
 
   const vendors = [...byVendor.values()];
 
-  // A vendor with no cover of their own borrows their first service's photo —
-  // the picture they actually uploaded, which is what a customer expects to see.
-  const needCover = vendors.filter((v) => !v.coverUrl);
-  if (needCover.length > 0) {
-    const covers = await listingCovers(needCover.map((v) => v.listingId));
-    for (const v of needCover) {
-      v.coverUrl = covers.get(v.listingId) ?? null;
-    }
-  }
+  // A vendor's profile photo is their own — set on their profile, never borrowed
+  // from a listing. A listing's picture is that service's, not the business's, and
+  // showing it as the vendor's identity misrepresents them. Empty until they set
+  // one (required at application from now on).
 
   const { data: ratings } = await supabase
     .from("provider_ratings")

@@ -139,6 +139,20 @@ export function ApplyForm({
         />
       </label>
 
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Profile photo</span>
+        <input
+          type="file"
+          name="profile_photo"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          required
+          className="w-full rounded-xl border border-[color:var(--color-line)] bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--color-surface-sunk)] file:px-4 file:py-2 file:text-sm"
+        />
+        <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">
+          Your business&rsquo;s face on Nexa — a logo or a clear photo. JPG, PNG or WEBP, under 10MB.
+        </span>
+      </label>
+
       <div className="rounded-[var(--radius-card)] bg-[color:var(--color-surface-sunk)] p-4">
         <p className="text-sm font-medium">Two means of identification</p>
         <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">

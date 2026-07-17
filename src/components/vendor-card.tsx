@@ -15,14 +15,20 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
       href={`/p/${vendor.slug}` as Route}
       className="group block overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]/30 hover:shadow-card-hover"
     >
-      <Photo
-        src={vendor.coverUrl}
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, 300px"
-        className="aspect-[16/10]"
-        imageClassName="transition duration-300 group-hover:scale-[1.03]"
-      />
+      {vendor.logoUrl ? (
+        <Photo
+          src={vendor.logoUrl}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 50vw, 300px"
+          className="aspect-[16/10]"
+          imageClassName="transition duration-300 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div className="flex aspect-[16/10] items-center justify-center bg-[color:var(--color-accent-soft)] text-3xl font-semibold text-[color:var(--color-accent)]">
+          {vendor.businessName.charAt(0).toUpperCase()}
+        </div>
+      )}
 
       <div className="p-3">
         <div className="flex items-center gap-1.5">
