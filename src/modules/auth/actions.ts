@@ -190,6 +190,17 @@ export async function signIn(
     return { error: "Admin accounts must sign in from Nexa Admin." };
   }
 
+  // The customer marketplace is its own app with its own accounts. A vendor
+  // account is a separate identity that belongs to the vendor app, and it cannot
+  // sign in here — this is what keeps the customer app from ever holding, or even
+  // seeing, a vendor session. Being a vendor is simply irrelevant to the customer
+  // app; to shop, you create a customer account, exactly like your clinic's
+  // hospital and super-admin logins.
+  if (!adminIntent && surface !== "studio" && role === "provider") {
+    await supabase.auth.signOut();
+    return { error: "That is a vendor account. Create a customer account to shop on Nexa." };
+  }
+
   revalidatePath("/", "layout");
 
   // You stay on the site you signed in on. The three surfaces are standalone and

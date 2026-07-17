@@ -32,6 +32,30 @@ export const SURFACE_LABEL: Record<Surface, string | null> = {
   admin: "admin",
 };
 
+/**
+ * The auth-cookie base name per surface — the root of surface independence.
+ *
+ * Each app stores its session under a DIFFERENT cookie name, so a login on one
+ * app is invisible to the others even when all three share a single host (dev,
+ * and the single-domain deploy where there are no subdomains to scope by). The
+ * customer app's Supabase client reads only the customer cookie, so it cannot
+ * see — cannot even ask — whether the visitor also holds a vendor or admin
+ * session. That is the clinic model: three separate apps, wired only by data.
+ *
+ * Host-only scoping (see cookieDomain) already keeps sessions apart ACROSS
+ * subdomains; this keeps them apart everywhere else too, which is where the
+ * coupling actually survived.
+ */
+const SURFACE_COOKIE_NAME: Record<Surface, string> = {
+  customer: "nexa-customer-auth",
+  studio: "nexa-vendor-auth",
+  admin: "nexa-admin-auth",
+};
+
+export function authCookieName(surface: Surface | null | undefined): string {
+  return SURFACE_COOKIE_NAME[surface ?? "customer"];
+}
+
 export function rootDomain(): string | undefined {
   const v = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
   return v ? v.toLowerCase().replace(/^\.+/, "") : undefined;

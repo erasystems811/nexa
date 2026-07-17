@@ -128,8 +128,8 @@ export default async function ProviderDetailPage({ params }: { params: Promise<{
           <span
             className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${
               identity.verified
-                ? "bg-emerald-50 text-[color:var(--color-success)]"
-                : "bg-amber-50 text-amber-900"
+                ? "bg-[color:var(--color-success-soft)] text-[color:var(--color-success)]"
+                : "bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)]"
             }`}
           >
             {identity.verified ? "Verified" : `${waiting.length} waiting`}

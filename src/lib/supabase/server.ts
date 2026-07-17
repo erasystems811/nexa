@@ -1,22 +1,29 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { publicEnv } from "@/lib/env";
-import { cookieDomain } from "@/lib/surfaces";
+import { authCookieName, cookieDomain, surfaceForHost } from "@/lib/surfaces";
 import type { Database } from "@/lib/db/types";
 
 /**
  * Request-scoped client carrying the caller's session. Every query it makes is
  * subject to RLS — this is the client almost all app code should use.
+ *
+ * The session is read from the cookie named for THIS surface, so the customer
+ * app reads only customer sessions, the vendor app only vendor sessions, and so
+ * on. The three apps cannot see each other's logins.
  */
 export async function createClient() {
   const cookieStore = await cookies();
+  const host = (await headers()).get("host");
+  const cookieName = authCookieName(surfaceForHost(host));
 
   return createServerClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      cookieOptions: { name: cookieName },
       cookies: {
         getAll() {
           return cookieStore.getAll();

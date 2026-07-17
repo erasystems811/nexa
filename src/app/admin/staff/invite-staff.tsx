@@ -18,7 +18,7 @@ export function InviteStaff() {
   }
 
   return (
-    <form action={action} className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-4">
+    <form action={action} className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-4">
       <h2 className="text-sm font-semibold">Add a staff member</h2>
       <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
         Creates their own login and starts them on the chosen role&rsquo;s views. You can grant extra views after. They
