@@ -34,11 +34,14 @@ export function ListingForm({
   action,
   defaults = {},
   submitLabel,
+  showPhotos = false,
 }: {
   categories: Category[];
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   defaults?: Defaults;
   submitLabel: string;
+  /** Create shows a photo picker so the listing arrives with its pictures. */
+  showPhotos?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [priceType, setPriceType] = useState(defaults.price_type ?? "fixed");
@@ -118,6 +121,23 @@ export function ListingForm({
           defaultValue={defaults.caution_fee}
           hint="Held separately on rentals and refunded when items come back in good condition."
         />
+      ) : null}
+
+      {showPhotos ? (
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Photos</span>
+          <input
+            type="file"
+            name="photos"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            multiple
+            className="w-full rounded-xl border border-[color:var(--color-line)] bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--color-surface-sunk)] file:px-4 file:py-2 file:text-sm"
+          />
+          <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">
+            Add at least one clear photo of your service. JPG, PNG or WEBP, under 10MB each. They go
+            to Admin with the listing.
+          </span>
+        </label>
       ) : null}
 
       {state.error ? <Alert>{state.error}</Alert> : null}

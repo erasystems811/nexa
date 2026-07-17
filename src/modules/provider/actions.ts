@@ -135,6 +135,14 @@ export async function createListingAction(_prev: FormState, formData: FormData):
   let id: string;
   try {
     id = await createListing(p.id, readListingForm(formData));
+
+    // The photos picked on the create form. They upload against the new listing
+    // and land as pending_approval alongside it, so the listing reaches Admin
+    // with its pictures instead of arriving empty and gaining them later.
+    const photos = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+    for (const photo of photos) {
+      await uploadMedia(p.id, id, photo);
+    }
   } catch (e) {
     return fail(e);
   }

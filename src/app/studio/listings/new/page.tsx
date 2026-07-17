@@ -42,7 +42,7 @@ export default async function NewListing() {
     <>
       <StudioBack fallback={"/listings" as Route} className="mb-4" />
       <PageHeader title="New listing" />
-      <ListingForm categories={categories} action={createListingAction} submitLabel="Create listing" />
+      <ListingForm categories={categories} action={createListingAction} submitLabel="Create listing" showPhotos />
     </>
   );
 }
