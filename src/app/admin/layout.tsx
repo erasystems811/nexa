@@ -1,10 +1,10 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { requireSession, signOut } from "@/modules/auth";
 import { currentStaff, recordLogin, can, PERMISSIONS as P } from "@/modules/admin";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
+import { AdminNavTabs } from "./nav-tabs";
 import type { Permission } from "@/modules/admin";
 
 /** Nexa Admin Console. Internal staff only. */
@@ -35,7 +35,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-dvh bg-[color:var(--color-surface-sunk)]">
-      <header className="border-b border-[color:var(--color-line)] bg-white">
+      <header className="sticky top-0 z-20 border-b border-[color:var(--color-line)]/60 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
           <Link href="/" aria-label="Nexa Admin home">
             <Logo label="Nexa Admin" markClassName="size-8 rounded-xl" textClassName="text-sm" />
@@ -46,20 +46,7 @@ export default async function AdminLayout({
             </Button>
           </form>
         </div>
-        <nav className="mx-auto max-w-4xl overflow-x-auto px-5">
-          <ul className="flex gap-1 pb-2">
-            {visible.map((t) => (
-              <li key={t.href}>
-                <Link
-                  href={t.href as Route}
-                  className="block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--color-ink-muted)] hover:bg-[color:var(--color-surface-sunk)]"
-                >
-                  {t.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <AdminNavTabs tabs={visible} />
       </header>
 
       <div className="mx-auto max-w-4xl px-5 py-8">{children}</div>

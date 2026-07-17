@@ -187,9 +187,10 @@ function Btn({
       onClick={onClick}
       disabled={disabled}
       className={
-        primary
-          ? "h-11 rounded-lg bg-[color:var(--color-ink)] px-4 text-sm font-medium text-white disabled:opacity-40"
-          : "h-11 rounded-lg border border-[color:var(--color-line)] px-4 text-sm font-medium disabled:opacity-40"
+        (primary
+          ? "h-11 rounded-lg bg-[color:var(--color-ink)] px-4 text-sm font-medium text-white hover:opacity-90"
+          : "h-11 rounded-lg border border-[color:var(--color-line)] px-4 text-sm font-medium hover:bg-[color:var(--color-surface-sunk)]") +
+        " transition-[opacity,transform,background-color] duration-150 active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100"
       }
     >
       {children}

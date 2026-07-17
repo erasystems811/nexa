@@ -5,6 +5,7 @@ import { mySubscription, currentProvider, myIdentityStatus } from "@/modules/pro
 import { SubscriptionBanner } from "@/components/subscription-banner";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui";
+import { StudioTabBar } from "./tab-bar";
 
 /** Nexa Business Studio. Never "Vendor Portal". */
 export default async function StudioLayout({
@@ -18,18 +19,9 @@ export default async function StudioLayout({
   const provider = await currentProvider();
   const identity = provider ? await myIdentityStatus(provider.id) : null;
 
-  const tabs = [
-    { href: "/", label: "Home" },
-    { href: "/listings", label: "Listings" },
-    { href: "/orders", label: "Orders" },
-    { href: "/wallet", label: "Wallet" },
-    { href: "/reviews", label: "Reviews" },
-    { href: "/profile", label: "Profile" },
-  ] as const;
-
   return (
     <div className="min-h-dvh bg-[color:var(--color-surface-sunk)] pb-20">
-      <header className="border-b border-[color:var(--color-line)] bg-white">
+      <header className="sticky top-0 z-20 border-b border-[color:var(--color-line)]/60 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-4">
           <Link href="/" aria-label="Business Studio home">
             <Logo label="Business Studio" markClassName="size-8 rounded-xl" textClassName="text-sm" />
@@ -52,7 +44,7 @@ export default async function StudioLayout({
         {identity && !identity.verified ? (
           <Link
             href={"/verification" as Route}
-            className="mb-4 block rounded-[var(--radius-card)] bg-amber-50 p-4 hover:bg-amber-100"
+            className="mb-4 block rounded-[var(--radius-card)] bg-amber-50 p-4 transition hover:bg-amber-100"
           >
             <p className="text-sm font-medium text-amber-900">
               Nexa needs to know who you are
@@ -69,21 +61,7 @@ export default async function StudioLayout({
         {children}
       </div>
 
-      {/* Mobile-first: a bottom tab bar, the way Section 16 asks. */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-[color:var(--color-line)] bg-white">
-        <ul className="mx-auto flex max-w-2xl">
-          {tabs.map((t) => (
-            <li key={t.href} className="flex-1">
-              <Link
-                href={t.href as Route}
-                className="block py-3 text-center text-[11px] font-medium text-[color:var(--color-ink-muted)]"
-              >
-                {t.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <StudioTabBar />
     </div>
   );
 }

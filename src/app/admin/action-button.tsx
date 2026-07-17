@@ -43,10 +43,10 @@ export function ActionButton({
 
   const cls =
     variant === "primary"
-      ? "bg-[color:var(--color-ink)] text-white"
+      ? "bg-[color:var(--color-ink)] text-white hover:opacity-90"
       : variant === "danger"
-        ? "border border-[color:var(--color-line)] text-[color:var(--color-danger)]"
-        : "border border-[color:var(--color-line)]";
+        ? "border border-[color:var(--color-line)] text-[color:var(--color-danger)] hover:bg-red-50"
+        : "border border-[color:var(--color-line)] hover:bg-[color:var(--color-surface-sunk)]";
 
   return (
     <>
@@ -54,7 +54,7 @@ export function ActionButton({
         type="button"
         onClick={onClick}
         disabled={pending}
-        className={`h-9 rounded-lg px-3 text-xs font-medium disabled:opacity-40 ${cls}`}
+        className={`h-9 rounded-lg px-3 text-xs font-medium transition-[opacity,transform,background-color] duration-150 active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 ${cls}`}
       >
         {pending ? "…" : label}
       </button>
