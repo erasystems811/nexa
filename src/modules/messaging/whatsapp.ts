@@ -9,7 +9,7 @@ import { scanMessageBody } from "./safety";
 import { ensureWhatsappCustomer } from "@/modules/auth/whatsappProvisioning";
 import { runColdDiscovery } from "@/modules/discovery";
 import { acceptOfferAsAdmin, sendOfferAsAdmin } from "@/modules/bookings/offers";
-import { checkout, cancelBookingByCustomer, BookingsError } from "@/modules/bookings";
+import { checkout, cancelBookingByCustomer, acceptBooking, rejectBooking, BookingsError } from "@/modules/bookings";
 
 interface WhatsappTextMessage {
   waId: string;
@@ -1086,6 +1086,111 @@ export async function notifyWhatsappOfferIfBound(input: {
 }): Promise<void> {
   if (!whatsappIsConfigured()) return;
   await sendOfferAcceptButton(input);
+}
+
+/**
+ * A booking just became genuinely paid (mock gateway settles instantly inside
+ * checkout(); a real one only reaches this once Flutterwave's own webhook
+ * confirms the charge - see src/app/api/webhooks/flutterwave/route.ts). This
+ * is the one thing that tells the vendor a real booking now exists at all -
+ * without it, a vendor who only ever uses WhatsApp would have no way to know
+ * "the customer accepted a price" isn't the same as "there's a booking
+ * waiting for me to accept", and might assume work should just start.
+ *
+ * Best-effort and silent for a vendor who was never WhatsApp-bound (a normal
+ * web-only vendor still sees this exactly where they always have, in
+ * Business Studio) - this only adds a second, WhatsApp-native way to see it.
+ */
+export async function notifyVendorOfNewBooking(bookingId: string): Promise<void> {
+  if (!whatsappIsConfigured()) return;
+
+  const db = createAdminClient();
+  const { data: booking } = await db
+    .from("bookings")
+    .select("provider_id, scheduled_start, agreed_price_kobo, listings ( title )")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (!booking) return;
+
+  const { data: providerContact } = await db
+    .from("provider_contacts")
+    .select("contact_phone")
+    .eq("provider_id", booking.provider_id)
+    .maybeSingle();
+
+  const vendorWaId = toWhatsAppNumber(providerContact?.contact_phone);
+  if (!vendorWaId) return;
+
+  const listingTitle = (booking.listings as unknown as { title: string } | null)?.title ?? "a listing";
+  const amountNaira = (booking.agreed_price_kobo / 100).toLocaleString("en-NG");
+  const when = new Date(booking.scheduled_start).toLocaleString("en-NG");
+
+  const result = await sendWhatsappButtons({
+    to: vendorWaId,
+    body:
+      `New paid booking! "${listingTitle}" for ${when} - ₦${amountNaira}, held safely by Nexa. ` +
+      `The customer is waiting on you to accept or decline.`,
+    buttons: [
+      { id: `accept_booking:${bookingId}`, title: "Accept" },
+      { id: `decline_booking:${bookingId}`, title: "Decline" },
+    ],
+  });
+
+  if (result.windowClosed) {
+    // Can't carry buttons as a template - nudge them, same as the offer flow.
+    // Business Studio remains the reliable fallback for this one case; unlike
+    // the offer-accept button, this isn't retried on the vendor's next reply.
+    await sendWhatsappTemplate({ to: vendorWaId, name: "there" });
+  }
+}
+
+/**
+ * A tap on a booking's Accept/Decline button. Same reasoning as
+ * handleOfferButtonReply: no session exists to authorise this, so the check
+ * is done by hand against the booking's own vendor contact number.
+ */
+export async function handleBookingButtonReply(input: { waId: string; buttonId: string }): Promise<boolean> {
+  const isAccept = input.buttonId.startsWith("accept_booking:");
+  const isDecline = input.buttonId.startsWith("decline_booking:");
+  if (!isAccept && !isDecline) return false;
+
+  const bookingId = input.buttonId.split(":")[1];
+  if (!bookingId) return false;
+
+  const db = createAdminClient();
+  const { data: booking } = await db
+    .from("bookings")
+    .select("provider_id, status")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (!booking) return true;
+
+  const { data: providerContact } = await db
+    .from("provider_contacts")
+    .select("contact_phone")
+    .eq("provider_id", booking.provider_id)
+    .maybeSingle();
+
+  if (toWhatsAppNumber(providerContact?.contact_phone) !== input.waId) return true;
+
+  try {
+    if (isAccept) {
+      await acceptBooking(bookingId);
+      await sendWhatsappText({ to: input.waId, body: "Accepted - the customer has been notified." });
+    } else {
+      await rejectBooking(bookingId);
+      await sendWhatsappText({ to: input.waId, body: "Declined - the customer has been refunded in full." });
+    }
+  } catch (error) {
+    await sendWhatsappText({
+      to: input.waId,
+      body: error instanceof BookingsError ? error.message : "Could not update that booking - please try again.",
+    });
+  }
+
+  return true;
 }
 
 /** Called after every inbound customer text - see handleIncomingWhatsappText. */

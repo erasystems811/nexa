@@ -9,6 +9,7 @@ import { serverEnv } from "@/lib/env";
 // eslint-disable-next-line no-restricted-imports -- see above
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordHold } from "@/modules/payments";
+import { notifyVendorOfNewBooking } from "@/modules/messaging/whatsapp";
 import type { Json } from "@/lib/db/generated";
 
 /**
@@ -243,6 +244,11 @@ async function recordCompletedCharge(
 
   if (booking && booking.status === "pending") {
     await db.from("bookings").update({ status: "paid_held" }).eq("id", payment.booking_id);
+    try {
+      await notifyVendorOfNewBooking(payment.booking_id);
+    } catch {
+      // Best-effort: the booking itself is already correctly paid and held.
+    }
   }
 }
 

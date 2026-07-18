@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { serverEnv } from "@/lib/env";
-import { handleIncomingWhatsappText, handleListingSelected, handleOfferButtonReply } from "@/modules/messaging/whatsapp";
+import { handleIncomingWhatsappText, handleListingSelected, handleOfferButtonReply, handleBookingButtonReply } from "@/modules/messaging/whatsapp";
 import { isEnabled, FLAGS } from "@/modules/settings/flags";
 
 /**
@@ -143,10 +143,11 @@ export async function POST(request: NextRequest) {
         }
 
         if (message.type === "interactive" && message.interactive?.button_reply?.id) {
-          await handleOfferButtonReply({
-            waId: message.from,
-            buttonId: message.interactive.button_reply.id,
-          });
+          const buttonId = message.interactive.button_reply.id;
+          const wasBookingButton = await handleBookingButtonReply({ waId: message.from, buttonId });
+          if (!wasBookingButton) {
+            await handleOfferButtonReply({ waId: message.from, buttonId });
+          }
           continue;
         }
       }

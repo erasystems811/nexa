@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { holdFunds, refund, settleVendorPayout, vendorCanBePaid } from "@/modules/payments";
+import { notifyVendorOfNewBooking } from "@/modules/messaging/whatsapp";
 import { publicEnv } from "@/lib/env";
 import { assertTransition } from "./state";
 import type { BookingStatus, Database } from "@/lib/db/types";
@@ -226,6 +227,17 @@ async function transition(bookingId: string, to: BookingStatus) {
     .eq("id", bookingId);
 
   if (error) throw new BookingsError(`Could not update the booking: ${error.message}`);
+
+  // The mock gateway's only route to paid_held. A real gateway reaches the
+  // same status through its own webhook (see flutterwave/route.ts), which
+  // notifies separately since it never calls this function.
+  if (to === "paid_held") {
+    try {
+      await notifyVendorOfNewBooking(bookingId);
+    } catch {
+      // Best-effort: the booking itself is already correctly paid and held.
+    }
+  }
 }
 
 /**
