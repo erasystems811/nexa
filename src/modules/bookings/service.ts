@@ -46,6 +46,12 @@ export interface CheckoutInput {
   scheduledEnd?: string | null;
   address?: string;
   notes?: string;
+  /** Where the payment gateway sends the customer back to, given the new
+   *  booking's id (not known until the booking is created). Defaults to the
+   *  logged-in order page; a WhatsApp-only customer has no session to view
+   *  that with, so the WhatsApp checkout path overrides this to its own
+   *  no-login tracking link instead. */
+  buildRedirectUrl?: (bookingId: string) => string;
 }
 
 export interface CheckoutResult {
@@ -113,7 +119,9 @@ export async function checkout(
       // The whole price. Nexa holds all of it, and works out nobody's cut.
       amountKobo: booking.agreed_price_kobo,
       customer,
-      redirectUrl: `${publicEnv.NEXT_PUBLIC_SITE_URL}/orders/${booking.id}`,
+      redirectUrl: input.buildRedirectUrl
+        ? input.buildRedirectUrl(booking.id)
+        : `${publicEnv.NEXT_PUBLIC_SITE_URL}/orders/${booking.id}`,
     });
 
     // Only say a booking is paid when it IS paid.
@@ -265,6 +273,40 @@ export async function rejectBooking(bookingId: string, reason?: string): Promise
   });
 
   await transition(bookingId, "rejected");
+}
+
+/**
+ * The customer's own free cancellation. Only before the vendor has accepted -
+ * once they have, they've committed to arranging their own time around it,
+ * so this stops being a clean no-harm action and the booking is no longer
+ * cancellable this way. A full, automatic refund, no admin in the loop,
+ * mirroring rejectBooking's shape but customer- rather than vendor-initiated.
+ */
+export async function cancelBookingByCustomer(bookingId: string): Promise<void> {
+  const db = createAdminClient();
+  const { data: booking } = await db
+    .from("bookings")
+    .select("status, agreed_price_kobo")
+    .eq("id", bookingId)
+    .single();
+
+  if (!booking) throw new BookingsError("No such booking");
+
+  if (booking.status !== "paid_held") {
+    throw new BookingsError(
+      booking.status === "pending"
+        ? "This booking hasn't been paid for yet, so there's nothing to refund."
+        : "This booking has already been accepted and can no longer be cancelled this way.",
+    );
+  }
+
+  await refund({
+    bookingId,
+    amountKobo: booking.agreed_price_kobo,
+    reason: "Customer cancelled before the vendor accepted",
+  });
+
+  await transition(bookingId, "cancelled");
 }
 
 /**

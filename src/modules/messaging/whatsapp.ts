@@ -1,14 +1,15 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { serverEnv } from "@/lib/env";
+import { serverEnv, publicEnv } from "@/lib/env";
 import type { ModerationFlagReason } from "@/lib/db/types";
 import { toWhatsAppNumber } from "@/lib/phone";
+import { createOrderAccessToken } from "@/lib/order-access";
 import { scanMessageBody } from "./safety";
 import { ensureWhatsappCustomer } from "@/modules/auth/whatsappProvisioning";
 import { runColdDiscovery } from "@/modules/discovery";
 import { acceptOfferAsAdmin, sendOfferAsAdmin } from "@/modules/bookings/offers";
-import { checkout, BookingsError } from "@/modules/bookings";
+import { checkout, cancelBookingByCustomer, BookingsError } from "@/modules/bookings";
 
 interface WhatsappTextMessage {
   waId: string;
@@ -46,9 +47,11 @@ export async function relayDashboardMessageToWhatsapp(input: {
   const targetWaId = side === "customer" ? context.vendorWaId : context.customerWaId;
   if (!targetWaId) return;
 
+  const body = formatRelayText(side, input.body, side === "customer" && context.vendorJustBound);
+
   await sendWhatsappText({
     to: targetWaId,
-    body: formatRelayText(side, input.body),
+    body,
     nudgeName: side === "customer" ? context.vendorName : context.customerName,
   });
 }
@@ -70,8 +73,13 @@ const REFERENCE = /booking reference:?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0
  * bot can't be a one-way door. Matched at the start of the message so "start
  * over, I need a photographer instead" both exits AND hands the rest straight
  * to a fresh search, in one message.
+ *
+ * Deliberately does NOT include "cancel" - that word means "cancel my
+ * booking" once one exists, and conflating the two would make a customer
+ * trying to cancel a real, paid booking get bounced to search results
+ * instead.
  */
-const EXIT_COMMANDS = /^(menu|start over|new search|cancel|exit|end chat)\b[,:.]?\s*/i;
+const EXIT_COMMANDS = /^(menu|start over|new search|exit|end chat)\b[,:.]?\s*/i;
 
 function parseExitIntent(text: string): { rest: string } | null {
   const trimmed = text.trim();
@@ -321,6 +329,13 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
     }
   }
 
+  // "cancel" means cancel a paid booking, not leave the chat - kept separate
+  // from EXIT_COMMANDS above for exactly that reason.
+  if (resolvedSide === "customer" && /^cancel\b/i.test(input.text.trim())) {
+    const handled = await tryCancelBookingFromWhatsapp({ conversationId, waId: input.waId });
+    if (handled) return;
+  }
+
   // An accepted offer with nothing booked yet means this reply is the date/
   // time answer, not ordinary chat - the whole point is that a customer never
   // has to leave WhatsApp to get from "agreed" to "paid".
@@ -400,7 +415,7 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
   if (targetWaId && context) {
     await sendWhatsappText({
       to: targetWaId,
-      body: formatRelayText(resolvedSide, input.text),
+      body: formatRelayText(resolvedSide, input.text, resolvedSide === "customer" && context.vendorJustBound),
       // If their 24-hour window has shut, this is the name the template greets.
       nudgeName: resolvedSide === "customer" ? context.vendorName : context.customerName,
     });
@@ -447,6 +462,10 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
   /** Who the template greets. A name, never a number — that is the whole point. */
   customerName: string;
   vendorName: string;
+  /** True exactly once: the first message this vendor has ever been relayed,
+   * on any conversation - the moment to explain how replying and quoting
+   * work, since nothing else ever tells them. */
+  vendorJustBound: boolean;
 } | null> {
   const db = createAdminClient();
 
@@ -485,6 +504,7 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
   // messaged Nexa and their 24-hour window is shut), and everything after it
   // flows normally.
   let vendorWaId = providerContactId ? byId.get(providerContactId) ?? null : null;
+  let vendorJustBound = false;
   if (!vendorWaId && conversation.provider_id) {
     const { data: providerContact } = await db
       .from("provider_contacts")
@@ -499,16 +519,28 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
     // never a code) is recognised next time instead of falling through to
     // cold discovery as a stranger.
     if (vendorWaId) {
-      const { data: vendorContact } = await db
+      const { data: existingVendorContact } = await db
         .from("whatsapp_contacts")
-        .upsert({ wa_id: vendorWaId }, { onConflict: "wa_id" })
         .select("id")
-        .single();
+        .eq("wa_id", vendorWaId)
+        .maybeSingle();
 
-      if (vendorContact) {
+      vendorJustBound = !existingVendorContact;
+
+      const vendorContactId =
+        existingVendorContact?.id ??
+        (
+          await db
+            .from("whatsapp_contacts")
+            .upsert({ wa_id: vendorWaId }, { onConflict: "wa_id" })
+            .select("id")
+            .single()
+        ).data?.id;
+
+      if (vendorContactId) {
         await db
           .from("whatsapp_threads")
-          .update({ provider_whatsapp_contact_id: vendorContact.id })
+          .update({ provider_whatsapp_contact_id: vendorContactId })
           .eq("conversation_id", conversationId);
       }
     }
@@ -521,6 +553,7 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
     vendorWaId,
     customerName: customer?.full_name?.trim() || "there",
     vendorName: provider?.business_name?.trim() || "there",
+    vendorJustBound,
   };
 }
 
@@ -799,9 +832,19 @@ export async function handleListingSelected(input: { waId: string; listingId: st
     to: input.waId,
     body:
       `You're connected with ${provider?.business_name ?? "the vendor"} about "${listing.title}". Ask away!\n\n` +
-      `(Want something else instead? Just type "menu" anytime.)`,
+      KEYWORD_GLOSSARY,
   });
 }
+
+/**
+ * Told once, right as a conversation actually begins - not left for a
+ * customer to discover by accident, and not repeated on every message either.
+ * Update this if a new keyword is ever added anywhere in this file.
+ */
+const KEYWORD_GLOSSARY =
+  `A few things you can type anytime:\n` +
+  `• "menu" or "start over" — leave this chat and search for something else\n` +
+  `• "cancel" — cancel a booking you've already paid for, for a refund`;
 
 /**
  * Sends (or re-sends) the WhatsApp-native "Accept" button for a pending offer,
@@ -888,6 +931,53 @@ async function tryQuoteFromVendorText(input: {
  * No extra state to track: once checkout() below creates the booking, this
  * naturally stops matching anything on its own.
  */
+/**
+ * "cancel" typed on the conversation for a booking that's actually theirs -
+ * cancelBookingByCustomer itself enforces the paid_held-only rule, so this is
+ * just finding the right booking and turning its answer into a reply.
+ */
+async function tryCancelBookingFromWhatsapp(input: {
+  conversationId: string;
+  waId: string;
+}): Promise<boolean> {
+  const db = createAdminClient();
+
+  const { data: conversation } = await db
+    .from("conversations")
+    .select("customer_id, listing_id")
+    .eq("id", input.conversationId)
+    .maybeSingle();
+
+  if (!conversation?.listing_id) return false;
+
+  const { data: booking } = await db
+    .from("bookings")
+    .select("id")
+    .eq("customer_id", conversation.customer_id)
+    .eq("listing_id", conversation.listing_id)
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!booking) {
+    await sendWhatsappText({ to: input.waId, body: "I don't see a booking to cancel here." });
+    return true;
+  }
+
+  try {
+    await cancelBookingByCustomer(booking.id);
+    await sendWhatsappText({ to: input.waId, body: "Done - your booking is cancelled and refunded in full." });
+  } catch (error) {
+    await sendWhatsappText({
+      to: input.waId,
+      body: error instanceof BookingsError ? error.message : "I couldn't cancel that booking - please try again.",
+    });
+  }
+
+  return true;
+}
+
 async function findAcceptedOfferAwaitingCheckout(conversationId: string): Promise<{
   listingId: string;
   customerId: string;
@@ -941,9 +1031,19 @@ async function completeCheckoutFromWhatsapp(input: {
     .eq("id", input.customerId)
     .maybeSingle();
 
+  const trackingUrlFor = (bookingId: string) =>
+    `${publicEnv.NEXT_PUBLIC_SITE_URL}/track/${bookingId}?t=${createOrderAccessToken(bookingId)}`;
+
   try {
     const result = await checkout(
-      { listingId: input.listingId, scheduledStart: input.scheduledStart },
+      {
+        listingId: input.listingId,
+        scheduledStart: input.scheduledStart,
+        // A WhatsApp-only customer has no session, so the gateway must send
+        // them back to the no-login tracking link, not the login-gated
+        // /orders page a web customer would land on.
+        buildRedirectUrl: trackingUrlFor,
+      },
       {
         id: input.customerId,
         // No real email exists for a WhatsApp-only account - this is never
@@ -958,7 +1058,7 @@ async function completeCheckoutFromWhatsapp(input: {
       to: input.waId,
       body: result.checkoutUrl
         ? `Almost there - tap to pay: ${result.checkoutUrl}`
-        : "Payment received! Your booking is confirmed.",
+        : `Payment received! Your booking is confirmed. Track it anytime here: ${trackingUrlFor(result.bookingId)}`,
     });
   } catch (error) {
     await sendWhatsappText({
@@ -1042,9 +1142,20 @@ export async function handleOfferButtonReply(input: { waId: string; buttonId: st
   });
 }
 
-function formatRelayText(from: WhatsappSide, body: string): string {
+function formatRelayText(from: WhatsappSide, body: string, explainToVendor = false): string {
   const label = from === "customer" ? "Customer" : "Vendor";
-  return `${label} via Nexa:\n${body}`;
+  const relayed = `${label} via Nexa:\n${body}`;
+
+  if (!explainToVendor) return relayed;
+
+  // The vendor's very first message ever through Nexa - nothing else tells
+  // them replying works like normal WhatsApp, or that a price is just typed
+  // as an amount, so this is the one place it has to be said.
+  return (
+    `${relayed}\n\n` +
+    `(This is a customer inquiry through Nexa - reply normally to chat with them. ` +
+    `When you're ready to name a price, just send the amount, e.g. "150000" or "150k".)`
+  );
 }
 
 function maskPhone(value: string): string {

@@ -15,6 +15,7 @@ export {
   resumePayment,
   acceptBooking,
   rejectBooking,
+  cancelBookingByCustomer,
   startWork,
   confirmWithCode,
   raiseDispute,
@@ -23,7 +24,7 @@ export {
   type CheckoutResult,
 } from "./service";
 
-export { listMyOrders, getMyOrder } from "./queries";
+export { listMyOrders, getMyOrder, getOrderAsAdmin } from "./queries";
 export { listOffers, sendOffer, acceptOffer } from "./offers";
 export {
   TRANSITIONS,
