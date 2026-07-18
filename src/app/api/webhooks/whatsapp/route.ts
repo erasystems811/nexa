@@ -101,6 +101,16 @@ export async function POST(request: NextRequest) {
           from?: string;
           id?: string;
         }>;
+        // Delivery receipts for messages Nexa sent (sent/delivered/read/failed).
+        // Meta only sends these once the `statuses` webhook field is subscribed
+        // in WhatsApp Manager - logged here, not acted on, purely so a failed
+        // send shows its actual reason in Railway logs instead of vanishing.
+        statuses?: Array<{
+          id?: string;
+          status?: string;
+          recipient_id?: string;
+          errors?: Array<{ code?: number; title?: string; message?: string }>;
+        }>;
       };
 
       const businessPhoneId = value.metadata?.phone_number_id;
@@ -138,6 +148,14 @@ export async function POST(request: NextRequest) {
             buttonId: message.interactive.button_reply.id,
           });
           continue;
+        }
+      }
+
+      for (const status of Array.isArray(value.statuses) ? value.statuses : []) {
+        if (status.errors?.length) {
+          console.error("WhatsApp delivery status (failed)", JSON.stringify(status));
+        } else {
+          console.log("WhatsApp delivery status", status.id, status.status, status.recipient_id);
         }
       }
     }
