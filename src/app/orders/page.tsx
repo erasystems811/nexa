@@ -67,12 +67,11 @@ export default async function OrdersPage({
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
       <BackBar className="mb-4" />
-      <PageHeader title="My orders" subtitle="Everything you have booked, and where each one stands." />
+      <PageHeader title="My orders" />
 
       {orders.length === 0 ? (
         <Card className="text-sm text-[color:var(--color-ink-muted)]">
-          Nothing booked yet. When you book a vendor, it shows up here — with the code that releases
-          their payment once your event is done.
+          Nothing booked yet.
         </Card>
       ) : (
         <>
@@ -104,7 +103,7 @@ export default async function OrdersPage({
           {current === "unfinished" ? (
             <Section
               title="Not finished"
-              hint="You started these but never paid. Finish now — nothing is booked until you do."
+              hint="Started but not paid yet — finish to confirm."
               empty="Nothing unpaid. You're all caught up."
             >
               {unfinished.map((o) => (

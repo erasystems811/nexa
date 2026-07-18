@@ -30,14 +30,11 @@ export default async function HomePage() {
             <Logo markClassName="size-9 rounded-[1rem]" textClassName="text-base" />
           </Link>
           <nav className="flex items-center gap-5 text-sm">
-            <Link href="/apply" className="hidden text-[color:var(--color-ink-muted)] transition-colors hover:text-[color:var(--color-ink)] sm:block">
+            <Link href="/apply" className="text-[color:var(--color-ink-muted)] transition-colors hover:text-[color:var(--color-ink)]">
               Apply to be a vendor
             </Link>
             {session ? (
-              <>
-                <Link href="/orders" className="text-[color:var(--color-ink-muted)] transition-colors hover:text-[color:var(--color-ink)]">My orders</Link>
-                <Link href="/account" className="font-medium">Account</Link>
-              </>
+              <Link href="/account" className="font-medium">Account</Link>
             ) : (
               <Link
                 href="/login"
@@ -64,17 +61,12 @@ export default async function HomePage() {
               <br />
               <span className="text-[color:var(--color-accent)]">booked with confidence.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-[color:var(--color-ink-muted)]">
-              Find verified caterers, decorators, DJs, transport services and more. Nexa keeps your
-              payment protected until your event is successfully completed.
-            </p>
-            <div className="mt-7">
+            <div className="mt-8">
               <SearchBar />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge tone="accent">Verified vendors</Badge>
               <Badge>Payment held until delivery</Badge>
-              <Badge>Event-ready services</Badge>
             </div>
           </div>
         </section>
@@ -133,34 +125,13 @@ export default async function HomePage() {
             <p className="text-xs font-medium uppercase tracking-wide text-white/60">Plan My Event</p>
             <h2 className="mt-1.5 font-display text-2xl">Let Nexa build the whole event for you.</h2>
             <p className="mt-2 max-w-md text-sm text-white/75">
-              {planMyEventLive
-                ? "Tell us the event, budget and guest count — we'll assemble a package."
-                : "Coming soon — tell us the event, and we'll assemble the whole package for you."}
+              {planMyEventLive ? "Tell us the event — we'll assemble the package." : "Coming soon."}
             </p>
-          </div>
-        </section>
-
-        <section className="mt-6">
-          <div className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-white p-7 text-center">
-            <h2 className="text-lg font-semibold">Do you provide an event service?</h2>
-            <p className="mx-auto mt-1.5 max-w-md text-sm text-[color:var(--color-ink-muted)]">
-              Caterers, DJs, photographers, decorators, transport, security and more. List your
-              business on Nexa and get booked.
-            </p>
-            <Link
-              href="/apply"
-              className="mt-5 inline-block rounded-full bg-[color:var(--color-ink)] px-6 py-3 text-sm font-medium text-white transition-transform active:scale-95"
-            >
-              Apply to be a vendor
-            </Link>
           </div>
         </section>
 
         <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
-          <p>
-            Nexa — powered by ERA. Your payment is held securely until your event is successfully
-            completed.
-          </p>
+          <p>Nexa — powered by ERA.</p>
           <p className="mt-3">
             <Link href="/privacy" className="underline hover:text-[color:var(--color-ink)]">
               Privacy
@@ -168,10 +139,6 @@ export default async function HomePage() {
             <span className="mx-2">·</span>
             <Link href="/terms" className="underline hover:text-[color:var(--color-ink)]">
               Terms
-            </Link>
-            <span className="mx-2">·</span>
-            <Link href="/apply" className="underline hover:text-[color:var(--color-ink)]">
-              Apply to be a vendor
             </Link>
           </p>
         </footer>
