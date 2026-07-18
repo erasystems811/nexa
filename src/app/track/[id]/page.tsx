@@ -5,14 +5,12 @@ import { formatKobo } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { StatusPill } from "@/components/status-pill";
 import { CancelButton } from "./cancel-button";
+import { SetPasswordForm } from "./set-password-form";
 
 /**
  * The no-login door to a booking, for a WhatsApp-only customer who has no
  * password to log in with. This is a link the bot sends, never something
  * typed in - the `t` query param is a signed token, not a session.
- *
- * Deliberately read-only: it shows the same completion code and status the
- * real /orders/[id] page does, but has no actions of its own yet.
  */
 export default async function TrackOrderPage({
   params,
@@ -117,6 +115,17 @@ export default async function TrackOrderPage({
         {booking.address ? (
           <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">{booking.address}</p>
         ) : null}
+      </Card>
+
+      <Card className="mt-4">
+        <h2 className="text-sm font-medium">Set a password</h2>
+        <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
+          This link expires eventually. Set a password once, and you can sign back in anytime with
+          your WhatsApp number — no link needed.
+        </p>
+        <div className="mt-3">
+          <SetPasswordForm bookingId={booking.id} token={t ?? ""} />
+        </div>
       </Card>
     </main>
   );

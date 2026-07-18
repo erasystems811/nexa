@@ -55,6 +55,34 @@ export async function getMyOrder(bookingId: string) {
 }
 
 /**
+ * Sets a password on the booking's own customer account - called only from
+ * /track/[id], after it has already verified the booking's access token, the
+ * same proof of identity a password-reset email link stands in for elsewhere.
+ * Returns their phone so the confirmation can tell them exactly what to type
+ * on the sign-in page, not just "your number".
+ */
+export async function setPasswordForBookingCustomer(
+  bookingId: string,
+  password: string,
+): Promise<{ phone: string | null } | null> {
+  const admin = createAdminClient();
+
+  const { data: booking } = await admin.from("bookings").select("customer_id").eq("id", bookingId).maybeSingle();
+  if (!booking) return null;
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("phone")
+    .eq("id", booking.customer_id)
+    .maybeSingle();
+
+  const { error } = await admin.auth.admin.updateUserById(booking.customer_id, { password });
+  if (error) throw new Error("Could not set a password");
+
+  return { phone: profile?.phone ?? null };
+}
+
+/**
  * Same shape as getMyOrder, for the token-gated /track/[id] page a WhatsApp-
  * only customer uses instead - there is no session for RLS to check, so the
  * caller (the page) must have already verified the booking's access token

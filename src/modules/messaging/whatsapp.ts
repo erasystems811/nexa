@@ -839,12 +839,16 @@ export async function handleListingSelected(input: { waId: string; listingId: st
 /**
  * Told once, right as a conversation actually begins - not left for a
  * customer to discover by accident, and not repeated on every message either.
- * Update this if a new keyword is ever added anywhere in this file.
+ *
+ * Only two words taught here on purpose, even though the code also quietly
+ * accepts a few natural synonyms ("start over", "exit", "end chat" all do the
+ * same thing as "menu") - teaching one clear word per action beats listing
+ * every alias and making the customer pick.
  */
 const KEYWORD_GLOSSARY =
-  `A few things you can type anytime:\n` +
-  `• "menu" or "start over" — leave this chat and search for something else\n` +
-  `• "cancel" — cancel a booking you've already paid for, for a refund`;
+  `Two things you can type anytime:\n` +
+  `• "menu" — leave this chat and search for something else\n` +
+  `• "cancel" — cancel a booking you've already paid for, for a full refund`;
 
 /**
  * Sends (or re-sends) the WhatsApp-native "Accept" button for a pending offer,
@@ -1154,7 +1158,8 @@ function formatRelayText(from: WhatsappSide, body: string, explainToVendor = fal
   return (
     `${relayed}\n\n` +
     `(This is a customer inquiry through Nexa - reply normally to chat with them. ` +
-    `When you're ready to name a price, just send the amount, e.g. "150000" or "150k".)`
+    `When you're ready to name a price, reply with just the number, no other words - ` +
+    `e.g. "150000" or "150k".)`
   );
 }
 

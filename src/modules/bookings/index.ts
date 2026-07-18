@@ -24,7 +24,7 @@ export {
   type CheckoutResult,
 } from "./service";
 
-export { listMyOrders, getMyOrder, getOrderAsAdmin } from "./queries";
+export { listMyOrders, getMyOrder, getOrderAsAdmin, setPasswordForBookingCustomer } from "./queries";
 export { listOffers, sendOffer, acceptOffer } from "./offers";
 export {
   TRANSITIONS,
