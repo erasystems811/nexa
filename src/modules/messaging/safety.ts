@@ -8,15 +8,25 @@ const BANK_WORDS =
 const OFF_PLATFORM_WORDS =
   /\b(whatsapp|whats app|wats app|watsapp|telegram|instagram|snapchat|dm me|inbox me)\b|(?:call|text|message|chat|reach)\s+me\s+(?:on|at|through|via)|(?:outside|off)\s+(?:the\s+)?(?:app|platform)|(?:pay|send)\s+(?:me\s+)?(?:directly|cash|outside)/i;
 
+/** A price quoted in chat ("₦2,000,000", "2000000 naira") must never read as a
+ * phone number or account number just because it happens to land on 10 or 11
+ * digits once separators are stripped - this is precisely the number a
+ * negotiation is expected to contain. */
+const CURRENCY_MARKER = /(₦|\bNGN\b|\bnaira\b)\s*$/i;
+
+function precededByCurrency(compact: string, digitsStartAt: number): boolean {
+  return CURRENCY_MARKER.test(compact.slice(0, digitsStartAt));
+}
+
 export function scanMessageBody(body: string): ModerationFlagReason[] {
   const compact = compactDigitRuns(body);
   const reasons = new Set<ModerationFlagReason>();
 
-  if (/(^|\D)((\+?234|234)[789]\d{9}|0[789]\d{9})(\D|$)/.test(compact)) {
+  if (hasUnpricedMatch(compact, /(^|\D)((\+?234|234)[789]\d{9}|0[789]\d{9})(\D|$)/g)) {
     reasons.add("phone_number");
   }
 
-  if (/(^|\D)\d{10}(\D|$)/.test(compact) || BANK_WORDS.test(body)) {
+  if (hasUnpricedMatch(compact, /(^|\D)(\d{10})(\D|$)/g) || BANK_WORDS.test(body)) {
     reasons.add("bank_account");
   }
 
@@ -25,6 +35,17 @@ export function scanMessageBody(body: string): ModerationFlagReason[] {
   }
 
   return [...reasons];
+}
+
+/** True if the pattern matches somewhere that isn't immediately after a
+ * currency marker - i.e. a genuine phone/account number, not a price. */
+function hasUnpricedMatch(compact: string, pattern: RegExp): boolean {
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(compact))) {
+    const digitsStartAt = match.index + (match[1]?.length ?? 0);
+    if (!precededByCurrency(compact, digitsStartAt)) return true;
+  }
+  return false;
 }
 
 function compactDigitRuns(value: string): string {
