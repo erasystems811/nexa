@@ -372,6 +372,26 @@ async function getWhatsappThreadContext(conversationId: string): Promise<{
       .eq("provider_id", conversation.provider_id)
       .maybeSingle();
     vendorWaId = toWhatsAppNumber(providerContact?.contact_phone);
+
+    // The vendor has no equivalent of the customer's Ref-carrying link, so
+    // this is the only moment their WhatsApp number is ever known: bind it to
+    // this thread now, invisibly, so their reply (which is just plain text,
+    // never a code) is recognised next time instead of falling through to
+    // cold discovery as a stranger.
+    if (vendorWaId) {
+      const { data: vendorContact } = await db
+        .from("whatsapp_contacts")
+        .upsert({ wa_id: vendorWaId }, { onConflict: "wa_id" })
+        .select("id")
+        .single();
+
+      if (vendorContact) {
+        await db
+          .from("whatsapp_threads")
+          .update({ provider_whatsapp_contact_id: vendorContact.id })
+          .eq("conversation_id", conversationId);
+      }
+    }
   }
 
   return {
