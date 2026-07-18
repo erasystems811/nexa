@@ -8,6 +8,7 @@ import { scanMessageBody } from "./safety";
 import { ensureWhatsappCustomer } from "@/modules/auth/whatsappProvisioning";
 import { runColdDiscovery } from "@/modules/discovery";
 import { acceptOfferAsAdmin, sendOfferAsAdmin } from "@/modules/bookings/offers";
+import { checkout, BookingsError } from "@/modules/bookings";
 
 interface WhatsappTextMessage {
   waId: string;
@@ -87,6 +88,41 @@ function parseExitIntent(text: string): { rest: string } | null {
  */
 const VENDOR_QUOTE =
   /^(?:quote|price|my price is|i can do(?: it)? for)?[:\s]*(?:₦|ngn|naira)?\s*([\d,]+(?:\.\d+)?)\s*(k)?\s*(?:naira|ngn|₦)?\.?$/i;
+
+const SCHEDULE_EXAMPLE = "25/12/2026 6pm";
+
+/**
+ * Deliberately not a natural-language parser (native Date.parse rejects
+ * almost every real phrasing a customer would actually type - "25 December
+ * 2026, 6pm" and "tomorrow 6pm" both come back invalid). Asking for one exact
+ * shape and parsing that shape reliably beats guessing at free text.
+ */
+function parseScheduledStart(text: string): string | null {
+  const match = text
+    .trim()
+    .match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  let hour = Number(match[4]);
+  const minute = match[5] ? Number(match[5]) : 0;
+  const meridiem = match[6]?.toLowerCase();
+
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
+
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    if (hour === 12) hour = meridiem === "pm" ? 12 : 0;
+    else if (meridiem === "pm") hour += 12;
+  }
+
+  const date = new Date(year, month - 1, day, hour, minute);
+  if (Number.isNaN(date.getTime()) || date.getTime() < Date.now()) return null;
+
+  return date.toISOString();
+}
 
 function parseVendorQuote(text: string): number | null {
   const match = text.trim().match(VENDOR_QUOTE);
@@ -281,6 +317,26 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
       } else {
         await sendWhatsappText({ to: input.waId, body: "No problem! What are you looking for now?" });
       }
+      return;
+    }
+  }
+
+  // An accepted offer with nothing booked yet means this reply is the date/
+  // time answer, not ordinary chat - the whole point is that a customer never
+  // has to leave WhatsApp to get from "agreed" to "paid".
+  if (resolvedSide === "customer") {
+    const pending = await findAcceptedOfferAwaitingCheckout(conversationId);
+    if (pending) {
+      const scheduledStart = parseScheduledStart(input.text);
+      if (!scheduledStart) {
+        await sendWhatsappText({
+          to: input.waId,
+          body: `I couldn't read that date. Please reply like: ${SCHEDULE_EXAMPLE}`,
+        });
+        return;
+      }
+
+      await completeCheckoutFromWhatsapp({ ...pending, waId: input.waId, scheduledStart });
       return;
     }
   }
@@ -827,6 +883,92 @@ async function tryQuoteFromVendorText(input: {
 }
 
 /**
+ * An offer this customer accepted, for a listing they haven't actually booked
+ * yet - the signal that their next message is a date/time answer, not chat.
+ * No extra state to track: once checkout() below creates the booking, this
+ * naturally stops matching anything on its own.
+ */
+async function findAcceptedOfferAwaitingCheckout(conversationId: string): Promise<{
+  listingId: string;
+  customerId: string;
+} | null> {
+  const db = createAdminClient();
+
+  const { data: offer } = await db
+    .from("price_offers")
+    .select("listing_id, customer_id")
+    .eq("conversation_id", conversationId)
+    .eq("status", "accepted")
+    .order("accepted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!offer) return null;
+
+  const { data: existingBooking } = await db
+    .from("bookings")
+    .select("id")
+    .eq("customer_id", offer.customer_id)
+    .eq("listing_id", offer.listing_id)
+    .neq("status", "cancelled")
+    .limit(1)
+    .maybeSingle();
+
+  if (existingBooking) return null;
+
+  return { listingId: offer.listing_id, customerId: offer.customer_id };
+}
+
+/**
+ * The one unavoidable step off WhatsApp: a card number can never be typed
+ * safely into a chat, so paying has to happen on a real, secure page. This is
+ * the only handoff - no login, no orders page, just a single link straight to
+ * the payment provider. checkout() is driven with the admin client standing
+ * in for a browser session; the pricing trigger and RLS both still see a real
+ * customer_id, so nothing about the money path is any different from a web
+ * checkout.
+ */
+async function completeCheckoutFromWhatsapp(input: {
+  waId: string;
+  scheduledStart: string;
+  listingId: string;
+  customerId: string;
+}): Promise<void> {
+  const db = createAdminClient();
+  const { data: profile } = await db
+    .from("profiles")
+    .select("full_name")
+    .eq("id", input.customerId)
+    .maybeSingle();
+
+  try {
+    const result = await checkout(
+      { listingId: input.listingId, scheduledStart: input.scheduledStart },
+      {
+        id: input.customerId,
+        // No real email exists for a WhatsApp-only account - this is never
+        // sent to, only used to satisfy the payment gateway's required field.
+        email: `wa-${input.waId}@guest.nexa.app`,
+        name: profile?.full_name ?? undefined,
+      },
+      db,
+    );
+
+    await sendWhatsappText({
+      to: input.waId,
+      body: result.checkoutUrl
+        ? `Almost there - tap to pay: ${result.checkoutUrl}`
+        : "Payment received! Your booking is confirmed.",
+    });
+  } catch (error) {
+    await sendWhatsappText({
+      to: input.waId,
+      body: `Sorry, I couldn't complete that booking: ${error instanceof BookingsError ? error.message : "please try again"}`,
+    });
+  }
+}
+
+/**
  * Best-effort hook for sendOffer() (src/modules/bookings/offers.ts): if this
  * conversation is WhatsApp-bound, the customer - who has no browser session -
  * gets a native Accept button alongside the vendor's quote appearing in the
@@ -896,7 +1038,7 @@ export async function handleOfferButtonReply(input: { waId: string; buttonId: st
 
   await sendWhatsappText({
     to: input.waId,
-    body: "Offer accepted! Head to your Nexa orders to complete payment.",
+    body: `Offer accepted! What date and time is this for?\n\nReply like: ${SCHEDULE_EXAMPLE}`,
   });
 }
 
