@@ -17,8 +17,10 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   const { provider, listings, rating, reviews } = result;
   // The vendor's own profile images only — their banner and their logo. Never a
   // listing's photo: that belongs to the service, not the business.
-  const cover = (provider as unknown as { cover_url: string | null }).cover_url;
   const logo = (provider as unknown as { logo_url: string | null }).logo_url;
+  // The big hero image. Vendors upload a profile photo (logo_url), not a separate
+  // banner, so fall back to it — otherwise the hero is blank for every vendor.
+  const cover = (provider as unknown as { cover_url: string | null }).cover_url ?? logo;
   const cityName = (provider.cities as unknown as { name: string } | null)?.name;
   const providerPath = `/p/${provider.slug}`;
 

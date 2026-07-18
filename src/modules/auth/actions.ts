@@ -15,6 +15,12 @@ import type { UserRole } from "@/lib/db/types";
 export interface AuthFormState {
   error?: string;
   message?: string;
+  /**
+   * The email/username the person typed, echoed back so a failed sign-in keeps
+   * what they entered instead of blanking the form. React resets the form after
+   * an action, so the field re-reads this as its defaultValue.
+   */
+  identifier?: string;
 }
 
 /**
@@ -107,13 +113,19 @@ export async function signIn(
   const next = safeNextPath(formData.get("next"));
   const surface = formData.get("surface");
   const adminIntent = isAdminIntent(next, surface);
+
+  // What they typed, echoed onto every failure so the form keeps it. Password is
+  // never echoed — clearing it on error is the safe default.
+  const rawIdentifier = typeof formData.get("email") === "string" ? String(formData.get("email")) : "";
+  const fail = (error: string): AuthFormState => ({ error, identifier: rawIdentifier });
+
   const parsed = loginCredentials.safeParse({
     identifier: formData.get("email"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid credentials" };
+    return fail(parsed.error.issues[0]?.message ?? "Invalid credentials");
   }
 
   let loginEmail = parsed.data.identifier;
@@ -131,17 +143,17 @@ export async function signIn(
     const adminPassword = env.NEXA_SUPER_ADMIN_PASSWORD?.trim();
 
     if (!username || !email || !adminPassword) {
-      return { error: "Admin login is not configured yet. Set the Nexa Super Admin env values in Railway." };
+      return fail("Admin login is not configured yet. Set the Nexa Super Admin env values in Railway.");
     }
 
     if (parsed.data.identifier.toLowerCase() !== username.toLowerCase() || parsed.data.password.trim() !== adminPassword) {
-      return { error: "Admin username and password do not match." };
+      return fail("Admin username and password do not match.");
     }
 
     try {
       await ensureEnvSuperAdmin(email, adminPassword);
     } catch {
-      return { error: "Admin login could not be prepared. Check the Supabase service key and admin env values." };
+      return fail("Admin login could not be prepared. Check the Supabase service key and admin env values.");
     }
 
     loginEmail = email;
@@ -149,7 +161,7 @@ export async function signIn(
   } else {
     const emailParsed = credentials.pick({ email: true }).safeParse({ email: parsed.data.identifier });
     if (!emailParsed.success) {
-      return { error: emailParsed.error.issues[0]?.message ?? "Enter a valid email address" };
+      return fail(emailParsed.error.issues[0]?.message ?? "Enter a valid email address");
     }
     // Sign in against THIS app's account for the typed email. The customer app
     // looks up the bare email, the vendor app the tagged one — so the same email
@@ -162,12 +174,12 @@ export async function signIn(
   if (error) {
     const message = error.message.toLowerCase();
     if (message.includes("email not confirmed")) {
-      return { error: "Your account exists, but it has not been verified yet. Enter the code from your email." };
+      return fail("Your account exists, but it has not been verified yet. Enter the code from your email.");
     }
     if (message.includes("invalid login credentials")) {
-      return { error: adminIntent ? "Admin username and password do not match." : "That email and password do not match. If this is your first time, create an account first." };
+      return fail(adminIntent ? "Admin username and password do not match." : "That email and password do not match. If this is your first time, create an account first.");
     }
-    return { error: error.message };
+    return fail(error.message);
   }
 
   const {
@@ -186,12 +198,12 @@ export async function signIn(
 
   if (adminIntent && role !== "admin") {
     await supabase.auth.signOut();
-    return { error: "This login is not allowed to open Admin." };
+    return fail("This login is not allowed to open Admin.");
   }
 
   if (!adminIntent && role === "admin") {
     await supabase.auth.signOut();
-    return { error: "Admin accounts must sign in from Nexa Admin." };
+    return fail("Admin accounts must sign in from Nexa Admin.");
   }
 
   revalidatePath("/", "layout");

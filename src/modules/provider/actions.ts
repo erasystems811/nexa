@@ -147,7 +147,10 @@ export async function createListingAction(_prev: FormState, formData: FormData):
     return fail(e);
   }
   revalidatePath("/studio/listings");
-  redirect(`/listings/${id}` as Route);
+  // Redirect to the explicit /studio path, not a bare /listings — the bare path
+  // only resolves to Studio on the vendor subdomain, and on a single-host deploy
+  // it bounces the vendor out of Studio until they refresh.
+  redirect(`/studio/listings/${id}` as Route);
 }
 
 export async function updateListingAction(
@@ -176,14 +179,14 @@ export async function deleteListingAction(listingId: string): Promise<void> {
   const p = await provider();
   await deleteListing(p.id, listingId);
   revalidatePath("/studio/listings");
-  redirect("/listings" as Route);
+  redirect("/studio/listings" as Route);
 }
 
 export async function duplicateListingAction(listingId: string): Promise<void> {
   const p = await provider();
   const newId = await duplicateListing(p.id, listingId);
   revalidatePath("/studio/listings");
-  redirect(`/listings/${newId}` as Route);
+  redirect(`/studio/listings/${newId}` as Route);
 }
 
 // ---- identification -------------------------------------------------------

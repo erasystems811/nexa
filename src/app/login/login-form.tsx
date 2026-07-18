@@ -62,6 +62,8 @@ export function LoginForm({ next, surface }: { next: string; surface: Surface })
           name="email"
           type={isAdmin ? "text" : "email"}
           autoComplete={isAdmin ? "username" : "email"}
+          // Keeps what they typed when a sign-in fails, instead of blanking it.
+          defaultValue={state.identifier ?? ""}
           required
         />
         <Field
