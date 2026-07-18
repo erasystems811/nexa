@@ -79,7 +79,7 @@ const REFERENCE = /booking reference:?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0
  * trying to cancel a real, paid booking get bounced to search results
  * instead.
  */
-const EXIT_COMMANDS = /^(menu|start over|new search|exit|end chat)\b[,:.]?\s*/i;
+const EXIT_COMMANDS = /^(home|menu|start over|new search|exit|end chat)\b[,:.]?\s*/i;
 
 function parseExitIntent(text: string): { rest: string } | null {
   const trimmed = text.trim();
@@ -841,14 +841,14 @@ export async function handleListingSelected(input: { waId: string; listingId: st
  * customer to discover by accident, and not repeated on every message either.
  *
  * Only two words taught here on purpose, even though the code also quietly
- * accepts a few natural synonyms ("start over", "exit", "end chat" all do the
- * same thing as "menu") - teaching one clear word per action beats listing
- * every alias and making the customer pick.
+ * accepts a few natural synonyms ("menu", "start over", "exit", "end chat"
+ * all do the same thing as "home") - teaching one clear word per action beats
+ * listing every alias and making the customer pick.
  */
 const KEYWORD_GLOSSARY =
   `Two things you can type anytime:\n` +
-  `• "menu" — leave this chat and search for something else\n` +
-  `• "cancel" — cancel a booking you've already paid for, for a full refund`;
+  `• "home" — takes you back to where you searched for vendors, so you can look for something else\n` +
+  `• "cancel" — cancels a booking you've already paid for, and refunds you in full`;
 
 /**
  * Sends (or re-sends) the WhatsApp-native "Accept" button for a pending offer,
