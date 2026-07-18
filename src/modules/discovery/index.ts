@@ -88,17 +88,26 @@ export async function runColdDiscovery(input: {
   const [categories, cities] = await Promise.all([listCategories(), listCities()]);
   const resolved = resolveQuery(input.text, categories, cities);
 
-  let results: ListingResult[] = [];
-  if (resolved.categorySlug || resolved.citySlug) {
-    results = await searchListings({
-      categorySlug: resolved.categorySlug,
-      citySlug: resolved.citySlug,
-      limit: RESULT_LIMIT,
-    });
-  }
+  // Every matched category ("light" should catch both "Lighting" and "String
+  // Lights"), plus a direct search of listing titles/descriptions - a listing
+  // can be the right answer without its category name literally being what
+  // the customer typed. Both run and get merged, not one instead of the other.
+  const [byCategory, byText] = await Promise.all([
+    Promise.all(
+      resolved.categorySlugs.map((categorySlug) =>
+        searchListings({ categorySlug, citySlug: resolved.citySlug, limit: RESULT_LIMIT }),
+      ),
+    ),
+    searchListings({ q: resolved.q, citySlug: resolved.citySlug, limit: RESULT_LIMIT }),
+  ]);
 
-  if (results.length === 0) {
-    results = await searchListings({ q: resolved.q, limit: RESULT_LIMIT });
+  const seen = new Set<string>();
+  const results: ListingResult[] = [];
+  for (const listing of [...byCategory.flat(), ...byText]) {
+    if (seen.has(listing.id)) continue;
+    seen.add(listing.id);
+    results.push(listing);
+    if (results.length === RESULT_LIMIT) break;
   }
 
   if (results.length === 0) {

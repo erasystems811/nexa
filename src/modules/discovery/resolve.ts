@@ -17,13 +17,27 @@ interface NamedSlug {
 }
 
 export interface ResolvedQuery {
-  categorySlug?: string;
+  /** Every category the message plausibly names - "light" should catch both
+   * "Lighting" and "String Lights", not just whichever came first. */
+  categorySlugs: string[];
   citySlug?: string;
   q: string;
 }
 
 function wordsOf(value: string): string[] {
   return value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+/**
+ * "light" should match "Lighting" and "lights" without an exact word match -
+ * a plain equality or "does the message contain the whole category name"
+ * check misses this whenever the customer types the shorter, everyday form of
+ * a word rather than the exact one an admin typed into the category name.
+ */
+function sharesStem(a: string, b: string): boolean {
+  if (a === b) return true;
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  return shorter.length >= 3 && longer.startsWith(shorter);
 }
 
 function matches(text: string, textWords: Set<string>, candidate: NamedSlug): boolean {
@@ -33,11 +47,11 @@ function matches(text: string, textWords: Set<string>, candidate: NamedSlug): bo
   const slugWords = candidate.slug.toLowerCase().replace(/-/g, " ");
   if (text.includes(slugWords)) return true;
 
-  // A single-word category/city name ("DJs", "Lagos") only needs one word to
-  // match; a multi-word one ("Event Planning") needs the substring check
-  // above, since checking "event" or "planning" alone would over-match.
-  const nameWords = wordsOf(name);
-  if (nameWords.length === 1 && textWords.has(nameWords[0]!)) return true;
+  for (const nameWord of wordsOf(name)) {
+    for (const textWord of textWords) {
+      if (sharesStem(nameWord, textWord)) return true;
+    }
+  }
 
   return false;
 }
@@ -50,11 +64,13 @@ export function resolveQuery(
   const lowered = text.toLowerCase();
   const textWords = new Set(wordsOf(text));
 
-  const category = categories.find((c) => matches(lowered, textWords, c));
+  const categorySlugs = categories
+    .filter((c) => matches(lowered, textWords, c))
+    .map((c) => c.slug);
   const city = cities.find((c) => matches(lowered, textWords, c));
 
   return {
-    categorySlug: category?.slug,
+    categorySlugs,
     citySlug: city?.slug,
     q: text,
   };
