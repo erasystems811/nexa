@@ -90,3 +90,47 @@ export async function acceptOfferAsAdmin(offerId: string) {
 
   if (error) throw new BookingsError(`Could not accept the offer: ${error.message}`);
 }
+
+/**
+ * Same as sendOffer, but for a vendor quoting straight from WhatsApp, which
+ * has no session to satisfy price_offers_provider_insert's RLS check. Only
+ * ever called from handleIncomingWhatsappText, after it has already resolved
+ * the sender to this exact conversation's own vendor via the WhatsApp thread
+ * binding - there is no separate identity check to do here, that binding IS
+ * the check.
+ */
+export async function sendOfferAsAdmin(input: {
+  conversationId: string;
+  listingId: string;
+  providerId: string;
+  customerId: string;
+  amountKobo: number;
+}) {
+  if (input.amountKobo <= 0) throw new BookingsError("An offer must be more than zero");
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("price_offers")
+    .insert({
+      conversation_id: input.conversationId,
+      listing_id: input.listingId,
+      provider_id: input.providerId,
+      customer_id: input.customerId,
+      amount_kobo: input.amountKobo,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) throw new BookingsError(`Offer not sent: ${error?.message}`);
+
+  try {
+    await notifyWhatsappOfferIfBound({
+      conversationId: input.conversationId,
+      offerId: data.id,
+      amountKobo: input.amountKobo,
+      listingId: input.listingId,
+    });
+  } catch {
+    // The offer itself is already saved and visible in Business Studio.
+  }
+}

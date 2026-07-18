@@ -7,7 +7,7 @@ import { toWhatsAppNumber } from "@/lib/phone";
 import { scanMessageBody } from "./safety";
 import { ensureWhatsappCustomer } from "@/modules/auth/whatsappProvisioning";
 import { runColdDiscovery } from "@/modules/discovery";
-import { acceptOfferAsAdmin } from "@/modules/bookings/offers";
+import { acceptOfferAsAdmin, sendOfferAsAdmin } from "@/modules/bookings/offers";
 
 interface WhatsappTextMessage {
   waId: string;
@@ -77,6 +77,26 @@ function parseExitIntent(text: string): { rest: string } | null {
   const match = trimmed.match(EXIT_COMMANDS);
   if (!match) return null;
   return { rest: trimmed.slice(match[0].length).trim() };
+}
+
+/**
+ * A vendor quoting straight from WhatsApp ("150k", "₦150,000", "quote 150000")
+ * - deliberately anchored to the WHOLE message, not just anywhere a number
+ *   appears, so an offhand mention of a number in an ordinary chat sentence
+ *   ("I did 3 jobs last week") is never mistaken for a price. Returns kobo.
+ */
+const VENDOR_QUOTE =
+  /^(?:quote|price|my price is|i can do(?: it)? for)?[:\s]*(?:₦|ngn|naira)?\s*([\d,]+(?:\.\d+)?)\s*(k)?\s*(?:naira|ngn|₦)?\.?$/i;
+
+function parseVendorQuote(text: string): number | null {
+  const match = text.trim().match(VENDOR_QUOTE);
+  if (!match) return null;
+
+  const numeric = Number(match[1]!.replace(/,/g, ""));
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+
+  const naira = match[2] ? numeric * 1000 : numeric;
+  return Math.round(naira * 100);
 }
 
 /**
@@ -262,6 +282,18 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
         await sendWhatsappText({ to: input.waId, body: "No problem! What are you looking for now?" });
       }
       return;
+    }
+  }
+
+  // A vendor should never have to leave WhatsApp to quote a price - if the
+  // whole message reads as one, turn it into a real offer instead of just
+  // relaying the raw text (the customer's Accept-button notification already
+  // says the amount, so relaying the raw number too would just be noise).
+  if (resolvedSide === "vendor") {
+    const amountKobo = parseVendorQuote(input.text);
+    if (amountKobo !== null) {
+      const quoted = await tryQuoteFromVendorText({ conversationId, amountKobo, waId: input.waId });
+      if (quoted) return;
     }
   }
 
@@ -709,7 +741,9 @@ export async function handleListingSelected(input: { waId: string; listingId: st
 
   await sendWhatsappText({
     to: input.waId,
-    body: `You're connected with ${provider?.business_name ?? "the vendor"} about "${listing.title}". Ask away!`,
+    body:
+      `You're connected with ${provider?.business_name ?? "the vendor"} about "${listing.title}". Ask away!\n\n` +
+      `(Want something else instead? Just type "menu" anytime.)`,
   });
 }
 
@@ -753,6 +787,43 @@ async function sendOfferAcceptButton(input: {
   if (result.ok) {
     await db.from("price_offers").update({ whatsapp_notified_at: new Date().toISOString() }).eq("id", input.offerId);
   }
+}
+
+/**
+ * A vendor's WhatsApp message just parsed as a price quote - turns it into a
+ * real price_offers row instead of a relayed chat message. Returns false when
+ * there's no listing to quote against (a listing-less "chat about the
+ * business" conversation), so the caller falls through to an ordinary relay.
+ */
+async function tryQuoteFromVendorText(input: {
+  conversationId: string;
+  amountKobo: number;
+  waId: string;
+}): Promise<boolean> {
+  const db = createAdminClient();
+
+  const { data: conversation } = await db
+    .from("conversations")
+    .select("listing_id, customer_id, provider_id")
+    .eq("id", input.conversationId)
+    .maybeSingle();
+
+  if (!conversation?.listing_id) return false;
+
+  await sendOfferAsAdmin({
+    conversationId: input.conversationId,
+    listingId: conversation.listing_id,
+    providerId: conversation.provider_id,
+    customerId: conversation.customer_id,
+    amountKobo: input.amountKobo,
+  });
+
+  await sendWhatsappText({
+    to: input.waId,
+    body: `Quote sent: ₦${(input.amountKobo / 100).toLocaleString("en-NG")}. I'll let you know as soon as the customer responds.`,
+  });
+
+  return true;
 }
 
 /**
