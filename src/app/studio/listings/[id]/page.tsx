@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireProvider, getMyListing, listMedia } from "@/modules/provider";
 import { listCategories } from "@/modules/marketplace";
 import { updateListingAction } from "@/modules/provider/actions";
+import { isEnabled, FLAGS } from "@/modules/settings/flags";
 import { koboToNaira } from "@/lib/money";
 import { Card, PageHeader } from "@/components/ui";
 import { StudioBack } from "@/components/studio-back";
@@ -15,10 +16,11 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const provider = await requireProvider();
 
-  const [listing, categories, media] = await Promise.all([
+  const [listing, categories, media, negotiableEnabled] = await Promise.all([
     getMyListing(provider.id, id),
     listCategories(),
     listMedia(provider.id, id),
+    isEnabled(FLAGS.negotiablePricing, "provider"),
   ]);
 
   if (!listing) notFound();
@@ -64,6 +66,7 @@ export default async function EditListing({ params }: { params: Promise<{ id: st
               ? "This listing is live. Saving changes sends it back to Nexa for approval, and it stays hidden from customers until Nexa approves it again. Save anyway?"
               : undefined
           }
+          negotiableEnabled={negotiableEnabled}
         />
       </Card>
     </>

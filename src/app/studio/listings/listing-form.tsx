@@ -36,6 +36,7 @@ export function ListingForm({
   submitLabel,
   showPhotos = false,
   confirmOnSave,
+  negotiableEnabled = true,
 }: {
   categories: Category[];
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
@@ -46,9 +47,17 @@ export function ListingForm({
   /** When set, the vendor must confirm this before the form submits — used on a
    *  live listing, where saving takes it offline for re-approval. */
   confirmOnSave?: string;
+  /** The real gate is server-side (readListingForm); this only decides whether
+   *  the option is offered. A listing already negotiable stays choosable even
+   *  when off, so turning the flag off never silently changes an existing one. */
+  negotiableEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [priceType, setPriceType] = useState(defaults.price_type ?? "fixed");
+  const priceTypeOptions =
+    negotiableEnabled || defaults.price_type === "negotiable"
+      ? (["fixed", "negotiable"] as const)
+      : (["fixed"] as const);
   const [categoryId, setCategoryId] = useState(defaults.category_id ?? categories[0]?.id ?? "");
 
   const category = categories.find((c) => c.id === categoryId);
@@ -87,7 +96,7 @@ export function ListingForm({
       <fieldset>
         <span className="mb-1.5 block text-sm font-medium">Price type</span>
         <div className="flex gap-2">
-          {(["fixed", "negotiable"] as const).map((t) => (
+          {priceTypeOptions.map((t) => (
             <label
               key={t}
               className={`flex-1 cursor-pointer rounded-xl border px-4 py-3 text-center text-sm ${priceType === t ? "border-[color:var(--color-ink)] font-medium" : "border-[color:var(--color-line)]"}`}

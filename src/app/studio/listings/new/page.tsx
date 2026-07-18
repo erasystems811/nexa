@@ -4,13 +4,17 @@ import { notFound } from "next/navigation";
 import { requireProvider, providerIsVerified } from "@/modules/provider";
 import { listCategories } from "@/modules/marketplace";
 import { createListingAction } from "@/modules/provider/actions";
+import { isEnabled, FLAGS } from "@/modules/settings/flags";
 import { Button, Card, PageHeader } from "@/components/ui";
 import { StudioBack } from "@/components/studio-back";
 import { ListingForm } from "../listing-form";
 
 export default async function NewListing() {
   const provider = await requireProvider();
-  const categories = await listCategories();
+  const [categories, negotiableEnabled] = await Promise.all([
+    listCategories(),
+    isEnabled(FLAGS.negotiablePricing, "provider"),
+  ]);
 
   // No category means no admin has opened one yet. Nothing to list.
   if (categories.length === 0) notFound();
@@ -42,7 +46,13 @@ export default async function NewListing() {
     <>
       <StudioBack fallback={"/listings" as Route} className="mb-4" />
       <PageHeader title="New listing" />
-      <ListingForm categories={categories} action={createListingAction} submitLabel="Create listing" showPhotos />
+      <ListingForm
+        categories={categories}
+        action={createListingAction}
+        submitLabel="Create listing"
+        showPhotos
+        negotiableEnabled={negotiableEnabled}
+      />
     </>
   );
 }

@@ -30,6 +30,7 @@ import {
   type IdType,
 } from ".";
 import type { PaymentType } from "@/lib/db/types";
+import { isEnabled, FLAGS } from "@/modules/settings/flags";
 
 /**
  * Every action re-checks the role and re-resolves the provider from the session.
@@ -112,8 +113,16 @@ export async function saveBankAction(_prev: FormState, formData: FormData): Prom
  * holds the whole amount — so every listing is written as "full" and the column
  * survives only because the schema is not mine to change.
  */
-function readListingForm(formData: FormData) {
+async function readListingForm(formData: FormData) {
   const priceType = String(formData.get("price_type") ?? "fixed") as "fixed" | "negotiable";
+
+  // The form only shows "Negotiable" when this flag is on, but that's just the
+  // UI - a request built by hand could still name it, so the real gate has to
+  // live here, not in the client component.
+  if (priceType === "negotiable" && !(await isEnabled(FLAGS.negotiablePricing))) {
+    throw new ProviderError("Negotiable pricing isn't turned on for Nexa right now");
+  }
+
   const toKobo = (name: string) => {
     const v = formData.get(name);
     return v ? Math.round(Number(v) * 100) : null;
@@ -134,7 +143,7 @@ export async function createListingAction(_prev: FormState, formData: FormData):
   const p = await provider();
   let id: string;
   try {
-    id = await createListing(p.id, readListingForm(formData));
+    id = await createListing(p.id, await readListingForm(formData));
 
     // The photos picked on the create form. They upload against the new listing
     // and land as pending_approval alongside it, so the listing reaches Admin
@@ -160,7 +169,7 @@ export async function updateListingAction(
 ): Promise<FormState> {
   const p = await provider();
   try {
-    await updateListing(p.id, listingId, readListingForm(formData));
+    await updateListing(p.id, listingId, await readListingForm(formData));
     revalidatePath(`/studio/listings/${listingId}`);
     return { ok: true };
   } catch (e) {
