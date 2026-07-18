@@ -62,7 +62,7 @@ export async function relayDashboardMessageToWhatsapp(input: {
  * the answer — and nothing read it, so every inbound message fell through to
  * "open your booking link first" and the relay never worked at all.
  */
-const REFERENCE = /Ref:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+const REFERENCE = /booking reference:?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
 /**
  * Bind a WhatsApp number to a conversation, once, on its first message.
