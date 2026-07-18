@@ -65,6 +65,21 @@ export async function relayDashboardMessageToWhatsapp(input: {
 const REFERENCE = /booking reference:?\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
 /**
+ * A plain-language way out of a conversation, always available - a marketplace
+ * bot can't be a one-way door. Matched at the start of the message so "start
+ * over, I need a photographer instead" both exits AND hands the rest straight
+ * to a fresh search, in one message.
+ */
+const EXIT_COMMANDS = /^(menu|start over|new search|cancel|exit|end chat)\b[,:.]?\s*/i;
+
+function parseExitIntent(text: string): { rest: string } | null {
+  const trimmed = text.trim();
+  const match = trimmed.match(EXIT_COMMANDS);
+  if (!match) return null;
+  return { rest: trimmed.slice(match[0].length).trim() };
+}
+
+/**
  * Bind a WhatsApp number to a conversation, once, on its first message.
  *
  * Knowing the reference is not proof on its own: a forwarded link would let a
@@ -231,6 +246,23 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
     conversationId = bound.conversationId;
     resolvedSide = bound.side;
     resolvedSenderId = bound.senderId;
+  }
+
+  // A customer must always be able to walk away, mid-negotiation or not - this
+  // is a marketplace, not a single endless conversation. Checked before the
+  // message is treated as chat, so it works no matter what stage they're at.
+  if (resolvedSide === "customer") {
+    const exit = parseExitIntent(input.text);
+    if (exit) {
+      await db.from("whatsapp_threads").update({ status: "closed" }).eq("conversation_id", conversationId);
+
+      if (exit.rest) {
+        await runColdDiscovery({ waId: input.waId, text: exit.rest, contactId: contact.id });
+      } else {
+        await sendWhatsappText({ to: input.waId, body: "No problem! What are you looking for now?" });
+      }
+      return;
+    }
   }
 
   const reasons = scanMessageBody(input.text);
@@ -652,7 +684,16 @@ export async function handleListingSelected(input: { waId: string; listingId: st
     .eq("conversation_id", conversationId)
     .maybeSingle();
 
-  if (!existingThread) {
+  // Picking the same listing again after "start over" (or any prior close)
+  // reopens the same thread rather than orphaning it - conversation_id is
+  // unique per thread, so there is exactly one row to reactivate, never a
+  // duplicate to create.
+  if (existingThread) {
+    await db
+      .from("whatsapp_threads")
+      .update({ whatsapp_contact_id: contact.id, status: "active" })
+      .eq("id", existingThread.id);
+  } else {
     await db.from("whatsapp_threads").insert({
       conversation_id: conversationId,
       whatsapp_contact_id: contact.id,
