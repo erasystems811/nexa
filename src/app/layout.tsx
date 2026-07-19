@@ -8,10 +8,9 @@ export const metadata: Metadata = {
   title: "Nexa - Event services marketplace",
   description:
     "Find verified vendors for your event - catering, DJs, photography, decor, venues and more. Contact them, compare, and book with your payment protected.",
-  icons: {
-    icon: "/nexa-logo.png",
-    apple: "/nexa-logo.png",
-  },
+  // The favicon comes from src/app/icon.png (+ apple-icon.png), sized from the
+  // Nexa logo. Every surface — customer, vendor, admin — is this one app on a
+  // subdomain, so they all inherit it. No manual icon link needed.
 };
 
 export const viewport: Viewport = {

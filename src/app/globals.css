@@ -82,8 +82,8 @@
   --color-accent-soft: rgba(255, 46, 139, 0.16);
   --color-danger: #ff6b5e;
   --color-danger-soft: rgba(255, 107, 94, 0.14);
-  --color-success: #12e6c8;       /* neon teal — positive amounts, "active" states */
-  --color-success-soft: rgba(18, 230, 200, 0.15);
+  --color-success: #14b8a6;       /* teal — positive amounts, "active" states */
+  --color-success-soft: rgba(20, 184, 166, 0.16);
   --color-warning: #ffb547;
   --color-warning-soft: rgba(255, 181, 71, 0.14);
   --color-star: #ffb547;
