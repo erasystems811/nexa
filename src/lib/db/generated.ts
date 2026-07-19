@@ -2163,6 +2163,84 @@ export type Database = {
           },
         ]
       }
+      support_notification_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone?: string
+        }
+        Relationships: []
+      }
+      support_requests: {
+        Row: {
+          assigned_to: string | null
+          channel: Database["public"]["Enums"]["support_request_channel"]
+          contact: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          message: string
+          name: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["support_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel: Database["public"]["Enums"]["support_request_channel"]
+          contact: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          message: string
+          name?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["support_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: Database["public"]["Enums"]["support_request_channel"]
+          contact?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          message?: string
+          name?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["support_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_contacts: {
         Row: {
           consent_at: string | null
@@ -2371,6 +2449,8 @@ export type Database = {
         | "finance"
         | "marketing"
       subscription_status: "trialing" | "active" | "past_due" | "cancelled"
+      support_request_channel: "web" | "whatsapp"
+      support_request_status: "open" | "in_progress" | "resolved"
       user_role: "admin" | "provider" | "customer"
       verification_status:
         | "pending"
@@ -2560,6 +2640,8 @@ export const Constants = {
         "marketing",
       ],
       subscription_status: ["trialing", "active", "past_due", "cancelled"],
+      support_request_channel: ["web", "whatsapp"],
+      support_request_status: ["open", "in_progress", "resolved"],
       user_role: ["admin", "provider", "customer"],
       verification_status: [
         "pending",

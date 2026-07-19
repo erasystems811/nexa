@@ -1,8 +1,9 @@
 import { getFlags, getSettings } from "@/modules/settings";
-import { requireView, PERMISSIONS as P } from "@/modules/admin";
+import { requireView, listNotificationNumbers, PERMISSIONS as P } from "@/modules/admin";
 import { Card, PageHeader } from "@/components/ui";
 import { FlagToggle } from "./flag-toggle";
 import { SettingRow } from "./setting-row";
+import { NotificationNumbers } from "./notification-numbers";
 
 /**
  * Admin Console → Settings.
@@ -12,7 +13,11 @@ import { SettingRow } from "./setting-row";
  */
 export default async function AdminSettingsPage() {
   await requireView(P.settingsManage);
-  const [settings, flags] = await Promise.all([getSettings(), getFlags()]);
+  const [settings, flags, notificationNumbers] = await Promise.all([
+    getSettings(),
+    getFlags(),
+    listNotificationNumbers(),
+  ]);
 
   return (
     <>
@@ -50,6 +55,17 @@ export default async function AdminSettingsPage() {
               No flags found. Have the migrations been applied?
             </p>
           ) : null}
+        </div>
+      </Card>
+
+      <Card className="mt-6">
+        <h2 className="text-sm font-semibold">Support notifications</h2>
+        <p className="mt-1 text-xs leading-relaxed text-[color:var(--color-ink-muted)]">
+          Every number here gets a WhatsApp message the moment a customer types &ldquo;help&rdquo; to
+          the bot, or submits the website contact form.
+        </p>
+        <div className="mt-3">
+          <NotificationNumbers numbers={notificationNumbers} />
         </div>
       </Card>
     </>

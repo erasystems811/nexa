@@ -93,7 +93,7 @@ export async function listStaff() {
   const db = adminDb();
   const { data } = await db
     .from("staff_members")
-    .select("id, user_id, staff_role, department, permissions, status, last_login_at, created_at, profiles ( full_name )")
+    .select("id, user_id, staff_role, department, permissions, status, last_login_at, created_at, profiles!staff_members_user_id_fkey ( full_name )")
     .order("created_at", { ascending: false });
 
   // Attach the email from auth for each staff row.

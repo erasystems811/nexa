@@ -89,6 +89,21 @@ function parseExitIntent(text: string): { rest: string } | null {
 }
 
 /**
+ * The other door out - not "leave this chat" or "cancel my booking", but
+ * "put me in touch with an actual person at Nexa". Kept as its own word
+ * (never folded into "home") since it means something different: it doesn't
+ * end anything, it starts a request a human answers.
+ */
+const HELP_COMMAND = /^help\b[,:.]?\s*/i;
+
+function parseHelpRequest(text: string): { rest: string } | null {
+  const trimmed = text.trim();
+  const match = trimmed.match(HELP_COMMAND);
+  if (!match) return null;
+  return { rest: trimmed.slice(match[0].length).trim() };
+}
+
+/**
  * A vendor quoting straight from WhatsApp ("150k", "₦150,000", "quote 150000")
  * - deliberately anchored to the WHOLE message, not just anywhere a number
  *   appears, so an offhand mention of a number in an ordinary chat sentence
@@ -261,6 +276,15 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
 
   if (contactError || !contact) {
     throw new Error(`Could not record WhatsApp contact: ${contactError?.message}`);
+  }
+
+  // Checked before anything else, on purpose: a stranger who hasn't even
+  // picked a vendor yet, and a customer mid-conversation, both need the same
+  // way to reach an actual person - this can't wait on a thread existing.
+  const help = parseHelpRequest(input.text);
+  if (help) {
+    await handleHelpRequest({ waId: input.waId, text: help.rest, contactId: contact.id });
+    return;
   }
 
   const { data: thread } = await db
@@ -858,15 +882,16 @@ export async function handleListingSelected(input: { waId: string; listingId: st
  * Told once, right as a conversation actually begins - not left for a
  * customer to discover by accident, and not repeated on every message either.
  *
- * Only two words taught here on purpose, even though the code also quietly
+ * Only three words taught here on purpose, even though the code also quietly
  * accepts a few natural synonyms ("menu", "start over", "exit", "end chat"
  * all do the same thing as "home") - teaching one clear word per action beats
  * listing every alias and making the customer pick.
  */
 const KEYWORD_GLOSSARY =
-  `Two things you can type anytime:\n` +
+  `A few things you can type anytime:\n` +
   `• "home" — ends this chat and takes you back to search, so you can look for something else\n` +
   `• "cancel" — cancels a booking you've already paid for (only before the vendor accepts it), and refunds you in full\n` +
+  `• "help" — puts you in touch with an actual person at Nexa\n` +
   `\nThis chat also ends on its own after 6 hours of quiet — just message again to start over.`;
 
 /**
@@ -999,6 +1024,48 @@ async function tryCancelBookingFromWhatsapp(input: {
   }
 
   return true;
+}
+
+/**
+ * "help", typed at any point - a stranger who's never picked a vendor, or a
+ * customer mid-conversation. Writes the same support_requests row the
+ * website's /contact form does, then pings every number in
+ * support_notification_numbers (an admin-managed list, /admin/settings) so a
+ * request never just sits unseen.
+ */
+async function handleHelpRequest(input: { waId: string; text: string; contactId: string }): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: contact } = await db
+    .from("whatsapp_contacts")
+    .select("profile_id, display_name")
+    .eq("id", input.contactId)
+    .maybeSingle();
+
+  const message = input.text || '(no message - just typed "help")';
+
+  await db.from("support_requests").insert({
+    channel: "whatsapp",
+    customer_id: contact?.profile_id ?? null,
+    name: contact?.display_name ?? null,
+    contact: input.waId,
+    message,
+  });
+
+  await sendWhatsappText({
+    to: input.waId,
+    body: "Got it - a member of the Nexa team will reach out to you shortly.",
+  });
+
+  const { data: numbers } = await db.from("support_notification_numbers").select("phone");
+  for (const n of numbers ?? []) {
+    const targetWaId = toWhatsAppNumber(n.phone);
+    if (!targetWaId) continue;
+    await sendWhatsappText({
+      to: targetWaId,
+      body: `New help request from ${input.waId}: "${message}" - check Admin Console > Support.`,
+    });
+  }
 }
 
 async function findAcceptedOfferAwaitingCheckout(conversationId: string): Promise<{

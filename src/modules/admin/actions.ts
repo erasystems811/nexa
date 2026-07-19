@@ -251,6 +251,39 @@ export async function refundCustomerInDisputeAction(disputeId: string, note?: st
   revalidatePath("/admin");
 }
 
+// ---- support requests -------------------------------------------------------
+
+export async function assignSupportRequestAction(requestId: string, assigneeId: string): Promise<void> {
+  await admin.assignSupportRequest(await actor(P.supportHandle), requestId, assigneeId);
+  revalidatePath("/admin/disputes");
+}
+
+export async function resolveSupportRequestAction(requestId: string): Promise<void> {
+  await admin.resolveSupportRequest(await actor(P.supportHandle), requestId);
+  revalidatePath("/admin/disputes");
+}
+
+export async function addNotificationNumberAction(
+  _prev: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  try {
+    const phone = String(formData.get("phone") ?? "").trim();
+    const label = String(formData.get("label") ?? "").trim();
+    if (!phone) return { error: "Enter a phone number" };
+    await admin.addNotificationNumber(await actor(P.settingsManage), phone, label || undefined);
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
+export async function removeNotificationNumberAction(id: string): Promise<void> {
+  await admin.removeNotificationNumber(await actor(P.settingsManage), id);
+  revalidatePath("/admin/settings");
+}
+
 // ---- moderation -----------------------------------------------------------
 
 export async function resolveFlagAction(flagId: string, decision: "confirmed" | "dismissed"): Promise<void> {

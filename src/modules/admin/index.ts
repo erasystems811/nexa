@@ -60,3 +60,7 @@ export {
 } from "./subscriptions";
 export { listDisputes, getDisputeDetail, resolveDispute, payVendorAndResolve, refundCustomerAndResolve } from "./disputes";
 export { listFlags, resolveFlag, convertFlagToStrike } from "./moderation";
+export {
+  listSupportRequests, assignSupportRequest, resolveSupportRequest,
+  listNotificationNumbers, addNotificationNumber, removeNotificationNumber,
+} from "./support";

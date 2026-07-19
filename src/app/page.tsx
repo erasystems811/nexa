@@ -130,6 +130,10 @@ export default async function HomePage() {
 
         <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
           <p>
+            <Link href="/contact" className="underline hover:text-[color:var(--color-ink)]">
+              Contact us
+            </Link>
+            <span className="mx-2">·</span>
             <Link href="/privacy" className="underline hover:text-[color:var(--color-ink)]">
               Privacy
             </Link>
