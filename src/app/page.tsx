@@ -77,22 +77,25 @@ export default async function HomePage() {
                 const image = images[c.slug];
                 return (
                   <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
-                    <div className="flex h-28 w-28 flex-col items-center justify-center gap-2.5 rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
+                    <div className="relative h-28 w-28 overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
                       {image ? (
-                        <Image
-                          src={image}
-                          alt=""
-                          width={48}
-                          height={48}
-                          className="size-12 rounded-xl object-cover"
-                        />
+                        <>
+                          <Image src={image} alt="" fill sizes="112px" className="object-cover" />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6">
+                            <span className="text-center text-[11px] font-medium leading-tight text-white">
+                              {c.name}
+                            </span>
+                          </div>
+                        </>
                       ) : (
-                        <CategoryIcon
-                          slug={c.slug}
-                          className="size-7 text-[color:var(--color-ink-muted)] transition-colors group-hover:text-[color:var(--color-accent)]"
-                        />
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-2.5">
+                          <CategoryIcon
+                            slug={c.slug}
+                            className="size-7 text-[color:var(--color-ink-muted)] transition-colors group-hover:text-[color:var(--color-accent)]"
+                          />
+                          <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
+                        </div>
                       )}
-                      <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
                     </div>
                   </Link>
                 );
