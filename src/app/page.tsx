@@ -48,7 +48,7 @@ export default async function HomePage() {
       <main className="mx-auto max-w-3xl px-5 pb-16">
         {/* A soft glow behind the hero — the one purely decorative brand touch,
             the kind of detail that separates a landing page from a template. */}
-        <section className="relative overflow-hidden pt-12">
+        <section className="relative overflow-hidden pt-5 sm:pt-12">
           <div
             aria-hidden
             className="pointer-events-none absolute -top-24 left-1/2 h-[26rem] w-[36rem] -translate-x-1/2 rounded-full bg-[color:var(--color-accent)]/[0.07] blur-3xl"
