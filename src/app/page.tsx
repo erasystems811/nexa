@@ -13,9 +13,8 @@ import { Badge } from "@/components/ui";
 /** Marketplace home. */
 export default async function HomePage() {
   const session = await getSession();
-  const [categories, planMyEventLive, images, vendors] = await Promise.all([
+  const [categories, images, vendors] = await Promise.all([
     listCategories(),
-    isEnabled(FLAGS.planMyEvent, session?.profile.role),
     categoryImages(),
     searchVendors({ limit: 24 }),
   ]);
@@ -131,8 +130,7 @@ export default async function HomePage() {
         </section>
 
         <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
-          <p>Nexa — powered by ERA.</p>
-          <p className="mt-3">
+          <p>
             <Link href="/privacy" className="underline hover:text-[color:var(--color-ink)]">
               Privacy
             </Link>
@@ -140,6 +138,17 @@ export default async function HomePage() {
             <Link href="/terms" className="underline hover:text-[color:var(--color-ink)]">
               Terms
             </Link>
+          </p>
+          <p className="mt-4 text-[10px] text-[color:var(--color-ink-muted)]/60">
+            Powered by{" "}
+            <a
+              href="https://erasystems.com.ng"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-[color:var(--color-ink)]"
+            >
+              ERA Systems
+            </a>
           </p>
         </footer>
       </main>

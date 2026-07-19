@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ProviderError } from "./context";
 
 /**
@@ -52,14 +53,20 @@ export async function uploadProfilePhoto(
 
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `${providerId}/${kind}.${ext}`;
-  const supabase = await createClient();
 
-  const { error: uploadError } = await supabase.storage
+  // Upload with the service role, exactly as the public application flow (apply.ts)
+  // does for this same bucket. The caller was already proven to own this provider
+  // (requireProvider, in the action), and the path is their own provider id — so
+  // nothing here is user-controlled. This also means the upload no longer depends
+  // on the storage RLS policy (0035) being present in every environment, which is
+  // what was making it fail with a policy violation.
+  const admin = createAdminClient();
+  const { error: uploadError } = await admin.storage
     .from(PROFILE_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: true });
   if (uploadError) throw new ProviderError(`Upload failed: ${uploadError.message}`);
 
-  const { data } = supabase.storage.from(PROFILE_BUCKET).getPublicUrl(path);
+  const { data } = admin.storage.from(PROFILE_BUCKET).getPublicUrl(path);
   // A fresh upload at the same path needs a cache-busting query param, or the
   // browser (and any CDN in front of Supabase) keeps serving the old photo.
   const url = `${data.publicUrl}?v=${Date.now()}`;

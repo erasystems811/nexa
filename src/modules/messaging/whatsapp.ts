@@ -266,13 +266,31 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
   const { data: thread } = await db
     .from("whatsapp_threads")
     .select(
-      "id, conversation_id, whatsapp_contact_id, provider_whatsapp_contact_id, conversations ( customer_id, providers ( user_id ) )",
+      "id, conversation_id, created_at, whatsapp_contact_id, provider_whatsapp_contact_id, conversations ( customer_id, last_message_at, providers ( user_id ) )",
     )
     .or(`whatsapp_contact_id.eq.${contact.id},provider_whatsapp_contact_id.eq.${contact.id}`)
     .eq("status", "active")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // Six hours of silence ends a conversation on its own — the same thing typing
+  // "home" does, just automatic. The stale relay is closed so a message sent long
+  // after the fact never lands on a vendor who has moved on; either side's next
+  // message starts fresh.
+  if (thread) {
+    const lastActivity =
+      (thread.conversations as unknown as { last_message_at: string | null } | null)?.last_message_at ??
+      thread.created_at;
+    if (lastActivity && Date.now() - new Date(lastActivity).getTime() > 6 * 60 * 60 * 1000) {
+      await db.from("whatsapp_threads").update({ status: "closed" }).eq("id", thread.id);
+      await sendWhatsappText({
+        to: input.waId,
+        body: "This chat ended after 6 hours of quiet. Send a new message and I'll start you off again.",
+      });
+      return;
+    }
+  }
 
   const conversation = thread?.conversations;
   const providerUserId = conversation?.providers?.user_id ?? null;
@@ -847,8 +865,9 @@ export async function handleListingSelected(input: { waId: string; listingId: st
  */
 const KEYWORD_GLOSSARY =
   `Two things you can type anytime:\n` +
-  `• "home" — takes you back to where you searched for vendors, so you can look for something else\n` +
-  `• "cancel" — cancels a booking you've already paid for, and refunds you in full`;
+  `• "home" — ends this chat and takes you back to search, so you can look for something else\n` +
+  `• "cancel" — cancels a booking you've already paid for (only before the vendor accepts it), and refunds you in full\n` +
+  `\nThis chat also ends on its own after 6 hours of quiet — just message again to start over.`;
 
 /**
  * Sends (or re-sends) the WhatsApp-native "Accept" button for a pending offer,

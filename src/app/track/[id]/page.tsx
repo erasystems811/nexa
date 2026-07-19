@@ -55,8 +55,8 @@ export default async function TrackOrderPage({
         <Card className="mt-4">
           <h2 className="text-sm font-medium">Changed your mind?</h2>
           <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-            The vendor hasn&rsquo;t accepted this booking yet, so you can still cancel for a full,
-            automatic refund.
+            You can cancel for a full, automatic refund — but only before the vendor accepts or starts
+            the job. They haven&rsquo;t accepted yet, so you&rsquo;re still in time.
           </p>
           <div className="mt-3">
             <CancelButton bookingId={booking.id} token={t ?? ""} />

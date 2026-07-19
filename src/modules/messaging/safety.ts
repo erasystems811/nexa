@@ -2,8 +2,35 @@ import "server-only";
 
 import type { ModerationFlagReason } from "@/lib/db/types";
 
-const BANK_WORDS =
-  /\b(account\s*(number|no|nos)|acct|a\/c|opay|moniepoint|kuda|palmpay|gtb|gtbank|zenith|uba|firstbank|first bank|access bank|sterling|fidelity|wema|ecobank|stanbic|union bank|polaris|keystone)\b/i;
+/**
+ * Any Nigerian bank or fintech name, plus the phrases that ask for an account.
+ * Naming a bank in chat is how an off-platform payment starts ("send it to my
+ * Opay"), so any of these raises the same bank_account flag a bare account number
+ * does. The list is deliberately broad and will over-match ordinary words like
+ * "access" — that is fine here: a human reviews every flag, and missing a real
+ * off-platform attempt is the costlier mistake.
+ */
+const BANK_NAME_WORDS = [
+  // Asking for an account
+  "account\\s*(number|no|nos)", "acct", "a/c", "bank\\s*details",
+  "send\\s*(it\\s*)?to\\s*(my|this)?\\s*account", "transfer\\s*to",
+  // Banks
+  "access", "diamond", "gtb", "gtbank", "guaranty\\s*trust", "zenith",
+  "uba", "united\\s*bank\\s*for\\s*africa", "first\\s*bank", "firstbank", "fbn",
+  "fcmb", "first\\s*city\\s*monument", "fidelity", "union\\s*bank", "sterling",
+  "wema", "alat", "ecobank", "stanbic", "ibtc", "polaris", "keystone",
+  "unity\\s*bank", "heritage\\s*bank", "providus", "globus", "suntrust",
+  "jaiz", "lotus\\s*bank", "taj\\s*bank", "coronation", "citibank",
+  "standard\\s*chartered", "rand\\s*merchant", "premium\\s*trust", "premiumtrust",
+  "titan\\s*trust", "nova\\s*bank", "parallex", "optimus",
+  // Fintechs / neobanks
+  "opay", "palmpay", "moniepoint", "monie\\s*point", "kuda", "carbon",
+  "fairmoney", "fair\\s*money", "vbank", "vfd", "rubies", "sparkle", "eyowo",
+  "chipper", "barter", "piggyvest", "piggy\\s*vest", "cowrywise", "gomoney",
+  "go\\s*money", "raven\\s*bank", "renmoney", "aella", "mintyn", "sofri", "roqqu",
+];
+
+const BANK_WORDS = new RegExp(`\\b(${BANK_NAME_WORDS.join("|")})\\b`, "i");
 
 const OFF_PLATFORM_WORDS =
   /\b(whatsapp|whats app|wats app|watsapp|telegram|instagram|snapchat|dm me|inbox me)\b|(?:call|text|message|chat|reach)\s+me\s+(?:on|at|through|via)|(?:outside|off)\s+(?:the\s+)?(?:app|platform)|(?:pay|send)\s+(?:me\s+)?(?:directly|cash|outside)/i;
