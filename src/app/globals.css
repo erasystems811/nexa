@@ -111,6 +111,17 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+/* Admin uses bg-[color:var(--color-ink)] as its primary/emphasis fill — buttons,
+   active tabs, highlight cards, toggles. That idiom is from the light theme,
+   where ink is near-black. On this brown console ink is a cream, so those fills
+   turn near-white and swallow their own white text — the "shining cards". Repaint
+   every ink-FILLED element (never ink TEXT) as the accent, which is what
+   "primary" should read as here. Declared after .card so the highlight cards,
+   which are both .card and bg-ink, pick this up too. */
+.admin-shell [class*="bg-[color:var(--color-ink)]"] {
+  background-color: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+}
 
 @layer utilities {
   /* Soft premium card shadow. */
