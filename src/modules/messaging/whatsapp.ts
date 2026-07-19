@@ -89,10 +89,11 @@ function parseExitIntent(text: string): { rest: string } | null {
 }
 
 /**
- * The other door out - not "leave this chat" or "cancel my booking", but
- * "put me in touch with an actual person at Nexa". Kept as its own word
- * (never folded into "home") since it means something different: it doesn't
- * end anything, it starts a request a human answers.
+ * The keyword stays "help" (matches what a customer already expects to type),
+ * but it's never introduced as a bare word - always framed as "if you have a
+ * complaint", so it reads as "something's actually wrong", not "help me
+ * search" or "I have a small question". The wording carries the bar, not
+ * the word.
  */
 const HELP_COMMAND = /^help\b[,:.]?\s*/i;
 
@@ -882,17 +883,25 @@ export async function handleListingSelected(input: { waId: string; listingId: st
  * Told once, right as a conversation actually begins - not left for a
  * customer to discover by accident, and not repeated on every message either.
  *
- * Only three words taught here on purpose, even though the code also quietly
- * accepts a few natural synonyms ("menu", "start over", "exit", "end chat"
- * all do the same thing as "home") - teaching one clear word per action beats
- * listing every alias and making the customer pick.
+ * Deliberately doesn't mention "cancel" or "help" here - neither means
+ * anything yet at this point (there's no booking to cancel, and nothing
+ * could have gone wrong before one exists), so introducing them this early
+ * would just be noise on top of the one thing that IS useful right now.
+ * They're taught later, at the moment they actually become usable - see
+ * BOOKING_KEYWORD_NOTE, sent alongside the payment confirmation.
  */
-const KEYWORD_GLOSSARY =
-  `A few things you can type anytime:\n` +
-  `• "home" — ends this chat and takes you back to search, so you can look for something else\n` +
-  `• "cancel" — cancels a booking you've already paid for (only before the vendor accepts it), and refunds you in full\n` +
-  `• "help" — puts you in touch with an actual person at Nexa\n` +
-  `\nThis chat also ends on its own after 6 hours of quiet — just message again to start over.`;
+const KEYWORD_GLOSSARY = `(Want something else instead? Just type "home" anytime.)`;
+
+/**
+ * Sent once a real booking exists - the first moment "cancel" or "help"
+ * mean anything. "help" is deliberately framed as "if you have a complaint",
+ * not just "something wrong" or "need help" - either of those reads as
+ * covering any small inconvenience, and gets typed for things a real person
+ * shouldn't need to be paged for. "Complaint" sets the actual bar.
+ */
+const BOOKING_KEYWORD_NOTE =
+  `\n\nYou can type "cancel" to cancel this booking for a refund (only before the vendor accepts). ` +
+  `If you have a complaint, type "help" to reach a real person at Nexa.`;
 
 /**
  * Sends (or re-sends) the WhatsApp-native "Accept" button for a pending offer,
@@ -1148,7 +1157,7 @@ async function completeCheckoutFromWhatsapp(input: {
       to: input.waId,
       body: result.checkoutUrl
         ? `Almost there - tap to pay: ${result.checkoutUrl}`
-        : `Payment received! Your booking is confirmed. Track it anytime here: ${trackingUrlFor(result.bookingId)}`,
+        : `Payment received! Your booking is confirmed. Track it anytime here: ${trackingUrlFor(result.bookingId)}${BOOKING_KEYWORD_NOTE}`,
     });
   } catch (error) {
     await sendWhatsappText({
