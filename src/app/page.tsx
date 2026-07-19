@@ -1,7 +1,6 @@
 import { listCategories, categoryImages } from "@/modules/marketplace";
 import { searchVendors } from "@/modules/search";
 import { getSession } from "@/modules/auth";
-import { FLAGS, isEnabled } from "@/modules/settings";
 import Link from "next/link";
 import Image from "next/image";
 import { Logo } from "@/components/logo";
@@ -116,16 +115,13 @@ export default async function HomePage() {
         ) : null}
 
         <section className="mt-14">
-          <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] p-7 text-white">
+          <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] px-6 py-4 text-white">
             <div
               aria-hidden
               className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-white/10 blur-2xl"
             />
-            <p className="text-xs font-medium uppercase tracking-wide text-white/60">Plan My Event</p>
-            <h2 className="mt-1.5 font-display text-2xl">Let Nexa build the whole event for you.</h2>
-            <p className="mt-2 max-w-md text-sm text-white/75">
-              {planMyEventLive ? "Tell us the event — we'll assemble the package." : "Coming soon."}
-            </p>
+            <h2 className="relative font-display text-base sm:text-lg">Let Nexa plan your event for you</h2>
+            <p className="relative shrink-0 font-display text-lg italic text-white/90 sm:text-xl">Nexa it!</p>
           </div>
         </section>
 
