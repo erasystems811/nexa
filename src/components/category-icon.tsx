@@ -58,6 +58,14 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M15 10.5l6-2.5v8l-6-2.5z" />
     </>
   ),
+  "car-rental": (
+    <>
+      <path d="M4.5 14h15" />
+      <path d="M6 14l1.4-4.1A2 2 0 0 1 9.3 8.6h5.4a2 2 0 0 1 1.9 1.3L18 14" />
+      <circle cx="8.5" cy="15.2" r="1.5" />
+      <circle cx="15.5" cy="15.2" r="1.5" />
+    </>
+  ),
   decor: (
     <>
       <path d="M4 20.5v-4.5a8 8 0 0 1 16 0v4.5" />

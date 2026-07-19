@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const UPDATED = "14 July 2026";
-const CONTACT = "chidera@erasystems.com.ng";
+const CONTACT = "hello@erasystems.com.ng";
 
 export default function TermsPage() {
   return (

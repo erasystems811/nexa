@@ -3,34 +3,52 @@ import "server-only";
 import type { ModerationFlagReason } from "@/lib/db/types";
 
 /**
- * Any Nigerian bank or fintech name, plus the phrases that ask for an account.
- * Naming a bank in chat is how an off-platform payment starts ("send it to my
- * Opay"), so any of these raises the same bank_account flag a bare account number
- * does. The list is deliberately broad and will over-match ordinary words like
- * "access" — that is fine here: a human reviews every flag, and missing a real
- * off-platform attempt is the costlier mistake.
+ * Bank flagging, in two tiers, so a bank name catches off-platform payment
+ * attempts without flagging every ordinary sentence:
+ *
+ *   HARD  coined bank / fintech names that never appear in ordinary event chat.
+ *         Naming one at all is a flag ("pay me on my opay").
+ *   SOFT  bank names that are also everyday words (access, sterling, fidelity…).
+ *         Flagged ONLY when the message is clearly about money — otherwise
+ *         "do you have access to the venue?" or "high-fidelity sound" would trip.
+ *
+ * Full multi-word forms ("access bank", "first bank") are HARD — unambiguous.
+ * A human still reviews every flag, so the bar is "plausible payment attempt".
  */
-const BANK_NAME_WORDS = [
-  // Asking for an account
-  "account\\s*(number|no|nos)", "acct", "a/c", "bank\\s*details",
-  "send\\s*(it\\s*)?to\\s*(my|this)?\\s*account", "transfer\\s*to",
-  // Banks
-  "access", "diamond", "gtb", "gtbank", "guaranty\\s*trust", "zenith",
-  "uba", "united\\s*bank\\s*for\\s*africa", "first\\s*bank", "firstbank", "fbn",
-  "fcmb", "first\\s*city\\s*monument", "fidelity", "union\\s*bank", "sterling",
-  "wema", "alat", "ecobank", "stanbic", "ibtc", "polaris", "keystone",
-  "unity\\s*bank", "heritage\\s*bank", "providus", "globus", "suntrust",
-  "jaiz", "lotus\\s*bank", "taj\\s*bank", "coronation", "citibank",
-  "standard\\s*chartered", "rand\\s*merchant", "premium\\s*trust", "premiumtrust",
-  "titan\\s*trust", "nova\\s*bank", "parallex", "optimus",
-  // Fintechs / neobanks
-  "opay", "palmpay", "moniepoint", "monie\\s*point", "kuda", "carbon",
-  "fairmoney", "fair\\s*money", "vbank", "vfd", "rubies", "sparkle", "eyowo",
-  "chipper", "barter", "piggyvest", "piggy\\s*vest", "cowrywise", "gomoney",
-  "go\\s*money", "raven\\s*bank", "renmoney", "aella", "mintyn", "sofri", "roqqu",
-];
+const HARD_BANK = new RegExp(
+  `\\b(${[
+    // Fintechs / neobanks (coined words)
+    "opay", "palmpay", "palm\\s*pay", "moniepoint", "monie\\s*point", "kuda",
+    "fairmoney", "fair\\s*money", "vbank", "vfd", "rubies", "eyowo", "chipper",
+    "piggyvest", "piggy\\s*vest", "cowrywise", "gomoney", "go\\s*money", "renmoney",
+    "aella", "mintyn", "sofri", "roqqu",
+    // Banks (abbreviations / coined names)
+    "gtb", "gtbank", "gtworld", "uba", "fcmb", "ecobank", "wema", "alat",
+    "providus", "globus", "suntrust", "jaiz", "parallex", "stanbic", "ibtc", "optimus",
+    // Unambiguous when written in full
+    "access\\s*bank", "first\\s*bank", "firstbank", "fbn", "union\\s*bank",
+    "unity\\s*bank", "heritage\\s*bank", "sterling\\s*bank", "keystone\\s*bank",
+    "polaris\\s*bank", "nova\\s*bank", "diamond\\s*bank", "zenith\\s*bank",
+    "fidelity\\s*bank", "premium\\s*trust", "premiumtrust", "titan\\s*trust",
+    "standard\\s*chartered", "lotus\\s*bank", "taj\\s*bank", "coronation",
+  ].join("|")})\\b`,
+  "i",
+);
 
-const BANK_WORDS = new RegExp(`\\b(${BANK_NAME_WORDS.join("|")})\\b`, "i");
+const SOFT_BANK = new RegExp(
+  `\\b(${[
+    "access", "sterling", "fidelity", "zenith", "keystone", "polaris", "nova",
+    "diamond", "carbon", "sparkle", "unity", "heritage", "union",
+  ].join("|")})\\b`,
+  "i",
+);
+
+/** A bare request for an account number — a flag on its own. */
+const ACCOUNT_PHRASE = /\b(account\s*(number|no|nos|details)|acct|a\/c|bank\s*details|nuban)\b/i;
+
+/** Signals the message is about moving money — used to un-ambiguate SOFT_BANK. */
+const ACCOUNT_CONTEXT =
+  /\b(account|acct|a\/c|bank|transfer|send|sent|pay|paid|deposit|number|details|wallet|nuban)\b|₦|\bngn\b|\bnaira\b/i;
 
 const OFF_PLATFORM_WORDS =
   /\b(whatsapp|whats app|wats app|watsapp|telegram|instagram|snapchat|dm me|inbox me)\b|(?:call|text|message|chat|reach)\s+me\s+(?:on|at|through|via)|(?:outside|off)\s+(?:the\s+)?(?:app|platform)|(?:pay|send)\s+(?:me\s+)?(?:directly|cash|outside)/i;
@@ -53,7 +71,14 @@ export function scanMessageBody(body: string): ModerationFlagReason[] {
     reasons.add("phone_number");
   }
 
-  if (hasUnpricedMatch(compact, /(^|\D)(\d{10})(\D|$)/g) || BANK_WORDS.test(body)) {
+  // An account number (10 digits, not a price), a bare "account number" phrase,
+  // or a bank name. A hard bank name flags outright; a soft one only when the
+  // message is otherwise about money — or sits next to an account number.
+  const accountNumber = hasUnpricedMatch(compact, /(^|\D)(\d{10})(\D|$)/g);
+  const namesBank =
+    HARD_BANK.test(body) || (SOFT_BANK.test(body) && (ACCOUNT_CONTEXT.test(body) || accountNumber));
+
+  if (accountNumber || ACCOUNT_PHRASE.test(body) || namesBank) {
     reasons.add("bank_account");
   }
 
