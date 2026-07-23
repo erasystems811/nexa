@@ -41,6 +41,13 @@ const serverSchema = z.object({
   NEXA_SUPER_ADMIN_USERNAME: z.string().optional(),
   NEXA_SUPER_ADMIN_EMAIL: z.string().email().optional(),
   NEXA_SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
+
+  // Semantic category matching for the WhatsApp bot ("someone to click
+  // pictures" -> Photography) - optional. Without it, discovery falls back to
+  // the existing keyword/stem/synonym matching alone, same as before this
+  // existed.
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
 });
 
 // Next.js inlines NEXT_PUBLIC_* only when referenced statically, so these cannot

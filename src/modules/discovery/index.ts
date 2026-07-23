@@ -5,6 +5,7 @@ import { listCategories, listCities } from "@/modules/marketplace";
 import { searchListings, type ListingResult } from "@/modules/search";
 import { sendWhatsappList, sendWhatsappText } from "@/modules/messaging/whatsapp";
 import { resolveQuery } from "./resolve";
+import { matchCategoriesSemantically } from "./semantic";
 
 /**
  * The front door for a stranger who has never dealt with Nexa before: they
@@ -88,13 +89,23 @@ export async function runColdDiscovery(input: {
   const [categories, cities] = await Promise.all([listCategories(), listCities()]);
   const resolved = resolveQuery(input.text, categories, cities);
 
-  // Every matched category ("light" should catch both "Lighting" and "String
-  // Lights"), plus a direct search of listing titles/descriptions - a listing
-  // can be the right answer without its category name literally being what
-  // the customer typed. Both run and get merged, not one instead of the other.
+  // Keyword/stem/synonym matching is fast and free, and already covers most
+  // real messages - only reach for the LLM when it comes up completely empty
+  // ("someone to click pictures" won't match anything in resolve.ts, but
+  // does mean Photography). Keeps the common case instant and this one
+  // genuinely optional: no OPENAI_API_KEY just means this never fires.
+  const categorySlugs =
+    resolved.categorySlugs.length > 0
+      ? resolved.categorySlugs
+      : await matchCategoriesSemantically(input.text, categories);
+
+  // Every matched category, plus a direct search of listing titles/
+  // descriptions - a listing can be the right answer without its category
+  // name (or meaning) being what the customer typed. Both run and get
+  // merged, not one instead of the other.
   const [byCategory, byText] = await Promise.all([
     Promise.all(
-      resolved.categorySlugs.map((categorySlug) =>
+      categorySlugs.map((categorySlug) =>
         searchListings({ categorySlug, citySlug: resolved.citySlug, limit: RESULT_LIMIT }),
       ),
     ),
