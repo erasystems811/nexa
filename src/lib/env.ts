@@ -36,6 +36,14 @@ const serverSchema = z.object({
   WHATSAPP_TEMPLATE_NAME: z.string().default("nexa_new_message"),
   WHATSAPP_TEMPLATE_LANG: z.string().default("en"),
 
+  // Bali (a separate ERA client chatbot) shares this Meta app/WABA and access
+  // token, via a second phone number. Messages for Bali's phone_number_id are
+  // relayed to Bali's own n8n instance untouched, never processed as Nexa
+  // messages -- see the businessPhoneId check in the webhook route.
+  BALI_WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  BALI_WEBHOOK_URL: z.string().optional(),
+  BALI_FORWARD_SECRET: z.string().optional(),
+
   // Fixed admin login. The username is what Admin types; the email is the
   // hidden Supabase Auth user that carries the admin session.
   NEXA_SUPER_ADMIN_USERNAME: z.string().optional(),

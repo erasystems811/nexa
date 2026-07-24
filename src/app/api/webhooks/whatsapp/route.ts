@@ -20,6 +20,41 @@ import { isEnabled, FLAGS } from "@/modules/settings/flags";
  * the same as it being safe.
  */
 
+/**
+ * Bali (a separate ERA client chatbot) shares this Meta app/WABA and access
+ * token via a second phone number, so Meta only lets us register one webhook
+ * URL for both. This forwards Bali's messages to Bali's own n8n instance,
+ * untouched and unprocessed by any Nexa logic -- full isolation, this route
+ * is purely a dumb relay for anything that isn't Nexa's own phone_number_id.
+ */
+async function forwardToBali(entryId: string, value: unknown): Promise<void> {
+  const env = serverEnv();
+  if (!env.BALI_WEBHOOK_URL || !env.BALI_FORWARD_SECRET) {
+    console.error("Bali webhook message received but BALI_WEBHOOK_URL/BALI_FORWARD_SECRET are not configured -- dropped");
+    return;
+  }
+
+  const forwardedPayload = {
+    object: "whatsapp_business_account",
+    entry: [{ id: entryId, changes: [{ field: "messages", value }] }],
+  };
+
+  try {
+    await fetch(env.BALI_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bali-forward-secret": env.BALI_FORWARD_SECRET,
+      },
+      body: JSON.stringify(forwardedPayload),
+    });
+  } catch (error) {
+    // Bali's own problem to retry/alert on from here; Nexa must not fail
+    // Meta's webhook delivery over Bali being down.
+    console.error("Failed to forward WhatsApp message to Bali", error);
+  }
+}
+
 function signatureIsValid(rawBody: string, header: string | null, appSecret: string): boolean {
   if (!header?.startsWith("sha256=")) return false;
 
@@ -64,11 +99,10 @@ export async function POST(request: NextRequest) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Still 200 when the feature is off, or Meta reads repeated non-2xx
-  // responses as "this webhook is broken" and disables it.
-  if (!(await isEnabled(FLAGS.whatsappMediatedChat))) {
-    return NextResponse.json({ ok: true });
-  }
+  // Gates Nexa's OWN message handling only, checked per-change below --
+  // Bali's forwarding must never depend on Nexa's feature flag, since they
+  // are unrelated bots sharing only the Meta app/webhook URL.
+  const nexaChatEnabled = await isEnabled(FLAGS.whatsappMediatedChat);
 
   let payload: unknown;
   try {
@@ -114,6 +148,17 @@ export async function POST(request: NextRequest) {
       };
 
       const businessPhoneId = value.metadata?.phone_number_id;
+
+      if (businessPhoneId && businessPhoneId === env.BALI_WHATSAPP_PHONE_NUMBER_ID) {
+        await forwardToBali((entry as { id?: string }).id ?? "", value);
+        continue;
+      }
+
+      // Still 200 when the feature is off, or Meta reads repeated non-2xx
+      // responses as "this webhook is broken" and disables it. Only skips
+      // Nexa's own handling -- Bali's forward above already happened.
+      if (!nexaChatEnabled) continue;
+
       const contacts = new Map<string, string | undefined>();
 
       for (const contact of Array.isArray(value.contacts) ? value.contacts : []) {
