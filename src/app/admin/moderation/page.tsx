@@ -1,7 +1,7 @@
 import { requireView, PERMISSIONS as P } from "@/modules/admin";
 import { listFlags } from "@/modules/admin";
 import { flagToStrikeAction, resolveFlagAction } from "@/modules/admin/actions";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui/card";
 import { ActionButton } from "../action-button";
 
 const REASON: Record<string, string> = {
@@ -21,24 +21,27 @@ export default async function ModerationPage() {
 
   return (
     <>
-      <PageHeader title="Flagged messages" subtitle="Delivered, not blocked. You decide what it means." />
+      <h1 className="font-serif text-2xl font-bold">Flagged messages</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Delivered, not blocked. You decide what it means.</p>
 
-      <h2 className="mb-2 text-sm font-semibold">Pending review</h2>
+      <h2 className="mb-2 mt-6 font-serif text-lg font-semibold">Pending review</h2>
       {pending.length === 0 ? (
-        <Card className="text-sm text-[color:var(--color-ink-muted)]">Nothing pending.</Card>
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">Nothing pending.</CardContent>
+        </Card>
       ) : (
         <ul className="space-y-3">
           {pending.map((f) => (
             <li key={f.id}>
               <Card>
-                <p className="text-xs font-medium uppercase tracking-wider text-[color:var(--color-danger)]">
-                  {REASON[f.reason] ?? f.reason}
-                </p>
-                <p className="mt-2 text-sm">&ldquo;{f.excerpt}&rdquo;</p>
-                <div className="mt-3 flex gap-2">
-                  <ActionButton label="Confirm breach" variant="primary" run={resolveFlagAction.bind(null, f.id, "confirmed")} />
-                  <ActionButton label="False positive" run={resolveFlagAction.bind(null, f.id, "dismissed")} />
-                </div>
+                <CardContent className="pt-6">
+                  <p className="text-xs font-medium uppercase tracking-wider text-destructive">{REASON[f.reason] ?? f.reason}</p>
+                  <p className="mt-2 text-sm">&ldquo;{f.excerpt}&rdquo;</p>
+                  <div className="mt-3 flex gap-2">
+                    <ActionButton label="Confirm breach" variant="primary" run={resolveFlagAction.bind(null, f.id, "confirmed")} />
+                    <ActionButton label="False positive" run={resolveFlagAction.bind(null, f.id, "dismissed")} />
+                  </div>
+                </CardContent>
               </Card>
             </li>
           ))}
@@ -47,17 +50,19 @@ export default async function ModerationPage() {
 
       {confirmed.length > 0 ? (
         <>
-          <h2 className="mb-2 mt-6 text-sm font-semibold">Confirmed — convert to a strike?</h2>
+          <h2 className="mb-2 mt-6 font-serif text-lg font-semibold">Confirmed — convert to a strike?</h2>
           <ul className="space-y-3">
             {confirmed.map((f) => (
               <li key={f.id}>
                 <Card>
-                  <p className="text-sm">&ldquo;{f.excerpt}&rdquo;</p>
-                  <div className="mt-3">
-                    {f.strike_id || f.status === "confirmed" ? (
-                      <ActionButton label="Record as a strike" variant="danger" confirm="Log this as a strike on the account?" run={flagToStrikeAction.bind(null, f.id)} />
-                    ) : null}
-                  </div>
+                  <CardContent className="pt-6">
+                    <p className="text-sm">&ldquo;{f.excerpt}&rdquo;</p>
+                    <div className="mt-3">
+                      {f.strike_id || f.status === "confirmed" ? (
+                        <ActionButton label="Record as a strike" variant="danger" confirm="Log this as a strike on the account?" run={flagToStrikeAction.bind(null, f.id)} />
+                      ) : null}
+                    </div>
+                  </CardContent>
                 </Card>
               </li>
             ))}

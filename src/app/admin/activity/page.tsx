@@ -1,11 +1,11 @@
 import { requireView, activityFeed, PERMISSIONS as P } from "@/modules/admin";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui/card";
 
 /**
- * The platform activity log. + the founder's requirement: every
- * action tied to the account that did it, so when several people manage the same
- * view you can see exactly who did what. Each row already carries the actor's
- * name because every admin action writes an audit_log entry under their id.
+ * The platform activity log. Every action tied to the account that did it,
+ * so when several people manage the same view you can see exactly who did
+ * what. Each row already carries the actor's name because every admin
+ * action writes an audit_log entry under their id.
  */
 const ACTION_LABELS: Record<string, string> = {
   approve_provider: "approved a provider",
@@ -47,29 +47,31 @@ export default async function ActivityPage() {
 
   return (
     <>
-      <PageHeader title="Activity" subtitle="Every staff action, tied to the person who did it." />
+      <h1 className="font-serif text-2xl font-bold">Activity</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Every staff action, tied to the person who did it.</p>
 
       {feed.length === 0 ? (
-        <Card className="text-sm text-[color:var(--color-ink-muted)]">No activity yet.</Card>
+        <Card className="mt-6">
+          <CardContent className="pt-6 text-sm text-muted-foreground">No activity yet.</CardContent>
+        </Card>
       ) : (
-        <Card>
-          <ul className="divide-y divide-[color:var(--color-line)]">
-            {feed.map((e) => {
-              const who = (e.profiles as unknown as { full_name: string | null } | null)?.full_name ?? "A staff member";
-              return (
-                <li key={e.id} className="flex items-baseline justify-between gap-4 py-2.5">
-                  <span className="text-sm">
-                    <span className="font-medium">{who}</span>{" "}
-                    {ACTION_LABELS[e.action] ?? e.action.replace(/_/g, " ")}
-                    {e.entity_type ? <span className="text-[color:var(--color-ink-muted)]"> · {e.entity_type}</span> : null}
-                  </span>
-                  <span className="shrink-0 text-xs text-[color:var(--color-ink-muted)]">
-                    {new Date(e.created_at).toLocaleString("en-NG")}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+        <Card className="mt-6">
+          <CardContent className="p-0">
+            <ul className="divide-y">
+              {feed.map((e) => {
+                const who = (e.profiles as unknown as { full_name: string | null } | null)?.full_name ?? "A staff member";
+                return (
+                  <li key={e.id} className="flex items-baseline justify-between gap-4 px-6 py-2.5">
+                    <span className="text-sm">
+                      <span className="font-medium">{who}</span> {ACTION_LABELS[e.action] ?? e.action.replace(/_/g, " ")}
+                      {e.entity_type ? <span className="text-muted-foreground"> · {e.entity_type}</span> : null}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString("en-NG")}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
         </Card>
       )}
     </>

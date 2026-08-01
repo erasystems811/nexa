@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import { setCategoryImageAction, type AdminActionState } from "@/modules/admin/actions";
-import { Alert } from "@/components/ui";
 
 const initialState: AdminActionState = {};
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -24,7 +23,7 @@ export function UploadPhoto({ slug, hasPhoto }: { slug: string; hasPhoto: boolea
   return (
     <form action={formAction} className="mt-3">
       <label className="block cursor-pointer">
-        <span className="inline-flex h-9 items-center rounded-lg border border-[color:var(--color-line)] px-3 text-xs font-medium hover:bg-[color:var(--color-surface-sunk)]">
+        <span className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-muted">
           {pending ? "Uploading…" : hasPhoto ? "Replace photo" : "Upload a photo"}
         </span>
         <input
@@ -46,16 +45,8 @@ export function UploadPhoto({ slug, hasPhoto }: { slug: string; hasPhoto: boolea
         />
       </label>
 
-      {tooBig ? (
-        <div className="mt-2">
-          <Alert>That photo is over 10MB. Please choose a smaller one.</Alert>
-        </div>
-      ) : null}
-      {state.error ? (
-        <div className="mt-2">
-          <Alert>{state.error}</Alert>
-        </div>
-      ) : null}
+      {tooBig ? <p className="mt-2 text-xs text-destructive">That photo is over 10MB. Please choose a smaller one.</p> : null}
+      {state.error ? <p className="mt-2 text-xs text-destructive">{state.error}</p> : null}
     </form>
   );
 }

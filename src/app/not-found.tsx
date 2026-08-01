@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { Logo } from "@/components/logo";
-import { Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function NotFound() {
   return (
@@ -10,14 +11,14 @@ export default function NotFound() {
         <Logo markClassName="size-12 rounded-2xl" textClassName="text-lg" />
       </Link>
 
-      <Card className="text-center">
-        <h1 className="text-lg font-semibold">Page not found</h1>
-        <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-          That page doesn&rsquo;t exist on Nexa.
-        </p>
-        <Link href={"/" as Route} className="mt-6 block">
-          <Button className="w-full">Back to Nexa</Button>
-        </Link>
+      <Card>
+        <CardContent className="pt-6 text-center">
+          <h1 className="text-lg font-semibold">Page not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">That page doesn&rsquo;t exist on Nexa.</p>
+          <Link href={"/" as Route} className="mt-6 block">
+            <Button className="w-full">Back to Nexa</Button>
+          </Link>
+        </CardContent>
       </Card>
     </main>
   );
