@@ -1,6 +1,6 @@
 import { getFlags, getSettings } from "@/modules/settings";
 import { requireView, listNotificationNumbers, PERMISSIONS as P } from "@/modules/admin";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FlagToggle } from "./flag-toggle";
 import { SettingRow } from "./setting-row";
 import { NotificationNumbers } from "./notification-numbers";
@@ -20,54 +20,64 @@ export default async function AdminSettingsPage() {
   ]);
 
   return (
-    <>
-      <PageHeader
-        title="Settings"
-        subtitle="The numbers Nexa runs on. Change them here — never in code."
-      />
+    <div className="space-y-8">
+      <div>
+        <h1 className="mb-2 text-3xl font-serif font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground">The numbers Nexa runs on. Change them here — never in code.</p>
+      </div>
 
       <Card>
-        <h2 className="text-sm font-semibold">Platform settings</h2>
-        <div className="mt-2">
-          {settings.map((setting) => (
-            <SettingRow key={setting.key} setting={setting} />
-          ))}
-          {settings.length === 0 ? (
-            <p className="py-4 text-sm text-[color:var(--color-ink-muted)]">
-              No settings found. Have the migrations been applied?
-            </p>
-          ) : null}
-        </div>
+        <CardHeader>
+          <CardTitle>Platform settings</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-border">
+            {settings.map((setting) => (
+              <SettingRow key={setting.key} setting={setting} />
+            ))}
+            {settings.length === 0 ? (
+              <p className="px-6 py-4 text-sm text-muted-foreground">
+                No settings found. Have the migrations been applied?
+              </p>
+            ) : null}
+          </div>
+        </CardContent>
       </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-sm font-semibold">Feature flags</h2>
-        <p className="mt-1 text-xs leading-relaxed text-[color:var(--color-ink-muted)]">
-          The schema for every feature below already exists. These switches control
-          who can see it. Turning one on is a config change, never a deployment.
-        </p>
-        <div className="mt-2">
-          {flags.map((flag) => (
-            <FlagToggle key={flag.key} flag={flag} />
-          ))}
-          {flags.length === 0 ? (
-            <p className="py-4 text-sm text-[color:var(--color-ink-muted)]">
-              No flags found. Have the migrations been applied?
-            </p>
-          ) : null}
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Feature flags</CardTitle>
+          <CardDescription>
+            The schema for every feature below already exists. These switches control who can see
+            it. Turning one on is a config change, never a deployment.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-border">
+            {flags.map((flag) => (
+              <FlagToggle key={flag.key} flag={flag} />
+            ))}
+            {flags.length === 0 ? (
+              <p className="px-6 py-4 text-sm text-muted-foreground">
+                No flags found. Have the migrations been applied?
+              </p>
+            ) : null}
+          </div>
+        </CardContent>
       </Card>
 
-      <Card className="mt-6">
-        <h2 className="text-sm font-semibold">Support notifications</h2>
-        <p className="mt-1 text-xs leading-relaxed text-[color:var(--color-ink-muted)]">
-          Every number here gets a WhatsApp message the moment a customer types &ldquo;help&rdquo; to
-          the bot, or submits the website contact form.
-        </p>
-        <div className="mt-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>Support notifications</CardTitle>
+          <CardDescription>
+            Every number here gets a WhatsApp message the moment a customer types &ldquo;help&rdquo;
+            to the bot, or submits the website contact form.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <NotificationNumbers numbers={notificationNumbers} />
-        </div>
+        </CardContent>
       </Card>
-    </>
+    </div>
   );
 }

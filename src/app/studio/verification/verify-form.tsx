@@ -3,7 +3,9 @@
 import { useActionState, useState } from "react";
 import { submitIdDocumentAction } from "@/modules/provider/actions";
 import type { FormState } from "@/modules/provider/actions";
-import { Alert, Button, Field } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initialState: FormState = {};
 
@@ -32,7 +34,7 @@ export function VerifyForm({
 
   if (remainingTypes.length === 0) {
     return (
-      <p className="text-sm text-[color:var(--color-ink-muted)]">
+      <p className="text-sm text-muted-foreground">
         You have sent Nexa every kind of ID we accept. Nothing more is needed from you.
       </p>
     );
@@ -40,14 +42,15 @@ export function VerifyForm({
 
   return (
     <form action={action} className="space-y-4">
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Which ID is this?</span>
+      <div className="space-y-1.5">
+        <Label htmlFor="id_type">Which ID is this?</Label>
         <select
+          id="id_type"
           name="id_type"
           required
           value={chosen}
           onChange={(e) => setChosen(e.target.value)}
-          className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <option value="" disabled>
             Choose one
@@ -58,26 +61,30 @@ export function VerifyForm({
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      {needsNumber ? <Field label="The number on it" name="id_number" required /> : null}
+      {needsNumber ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="id_number">The number on it</Label>
+          <Input id="id_number" name="id_number" required />
+        </div>
+      ) : null}
 
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Photo of it</span>
+      <div className="space-y-1.5">
+        <Label htmlFor="id_file">Photo of it</Label>
         <input
+          id="id_file"
           type="file"
           name="id_file"
           required
           accept={acceptedMimeTypes.join(",")}
-          className="w-full rounded-xl border border-[color:var(--color-line)] bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--color-surface-sunk)] file:px-4 file:py-2 file:text-sm"
+          className="flex w-full rounded-md border border-input bg-transparent p-2.5 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-4 file:py-2 file:text-sm"
         />
-        <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">
-          A clear photo or scan. JPG, PNG or WEBP, under 10MB.
-        </span>
-      </label>
+        <span className="block text-xs text-muted-foreground">A clear photo or scan. JPG, PNG or WEBP, under 10MB.</span>
+      </div>
 
-      {state.error ? <Alert>{state.error}</Alert> : null}
-      {state.ok ? <Alert tone="success">Sent. Nexa will look at it.</Alert> : null}
+      {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+      {state.ok ? <p className="text-sm text-emerald-700">Sent. Nexa will look at it.</p> : null}
 
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Sending…" : "Send this to Nexa"}

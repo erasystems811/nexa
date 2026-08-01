@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { resumePaymentAction, type CheckoutState } from "@/modules/bookings/actions";
-import { Alert, Button } from "@/components/ui";
+import { Button } from "@/components/ui/button";
 
 /**
  * "Complete payment" for a booking that was started but never paid. Submits to
@@ -28,9 +28,9 @@ export function ResumePaymentButton({
         {pending ? "Taking you to payment…" : "Complete payment"}
       </Button>
       {state.error ? (
-        <div className="mt-2">
-          <Alert>{state.error}</Alert>
-        </div>
+        <p className="mt-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive" role="status">
+          {state.error}
+        </p>
       ) : null}
     </form>
   );

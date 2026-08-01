@@ -49,7 +49,7 @@ export function PhotoUpload({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className={`group relative block w-full overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-[color:var(--color-surface-sunk)] transition ${
+        className={`group relative block w-full overflow-hidden rounded-2xl border bg-muted transition ${
           aspect === "square" ? "aspect-square max-w-[160px]" : "aspect-[3/1]"
         }`}
       >
@@ -57,7 +57,7 @@ export function PhotoUpload({
           // eslint-disable-next-line @next/next/no-img-element -- user-uploaded, arbitrary origin
           <img src={url} alt="" className="h-full w-full object-cover" />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-xs text-[color:var(--color-ink-muted)]">
+          <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
             Add a photo
           </span>
         )}
@@ -76,7 +76,7 @@ export function PhotoUpload({
           e.target.value = "";
         }}
       />
-      {error ? <p className="mt-1 text-xs text-[color:var(--color-danger)]">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }

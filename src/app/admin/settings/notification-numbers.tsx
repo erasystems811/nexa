@@ -6,6 +6,9 @@ import {
   removeNotificationNumberAction,
   type AdminActionState,
 } from "@/modules/admin/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initialState: AdminActionState = {};
 
@@ -36,65 +39,43 @@ export function NotificationNumbers({
 
   return (
     <div>
-      <ul className="divide-y divide-[color:var(--color-line)]">
+      <ul className="divide-y divide-border">
         {numbers.map((n) => (
           <li key={n.id} className="flex items-center justify-between gap-4 py-3">
             <div>
-              <p className="text-sm font-medium">{n.phone}</p>
-              {n.label ? (
-                <p className="text-xs text-[color:var(--color-ink-muted)]">{n.label}</p>
-              ) : null}
+              <p className="text-sm font-medium text-foreground">{n.phone}</p>
+              {n.label ? <p className="text-xs text-muted-foreground">{n.label}</p> : null}
             </div>
             <button
               type="button"
               disabled={removing}
               onClick={() => remove(n.id)}
-              className="text-xs font-medium text-[color:var(--color-danger)] disabled:opacity-40"
+              className="text-xs font-medium text-destructive disabled:opacity-40"
             >
               Remove
             </button>
           </li>
         ))}
         {numbers.length === 0 ? (
-          <li className="py-3 text-sm text-[color:var(--color-ink-muted)]">No numbers added yet.</li>
+          <li className="py-3 text-sm text-muted-foreground">No numbers added yet.</li>
         ) : null}
       </ul>
-      {removeError ? (
-        <p className="mt-2 text-xs text-[color:var(--color-danger)]">{removeError}</p>
-      ) : null}
+      {removeError ? <p className="mt-2 text-xs text-destructive">{removeError}</p> : null}
 
       <form action={formAction} className="mt-4 flex flex-wrap items-end gap-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-[color:var(--color-ink-muted)]">
-            WhatsApp number
-          </label>
-          <input
-            name="phone"
-            placeholder="2348012345678"
-            className="h-9 w-40 rounded-lg border border-[color:var(--color-line)] px-2 text-sm"
-          />
+          <Label className="mb-1 block text-xs font-medium text-muted-foreground">WhatsApp number</Label>
+          <Input name="phone" placeholder="2348012345678" className="h-9 w-40" />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-[color:var(--color-ink-muted)]">
-            Label (optional)
-          </label>
-          <input
-            name="label"
-            placeholder="e.g. Chidera"
-            className="h-9 w-40 rounded-lg border border-[color:var(--color-line)] px-2 text-sm"
-          />
+          <Label className="mb-1 block text-xs font-medium text-muted-foreground">Label (optional)</Label>
+          <Input name="label" placeholder="e.g. Chidera" className="h-9 w-40" />
         </div>
-        <button
-          type="submit"
-          disabled={pending}
-          className="h-9 rounded-lg bg-[color:var(--color-ink)] px-3 text-xs font-medium text-white disabled:opacity-40"
-        >
+        <Button type="submit" size="sm" disabled={pending}>
           Add
-        </button>
+        </Button>
       </form>
-      {state.error ? (
-        <p className="mt-2 text-xs text-[color:var(--color-danger)]">{state.error}</p>
-      ) : null}
+      {state.error ? <p className="mt-2 text-xs text-destructive">{state.error}</p> : null}
     </div>
   );
 }

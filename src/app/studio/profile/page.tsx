@@ -1,5 +1,4 @@
 import { requireProvider, getContact } from "@/modules/provider";
-import { PageHeader } from "@/components/ui";
 import { ProfileForm } from "./profile-form";
 import { PhotoUpload } from "./photo-upload";
 
@@ -10,9 +9,10 @@ export default async function StudioProfile() {
 
   return (
     <>
-      <PageHeader title="Business profile" subtitle="How customers see you." />
+      <h1 className="font-serif text-2xl font-bold">Business profile</h1>
+      <p className="mt-1 text-sm text-muted-foreground">How customers see you.</p>
 
-      <div className="mb-6 space-y-4">
+      <div className="mb-6 mt-6 space-y-4">
         <PhotoUpload kind="cover" label="Cover photo" aspect="wide" initialUrl={provider.cover_url} />
         <PhotoUpload kind="logo" label="Logo" aspect="square" initialUrl={provider.logo_url} />
       </div>

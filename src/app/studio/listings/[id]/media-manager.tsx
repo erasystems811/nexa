@@ -34,12 +34,12 @@ export function MediaManager({
         <ul className="mb-4 grid grid-cols-3 gap-2">
           {media.map((m) => (
             <li key={m.id} className="relative">
-              <div className="aspect-square overflow-hidden rounded-lg bg-[color:var(--color-surface-sunk)]">
+              <div className="aspect-square overflow-hidden rounded-lg bg-muted">
                 {m.url && m.kind === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed URL to a private bucket; next/image cannot sign it
                   <img src={m.url} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-[color:var(--color-ink-muted)]">
+                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
                     {m.kind}
                   </div>
                 )}
@@ -82,16 +82,16 @@ export function MediaManager({
             )
               e.preventDefault();
           }}
-          className="h-10 shrink-0 rounded-lg bg-[color:var(--color-ink)] px-4 text-sm font-medium text-white disabled:opacity-40"
+          className="h-10 shrink-0 rounded-lg bg-primary px-4 text-sm font-medium text-white disabled:opacity-40"
         >
           {pending ? "Uploading…" : "Upload"}
         </button>
       </form>
 
       {state.error ? (
-        <p className="mt-2 text-xs text-[color:var(--color-danger)]">{state.error}</p>
+        <p className="mt-2 text-xs text-destructive">{state.error}</p>
       ) : null}
-      <p className="mt-2 text-xs text-[color:var(--color-ink-muted)]">
+      <p className="mt-2 text-xs text-muted-foreground">
         Every upload is reviewed by Admin before it appears publicly.
       </p>
     </div>

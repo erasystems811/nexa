@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { updateSettingAction, type ActionState } from "./actions";
 import { formatKobo } from "@/lib/money";
 import type { PlatformSetting } from "@/lib/db/types";
+import { Button } from "@/components/ui/button";
 
 const initialState: ActionState = {};
 
@@ -28,23 +29,15 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
   );
 
   return (
-    <div className="border-b border-[color:var(--color-line)] py-4 last:border-0">
+    <div className="px-6 py-4">
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-sm font-medium">{setting.label}</p>
-        {shown ? (
-          <p className="shrink-0 text-sm tabular-nums text-[color:var(--color-ink-muted)]">
-            {shown}
-          </p>
-        ) : null}
+        <p className="text-sm font-medium text-foreground">{setting.label}</p>
+        {shown ? <p className="shrink-0 text-sm tabular-nums text-muted-foreground">{shown}</p> : null}
       </div>
 
-      <p className="mt-0.5 font-mono text-xs text-[color:var(--color-ink-muted)]">
-        {setting.key}
-      </p>
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">{setting.key}</p>
       {setting.description ? (
-        <p className="mt-1.5 text-xs leading-relaxed text-[color:var(--color-ink-muted)]">
-          {setting.description}
-        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{setting.description}</p>
       ) : null}
 
       <form action={formAction} className="mt-3 flex items-stretch gap-2">
@@ -55,8 +48,8 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
             {/* What the server stores: kobo. Naira × 100, rounded so no fraction
                 of a kobo slips through. */}
             <input type="hidden" name="value" value={Math.round(Number(naira || 0) * 100)} />
-            <div className="flex h-10 w-40 items-center rounded-lg border border-[color:var(--color-line)] px-3 focus-within:border-[color:var(--color-ink)]">
-              <span className="mr-1 text-sm text-[color:var(--color-ink-muted)]">₦</span>
+            <div className="flex h-9 w-40 items-center rounded-md border border-input bg-transparent px-3 shadow-sm focus-within:ring-1 focus-within:ring-ring">
+              <span className="mr-1 text-sm text-muted-foreground">₦</span>
               <input
                 type="number"
                 step="1"
@@ -77,25 +70,17 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
             defaultValue={String(setting.value)}
             min={setting.min_value ?? undefined}
             max={setting.max_value ?? undefined}
-            className="h-10 w-40 rounded-lg border border-[color:var(--color-line)] px-3 text-sm tabular-nums outline-none focus:border-[color:var(--color-ink)]"
+            className="h-9 w-40 rounded-md border border-input bg-transparent px-3 text-sm tabular-nums shadow-sm outline-none focus:ring-1 focus:ring-ring"
           />
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="h-10 rounded-lg border border-[color:var(--color-line)] px-4 text-sm font-medium disabled:opacity-40"
-        >
+        <Button type="submit" variant="outline" size="sm" disabled={pending}>
           {pending ? "Saving…" : "Save"}
-        </button>
+        </Button>
       </form>
 
-      {state.error ? (
-        <p className="mt-1.5 text-xs text-[color:var(--color-danger)]">{state.error}</p>
-      ) : null}
-      {state.message ? (
-        <p className="mt-1.5 text-xs text-[color:var(--color-success)]">{state.message}</p>
-      ) : null}
+      {state.error ? <p className="mt-1.5 text-xs text-destructive">{state.error}</p> : null}
+      {state.message ? <p className="mt-1.5 text-xs text-green-500">{state.message}</p> : null}
     </div>
   );
 }

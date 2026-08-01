@@ -36,24 +36,24 @@ export function AvailabilityManager({
         <form action={action} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="listing_id" value={listingId} />
           <label className="flex-1">
-            <span className="mb-1 block text-xs text-[color:var(--color-ink-muted)]">Date</span>
+            <span className="mb-1 block text-xs text-muted-foreground">Date</span>
             <input
               name="date"
               type="date"
               required
-              className="h-10 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm"
+              className="h-10 w-full rounded-lg border border-input px-3 text-sm"
             />
           </label>
           <button
             type="submit"
             disabled={pending}
-            className="h-10 rounded-lg bg-[color:var(--color-ink)] px-4 text-sm font-medium text-white disabled:opacity-40"
+            className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white disabled:opacity-40"
           >
             Block
           </button>
         </form>
         {state.error ? (
-          <p className="mt-2 text-xs text-[color:var(--color-danger)]">{state.error}</p>
+          <p className="mt-2 text-xs text-destructive">{state.error}</p>
         ) : null}
       </Card>
 
@@ -62,7 +62,7 @@ export function AvailabilityManager({
           <h2 className="mb-2 text-sm font-semibold">Booked</h2>
           <ul className="space-y-1 text-sm">
             {booked.map((b, i) => (
-              <li key={i} className="text-[color:var(--color-ink-muted)]">
+              <li key={i} className="text-muted-foreground">
                 {new Date(b.start).toLocaleDateString("en-NG")} — booked
               </li>
             ))}
@@ -81,7 +81,7 @@ export function AvailabilityManager({
                   type="button"
                   disabled={removing}
                   onClick={() => startRemove(() => removeBlockAction(b.id, listingId))}
-                  className="text-xs text-[color:var(--color-danger)] disabled:opacity-40"
+                  className="text-xs text-destructive disabled:opacity-40"
                 >
                   Remove
                 </button>

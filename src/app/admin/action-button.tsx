@@ -43,10 +43,10 @@ export function ActionButton({
 
   const cls =
     variant === "primary"
-      ? "bg-[color:var(--color-ink)] text-white hover:opacity-90"
+      ? "bg-primary text-primary-foreground hover:bg-primary/90"
       : variant === "danger"
-        ? "border border-[color:var(--color-line)] text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]"
-        : "border border-[color:var(--color-line)] hover:bg-[color:var(--color-surface-sunk)]";
+        ? "border border-input text-destructive hover:bg-destructive/10"
+        : "border border-input hover:bg-accent hover:text-accent-foreground";
 
   return (
     <>
@@ -54,11 +54,11 @@ export function ActionButton({
         type="button"
         onClick={onClick}
         disabled={pending}
-        className={`h-9 rounded-lg px-3 text-xs font-medium transition-[opacity,transform,background-color] duration-150 active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 ${cls}`}
+        className={`h-9 rounded-md px-3 text-xs font-medium transition-[opacity,transform,background-color] duration-150 active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 ${cls}`}
       >
         {pending ? "…" : label}
       </button>
-      {error ? <span className="text-xs text-[color:var(--color-danger)]">{error}</span> : null}
+      {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </>
   );
 }

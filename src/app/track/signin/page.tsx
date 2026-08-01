@@ -2,8 +2,10 @@
 
 import { useActionState } from "react";
 import { signInWithPhoneAction, type PhoneSignInState } from "./actions";
-import { Logo } from "@/components/logo";
-import { Alert, Button, Field } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initialState: PhoneSignInState = {};
 
@@ -15,30 +17,40 @@ export default function TrackSignInPage() {
   const [state, formAction, pending] = useActionState(signInWithPhoneAction, initialState);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <Logo label="Nexa" markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight">Sign in</h1>
-      <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-        For customers who set a password from a WhatsApp booking&rsquo;s tracking page.
-      </p>
+    <div className="mx-auto max-w-sm">
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl">Sign in</CardTitle>
+          <CardDescription>
+            For customers who set a password from a WhatsApp booking&rsquo;s tracking page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={formAction} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">WhatsApp number</Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                defaultValue={state.phone ?? ""}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" autoComplete="current-password" required />
+            </div>
 
-      <form action={formAction} className="mt-8 space-y-4">
-        <Field
-          label="WhatsApp number"
-          name="phone"
-          type="tel"
-          autoComplete="tel"
-          defaultValue={state.phone ?? ""}
-          required
-        />
-        <Field label="Password" name="password" type="password" autoComplete="current-password" required />
+            {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
 
-        {state.error ? <Alert>{state.error}</Alert> : null}
-
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Signing in..." : "Sign in"}
-        </Button>
-      </form>
-    </main>
+            <Button type="submit" className="w-full" disabled={pending}>
+              {pending ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

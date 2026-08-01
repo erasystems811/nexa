@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
+import { Calendar, MapPin, ShieldCheck } from "lucide-react";
 import { requireSession } from "@/modules/auth";
 import { getMyOrder } from "@/modules/bookings";
 import { formatKobo } from "@/lib/money";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPill } from "@/components/status-pill";
-import { BackBar } from "@/components/back-bar";
 import { ResumePaymentButton } from "../resume-payment-button";
 
 /**
@@ -25,88 +25,130 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const code = codes[0] ?? null;
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
-      <BackBar fallback="/orders" className="mb-4" />
-      <PageHeader title={booking.listings.title} subtitle={booking.providers.business_name} />
-
-      <div className="flex items-center justify-between">
-        <StatusPill status={booking.status} />
-        <p className="font-mono text-xs text-[color:var(--color-ink-muted)]">{booking.reference}</p>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <h1 className="mb-1 font-serif text-3xl font-bold text-primary">{booking.listings.title}</h1>
+          <p className="text-muted-foreground">{booking.providers.business_name}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <StatusPill status={booking.status} />
+          <span className="font-mono text-xs text-muted-foreground">{booking.reference}</span>
+        </div>
       </div>
 
-      {booking.status === "pending" ? (
-        <Card className="mt-4 border-[color:var(--color-accent)]">
-          <h2 className="text-sm font-medium">This booking is not paid yet</h2>
-          <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-            Nothing is held and the vendor has not been notified until you pay. Finish now to lock it
-            in.
-          </p>
-          <div className="mt-3">
-            <ResumePaymentButton bookingId={booking.id} />
-          </div>
-        </Card>
-      ) : null}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="space-y-6 md:col-span-2">
+          {booking.status === "pending" ? (
+            <Card className="border-accent">
+              <CardContent className="p-6">
+                <h2 className="font-semibold">This booking is not paid yet</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Nothing is held and the vendor has not been notified until you pay. Finish now
+                  to lock it in.
+                </p>
+                <div className="mt-4">
+                  <ResumePaymentButton bookingId={booking.id} />
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
-      {code ? (
-        <section className="mt-6">
-          <Card className="border-[color:var(--color-ink)]">
-            <h2 className="text-sm font-medium">Your completion code</h2>
-            <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-              Only you can see this. Give it to the vendor when the job is done and
-              you are happy — that is what tells Nexa to pay them. Never share it
-              beforehand.
-            </p>
+          {code ? (
+            <Card className="relative overflow-hidden border-primary ring-2 ring-primary/20">
+              <div className="pointer-events-none absolute right-0 top-0 p-6 opacity-5">
+                <ShieldCheck className="h-32 w-32" />
+              </div>
+              <CardContent className="p-8">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="mb-2 text-2xl font-bold">Your completion code</h3>
+                    <p className="mb-6 text-muted-foreground">
+                      Only you can see this. Give it to the vendor when the job is done and you
+                      are happy — that is what tells Nexa to pay them. Never share it beforehand.
+                    </p>
+                    <div className="rounded-xl border border-secondary bg-secondary/50 p-6 text-center">
+                      {code.consumed_at ? (
+                        <p className="mb-2 text-xs font-medium text-emerald-700">Used</p>
+                      ) : null}
+                      <div
+                        className={`font-mono text-4xl font-bold tracking-[0.4em] ${
+                          code.consumed_at ? "text-muted-foreground line-through" : "text-primary"
+                        }`}
+                      >
+                        {code.code}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
-            <div className="mt-4 flex items-center justify-between">
-              {code.consumed_at ? (
-                <p className="text-[11px] text-[color:var(--color-success)]">Used</p>
-              ) : (
-                <span />
-              )}
-              <p
-                className={`font-mono text-2xl font-semibold tracking-[0.2em] ${code.consumed_at ? "text-[color:var(--color-ink-muted)] line-through" : ""}`}
-              >
-                {code.code}
-              </p>
-            </div>
+          <Card>
+            <CardHeader className="border-b border-border bg-muted/30">
+              <CardTitle>Progress</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ol className="space-y-3 text-sm">
+                <Step done={!!booking.accepted_at} label="Vendor accepted the booking" />
+                <Step
+                  done={booking.status === "in_progress" || !!booking.completed_at}
+                  label="Work under way"
+                />
+                <Step done={!!booking.completed_at} label="You gave the vendor your completion code" />
+              </ol>
+            </CardContent>
           </Card>
-        </section>
-      ) : null}
+        </div>
 
-      <Card className="mt-4">
-        <h2 className="text-sm font-medium">Progress</h2>
-        <ol className="mt-3 space-y-3 text-sm">
-          <Step done={!!booking.accepted_at} label="Vendor accepted the booking" />
-          <Step done={booking.status === "in_progress" || !!booking.completed_at} label="Work under way" />
-          <Step done={!!booking.completed_at} label="You gave the vendor your completion code" />
-        </ol>
-      </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="border-b border-border bg-muted/30">
+              <CardTitle>Payment</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 p-6 text-sm">
+              <Row label="Price" value={formatKobo(booking.agreed_price_kobo)} />
+              <div className="flex justify-between border-t border-border pt-3 font-bold">
+                <dt>Held by Nexa</dt>
+                <dd className="tabular-nums">{formatKobo(booking.agreed_price_kobo)}</dd>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Nexa is holding the whole amount. The vendor gets nothing up front. Nexa pays them
+                once the job is done — which is what your completion code says.
+              </p>
+            </CardContent>
+          </Card>
 
-      <Card className="mt-4">
-        <h2 className="text-sm font-medium">Payment</h2>
-        <dl className="mt-3 space-y-2 text-sm">
-          <Row label="Price" value={formatKobo(booking.agreed_price_kobo)} />
-          <div className="flex justify-between border-t border-[color:var(--color-line)] pt-2 font-medium">
-            <dt>Held by Nexa</dt>
-            <dd className="tabular-nums">{formatKobo(booking.agreed_price_kobo)}</dd>
-          </div>
-        </dl>
-        <p className="mt-3 text-xs text-[color:var(--color-ink-muted)]">
-          Nexa is holding the whole amount. The vendor gets nothing up front. Nexa
-          pays them once the job is done — which is what your completion code says.
-        </p>
-      </Card>
-
-      <Card className="mt-4">
-        <h2 className="text-sm font-medium">When</h2>
-        <p className="mt-1 text-sm">
-          {new Date(booking.scheduled_start).toLocaleString("en-NG")}
-        </p>
-        {booking.address ? (
-          <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">{booking.address}</p>
-        ) : null}
-      </Card>
-    </main>
+          <Card>
+            <CardHeader className="border-b border-border bg-muted/30">
+              <CardTitle>Event details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 p-6 text-sm">
+              <div>
+                <div className="mb-1 text-muted-foreground">Date</div>
+                <div className="flex items-center gap-2 font-medium">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  {new Date(booking.scheduled_start).toLocaleString("en-NG")}
+                </div>
+              </div>
+              {booking.address ? (
+                <div className="border-t border-border pt-4">
+                  <div className="mb-1 text-muted-foreground">Location</div>
+                  <div className="flex items-center gap-2 font-medium">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    {booking.address}
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -114,11 +156,11 @@ function Step({ done, label }: { done: boolean; label: string }) {
   return (
     <li className="flex items-start gap-3">
       <span
-        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${done ? "bg-[color:var(--color-ink)] text-white" : "border border-[color:var(--color-line)]"}`}
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${done ? "bg-primary text-primary-foreground" : "border border-border"}`}
       >
         {done ? "✓" : ""}
       </span>
-      <span className={done ? "" : "text-[color:var(--color-ink-muted)]"}>{label}</span>
+      <span className={done ? "" : "text-muted-foreground"}>{label}</span>
     </li>
   );
 }
@@ -126,7 +168,7 @@ function Step({ done, label }: { done: boolean; label: string }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-[color:var(--color-ink-muted)]">{label}</dt>
+      <dt className="text-muted-foreground">{label}</dt>
       <dd className="tabular-nums">{value}</dd>
     </div>
   );

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Logo } from "@/components/logo";
-import { Alert, Button, Field } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { completePasswordReset, requestPasswordReset, type PasswordResetState } from "@/modules/auth/actions";
 import type { Surface } from "@/lib/surfaces";
 
@@ -30,95 +33,117 @@ export function ResetForm({
   const knownEmail = completeState.email || requestState.email || email;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <Link href="/" aria-label="Nexa home">
-        <Logo markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-12">
+      <Link href="/" aria-label="Nexa home" className="mb-6 flex justify-center">
+        <Logo markClassName="size-12 rounded-2xl" textClassName="text-lg" />
       </Link>
 
-      {onCodeStep ? (
-        <>
-          <h1 className="mt-6 text-3xl font-semibold tracking-tight">Choose a new password</h1>
-          <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-            Enter the code we sent to {knownEmail || "your email"} and the password you want to use.
-          </p>
+      <Card>
+        {onCodeStep ? (
+          <>
+            <CardHeader className="space-y-1 text-center">
+              <CardTitle className="font-serif text-2xl">Choose a new password</CardTitle>
+              <CardDescription>
+                Enter the code we sent to {knownEmail || "your email"} and the password you want to use.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={completeAction} className="space-y-4">
+                <input type="hidden" name="surface" value={surface} />
 
-          <form action={completeAction} className="mt-8 space-y-4">
-            <input type="hidden" name="surface" value={surface} />
-            <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={knownEmail} required />
-            <Field
-              label="Reset code"
-              name="code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={8}
-              required
-            />
-            <Field
-              label="New password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              hint="At least 8 characters."
-              required
-            />
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" autoComplete="email" defaultValue={knownEmail} required />
+                </div>
 
-            {requestState.message && !completeState.error ? (
-              <Alert tone="success">{requestState.message}</Alert>
-            ) : null}
-            {completeState.error ? <Alert>{completeState.error}</Alert> : null}
+                <div className="space-y-2">
+                  <Label htmlFor="code">Reset code</Label>
+                  <Input
+                    id="code"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    required
+                  />
+                </div>
 
-            <Button type="submit" className="w-full" disabled={completing}>
-              {completing ? "Saving..." : "Save password and sign in"}
-            </Button>
-          </form>
+                <div className="space-y-2">
+                  <Label htmlFor="password">New password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground">At least 8 characters.</p>
+                </div>
 
-          <p className="mt-6 text-center text-sm text-[color:var(--color-ink-muted)]">
-            Need a new code?{" "}
-            <button
-              type="button"
-              onClick={() => setHasCode(false)}
-              className="font-medium text-[color:var(--color-ink)] underline"
-            >
-              Send another
-            </button>
-          </p>
-        </>
-      ) : (
-        <>
-          <h1 className="mt-6 text-3xl font-semibold tracking-tight">Reset your password</h1>
-          <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-            Enter your email and we will send you a code to set a new password.
-          </p>
+                {requestState.message && !completeState.error ? (
+                  <p className="text-sm font-medium text-emerald-700">{requestState.message}</p>
+                ) : null}
+                {completeState.error ? <p className="text-sm font-medium text-destructive">{completeState.error}</p> : null}
 
-          <form action={requestAction} className="mt-8 space-y-4">
-            <input type="hidden" name="surface" value={surface} />
-            <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={knownEmail} required />
+                <Button type="submit" className="w-full" disabled={completing}>
+                  {completing ? "Saving..." : "Save password and sign in"}
+                </Button>
+              </form>
 
-            {requestState.error ? <Alert>{requestState.error}</Alert> : null}
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                Need a new code?{" "}
+                <button
+                  type="button"
+                  onClick={() => setHasCode(false)}
+                  className="font-medium text-foreground underline"
+                >
+                  Send another
+                </button>
+              </p>
+            </CardContent>
+          </>
+        ) : (
+          <>
+            <CardHeader className="space-y-1 text-center">
+              <CardTitle className="font-serif text-2xl">Reset your password</CardTitle>
+              <CardDescription>Enter your email and we will send you a code to set a new password.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={requestAction} className="space-y-4">
+                <input type="hidden" name="surface" value={surface} />
 
-            <Button type="submit" className="w-full" disabled={requesting}>
-              {requesting ? "Sending..." : "Send reset code"}
-            </Button>
-          </form>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" autoComplete="email" defaultValue={knownEmail} required />
+                </div>
 
-          <p className="mt-6 text-center text-sm text-[color:var(--color-ink-muted)]">
-            Already have a code?{" "}
-            <button
-              type="button"
-              onClick={() => setHasCode(true)}
-              className="font-medium text-[color:var(--color-ink)] underline"
-            >
-              Enter it
-            </button>
-          </p>
-        </>
-      )}
+                {requestState.error ? <p className="text-sm font-medium text-destructive">{requestState.error}</p> : null}
 
-      <p className="mt-3 text-center text-sm text-[color:var(--color-ink-muted)]">
+                <Button type="submit" className="w-full" disabled={requesting}>
+                  {requesting ? "Sending..." : "Send reset code"}
+                </Button>
+              </form>
+
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                Already have a code?{" "}
+                <button
+                  type="button"
+                  onClick={() => setHasCode(true)}
+                  className="font-medium text-foreground underline"
+                >
+                  Enter it
+                </button>
+              </p>
+            </CardContent>
+          </>
+        )}
+      </Card>
+
+      <p className="mt-4 text-center text-sm text-muted-foreground">
         Remembered it?{" "}
-        <Link href="/login" className="font-medium text-[color:var(--color-ink)] underline">
+        <Link href="/login" className="font-medium text-foreground underline">
           Sign in
         </Link>
       </p>

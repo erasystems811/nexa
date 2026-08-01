@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Alert, Button, Field } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { FormState } from "@/modules/provider/actions";
 
 interface Category {
@@ -20,6 +24,9 @@ interface Defaults {
   price_max?: number;
   caution_fee?: number;
 }
+
+const selectClass =
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 /**
  * Create and edit share this form. A listing declares a price type — Fixed, or
@@ -65,15 +72,19 @@ export function ListingForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      <Field label="Title" name="title" defaultValue={defaults.title} required />
+      <div className="space-y-1.5">
+        <Label htmlFor="title">Title</Label>
+        <Input id="title" name="title" defaultValue={defaults.title} required />
+      </div>
 
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Category</span>
+      <div className="space-y-1.5">
+        <Label htmlFor="category_id">Category</Label>
         <select
+          id="category_id"
           name="category_id"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          className="h-12 w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4"
+          className={selectClass}
         >
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
@@ -81,17 +92,12 @@ export function ListingForm({
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Description</span>
-        <textarea
-          name="description"
-          defaultValue={defaults.description}
-          rows={3}
-          className="w-full rounded-xl border border-[color:var(--color-line)] bg-white px-4 py-3 text-sm"
-        />
-      </label>
+      <div className="space-y-1.5">
+        <Label htmlFor="description">Description</Label>
+        <Textarea id="description" name="description" defaultValue={defaults.description} rows={3} />
+      </div>
 
       <fieldset>
         <span className="mb-1.5 block text-sm font-medium">Price type</span>
@@ -99,7 +105,10 @@ export function ListingForm({
           {priceTypeOptions.map((t) => (
             <label
               key={t}
-              className={`flex-1 cursor-pointer rounded-xl border px-4 py-3 text-center text-sm ${priceType === t ? "border-[color:var(--color-ink)] font-medium" : "border-[color:var(--color-line)]"}`}
+              className={cn(
+                "flex-1 cursor-pointer rounded-md border px-4 py-3 text-center text-sm transition-colors",
+                priceType === t ? "border-primary bg-primary/5 font-medium text-primary" : "border-input",
+              )}
             >
               <input
                 type="radio"
@@ -116,45 +125,62 @@ export function ListingForm({
       </fieldset>
 
       {priceType === "fixed" ? (
-        <Field label="Price (₦)" name="price" type="number" min="0" step="any" defaultValue={defaults.price} />
+        <div className="space-y-1.5">
+          <Label htmlFor="price">Price (₦)</Label>
+          <Input id="price" name="price" type="number" min="0" step="any" defaultValue={defaults.price} />
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="From (₦)" name="price_min" type="number" min="0" step="any" defaultValue={defaults.price_min} />
-          <Field label="To (₦)" name="price_max" type="number" min="0" step="any" defaultValue={defaults.price_max} />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="price_min">From (₦)</Label>
+            <Input id="price_min" name="price_min" type="number" min="0" step="any" defaultValue={defaults.price_min} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="price_max">To (₦)</Label>
+            <Input id="price_max" name="price_max" type="number" min="0" step="any" defaultValue={defaults.price_max} />
+          </div>
         </div>
       )}
 
       {isRental ? (
-        <Field
-          label="Caution fee (₦)"
-          name="caution_fee"
-          type="number"
-          min="0"
-          step="any"
-          defaultValue={defaults.caution_fee}
-          hint="Held separately on rentals and refunded when items come back in good condition."
-        />
+        <div className="space-y-1.5">
+          <Label htmlFor="caution_fee">Caution fee (₦)</Label>
+          <Input
+            id="caution_fee"
+            name="caution_fee"
+            type="number"
+            min="0"
+            step="any"
+            defaultValue={defaults.caution_fee}
+          />
+          <p className="text-xs text-muted-foreground">
+            Held separately on rentals and refunded when items come back in good condition.
+          </p>
+        </div>
       ) : null}
 
       {showPhotos ? (
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Photos</span>
+        <div className="space-y-1.5">
+          <Label htmlFor="photos">Photos</Label>
           <input
+            id="photos"
             type="file"
             name="photos"
             accept="image/jpeg,image/png,image/webp,image/avif"
             multiple
-            className="w-full rounded-xl border border-[color:var(--color-line)] bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[color:var(--color-surface-sunk)] file:px-4 file:py-2 file:text-sm"
+            className="w-full rounded-md border border-input bg-transparent p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-4 file:py-2 file:text-sm file:text-secondary-foreground"
           />
-          <span className="mt-1 block text-xs text-[color:var(--color-ink-muted)]">
+          <p className="text-xs text-muted-foreground">
             Add at least one clear photo of your service. JPG, PNG or WEBP, under 10MB each. They go
             to Admin with the listing.
-          </span>
-        </label>
+          </p>
+        </div>
       ) : null}
 
-      {state.error ? <Alert>{state.error}</Alert> : null}
-      {state.ok ? <Alert tone="success">Saved. It goes to Admin for approval before it&rsquo;s public.</Alert> : null}
+      {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+      {state.ok ? (
+        <p className="text-sm text-emerald-700">Saved. It goes to Admin for approval before it&rsquo;s public.</p>
+      ) : null}
 
       <Button
         type="submit"
@@ -166,7 +192,7 @@ export function ListingForm({
       >
         {pending ? "Saving…" : submitLabel}
       </Button>
-      <p className="text-center text-xs text-[color:var(--color-ink-muted)]">
+      <p className="text-center text-xs text-muted-foreground">
         Every listing, and every edit to price or details, is reviewed by Admin before going live.
       </p>
     </form>

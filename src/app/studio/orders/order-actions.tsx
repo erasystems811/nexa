@@ -10,6 +10,9 @@ import {
 } from "@/modules/provider/actions";
 import { formatKobo } from "@/lib/money";
 import type { BookingStatus } from "@/lib/db/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export function OrderActions({
   bookingId,
@@ -60,16 +63,14 @@ export function OrderActions({
 
   if (paid !== null) {
     return (
-      <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-[color:var(--color-success)]">
+      <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
         Done. {paid > 0 ? `${formatKobo(paid)} is on its way to your bank account.` : "This booking is complete."}
       </p>
     );
   }
 
   if (status === "completed") {
-    return (
-      <p className="mt-4 text-sm text-[color:var(--color-success)]">Completed and paid.</p>
-    );
+    return <p className="mt-4 text-sm text-emerald-700">Completed and paid.</p>;
   }
 
   if (status === "disputed") {
@@ -84,17 +85,17 @@ export function OrderActions({
     <div className="mt-4 space-y-3">
       {status === "paid_held" ? (
         <div>
-          <p className="mb-2 text-xs text-[color:var(--color-ink-muted)]">
-            The customer has paid and Nexa is holding the whole amount. Accept it, do the job, and
-            you get paid the moment you enter their code.
+          <p className="mb-2 text-xs text-muted-foreground">
+            The customer has paid and Nexa is holding the whole amount. Accept it, do the job, and you get paid the
+            moment you enter their code.
           </p>
           <div className="flex gap-2">
-            <Btn primary disabled={pending} onClick={() => run(() => acceptOrderAction(bookingId))}>
+            <Button disabled={pending} onClick={() => run(() => acceptOrderAction(bookingId))}>
               Accept booking
-            </Btn>
-            <Btn disabled={pending} onClick={() => run(() => rejectOrderAction(bookingId))}>
+            </Button>
+            <Button variant="outline" disabled={pending} onClick={() => run(() => rejectOrderAction(bookingId))}>
               Decline
-            </Btn>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -102,26 +103,26 @@ export function OrderActions({
       {status === "accepted" || status === "in_progress" ? (
         <>
           {status === "accepted" ? (
-            <Btn disabled={pending} onClick={() => run(() => startWorkAction(bookingId))}>
+            <Button variant="outline" disabled={pending} onClick={() => run(() => startWorkAction(bookingId))}>
               Mark work started
-            </Btn>
+            </Button>
           ) : null}
 
-          <div className="rounded-xl border border-[color:var(--color-line)] p-3">
+          <div className="rounded-xl border p-3">
             <p className="text-sm font-medium">Finished the job? Enter the customer&rsquo;s code.</p>
-            <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               They give it to you when they&rsquo;re happy. Entering it pays you straight away.
             </p>
             <div className="mt-3 flex gap-2">
-              <input
+              <Input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="Their code"
-                className="h-11 w-40 rounded-lg border border-[color:var(--color-line)] px-3 font-mono text-base tracking-widest outline-none focus:border-[color:var(--color-ink)]"
+                className="w-40 font-mono tracking-widest"
               />
-              <Btn primary disabled={pending || code.trim().length === 0} onClick={submitCode}>
+              <Button disabled={pending || code.trim().length === 0} onClick={submitCode}>
                 Get paid
-              </Btn>
+              </Button>
             </div>
           </div>
 
@@ -129,71 +130,42 @@ export function OrderActions({
             <button
               type="button"
               onClick={() => setShowProblem(true)}
-              className="text-xs text-[color:var(--color-ink-muted)] underline"
+              className="text-xs text-muted-foreground underline"
             >
               The customer won&rsquo;t give me the code
             </button>
           ) : problemSent ? (
             <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Thanks — Nexa has your report and will look into it. We may ask you for proof that you
-              did the job.
+              Thanks — Nexa has your report and will look into it. We may ask you for proof that you did the job.
             </p>
           ) : (
-            <div className="rounded-xl border border-[color:var(--color-line)] p-3">
+            <div className="rounded-xl border p-3">
               <p className="text-sm font-medium">Tell Nexa what happened</p>
-              <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
-                We&rsquo;ll contact the customer for the code. If they still refuse and you did the
-                job, Nexa can pay you without it.
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                We&rsquo;ll contact the customer for the code. If they still refuse and you did the job, Nexa can
+                pay you without it.
               </p>
-              <textarea
+              <Textarea
                 value={problem}
                 onChange={(e) => setProblem(e.target.value)}
                 rows={3}
                 placeholder="What happened? Mention any proof you have — photos, messages, delivery notes."
-                className="mt-2 w-full rounded-lg border border-[color:var(--color-line)] px-3 py-2 text-sm outline-none focus:border-[color:var(--color-ink)]"
+                className="mt-2"
               />
               <div className="mt-2 flex gap-2">
-                <Btn primary disabled={pending || problem.trim().length < 10} onClick={submitProblem}>
+                <Button disabled={pending || problem.trim().length < 10} onClick={submitProblem}>
                   Send to Nexa
-                </Btn>
-                <Btn disabled={pending} onClick={() => setShowProblem(false)}>
+                </Button>
+                <Button variant="outline" disabled={pending} onClick={() => setShowProblem(false)}>
                   Cancel
-                </Btn>
+                </Button>
               </div>
             </div>
           )}
         </>
       ) : null}
 
-      {error ? <p className="text-xs text-[color:var(--color-danger)]">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
-  );
-}
-
-function Btn({
-  children,
-  onClick,
-  disabled,
-  primary,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  primary?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={
-        (primary
-          ? "h-11 rounded-lg bg-[color:var(--color-ink)] px-4 text-sm font-medium text-white hover:opacity-90"
-          : "h-11 rounded-lg border border-[color:var(--color-line)] px-4 text-sm font-medium hover:bg-[color:var(--color-surface-sunk)]") +
-        " transition-[opacity,transform,background-color] duration-150 active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100"
-      }
-    >
-      {children}
-    </button>
   );
 }

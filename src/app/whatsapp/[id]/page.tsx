@@ -3,8 +3,8 @@ import { requireSession } from "@/modules/auth";
 import { getConversation } from "@/modules/messaging";
 import { publicEnv } from "@/lib/env";
 import { toWhatsAppNumber } from "@/lib/phone";
-import { Button, Card, PageHeader } from "@/components/ui";
-import { BackBar } from "@/components/back-bar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
  * The handoff to WhatsApp.
@@ -52,29 +52,31 @@ export default async function WhatsappHandoffPage({
     : null;
 
   return (
-    <main className="mx-auto max-w-xl px-5 py-10">
-      <BackBar fallback="/" className="mb-4" />
-      <PageHeader
-        title="Chat on WhatsApp"
-        subtitle="You message Nexa, and Nexa sorts it out with the vendor. You never deal with a stranger, and your money is protected until the job is done."
-      />
-
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-12">
       <Card>
-        <p className="text-sm text-[color:var(--color-ink-muted)]">
-          Tap below to open WhatsApp. Your message is already written — just send it, and someone
-          at Nexa will help you book{" "}
-          <strong className="text-[color:var(--color-ink)]">{vendorName ?? "this vendor"}</strong>.
-        </p>
-
-        {href ? (
-          <a href={href} className="mt-5 block">
-            <Button className="w-full">Chat on WhatsApp</Button>
-          </a>
-        ) : (
-          <p className="mt-5 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            WhatsApp isn&rsquo;t set up yet. Please try again shortly, or contact Nexa support.
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="font-serif text-2xl">Chat on WhatsApp</CardTitle>
+          <CardDescription>
+            You message Nexa, and Nexa sorts it out with the vendor. You never deal with a
+            stranger, and your money is protected until the job is done.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Tap below to open WhatsApp. Your message is already written — just send it, and someone
+            at Nexa will help you book <strong className="text-foreground">{vendorName ?? "this vendor"}</strong>.
           </p>
-        )}
+
+          {href ? (
+            <a href={href} className="mt-5 block">
+              <Button className="w-full">Chat on WhatsApp</Button>
+            </a>
+          ) : (
+            <p className="mt-5 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              WhatsApp isn&rsquo;t set up yet. Please try again shortly, or contact Nexa support.
+            </p>
+          )}
+        </CardContent>
       </Card>
     </main>
   );

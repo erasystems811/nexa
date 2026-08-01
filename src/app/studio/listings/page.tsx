@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { Route } from "next";
 import { requireProvider, listMyListings } from "@/modules/provider";
 import { formatKobo } from "@/lib/money";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Plus } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -20,49 +23,57 @@ export default async function StudioListings() {
   const listings = await listMyListings(provider.id);
 
   return (
-    <>
-      <div className="mb-6 flex items-center justify-between">
-        <PageHeader title="Listings" />
-        <Link
-          href={"/listings/new" as Route}
-          className="h-10 shrink-0 rounded-full bg-[color:var(--color-ink)] px-5 text-sm font-medium leading-10 text-white"
-        >
-          New listing
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-serif font-bold text-primary mb-2">My Services</h1>
+          <p className="text-muted-foreground">Manage what you offer to clients.</p>
+        </div>
+        <Link href={"/listings/new" as Route}>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" /> New listing
+          </Button>
         </Link>
       </div>
 
       {listings.length === 0 ? (
-        <Card className="text-sm text-[color:var(--color-ink-muted)]">
-          No listings yet. Create one — it goes to Admin for approval before it&rsquo;s public.
+        <Card className="bg-muted/50 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center h-48 text-center">
+            <p className="text-muted-foreground mb-4">
+              No listings yet. Create one — it goes to Admin for approval before it&rsquo;s public.
+            </p>
+            <Link href={"/listings/new" as Route}>
+              <Button>Add your first listing</Button>
+            </Link>
+          </CardContent>
         </Card>
       ) : (
-        <ul className="space-y-3">
+        <div className="grid md:grid-cols-2 gap-6">
           {listings.map((l) => (
-            <li key={l.id}>
-              <Link href={`/listings/${l.id}` as Route}>
-                <Card className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{l.title}</p>
-                    <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
-                      {l.categories?.name} · {l.price_type === "fixed" ? "Fixed" : "Negotiable"}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className="text-[11px] font-medium text-[color:var(--color-ink-muted)]">
+            <Link key={l.id} href={`/listings/${l.id}` as Route}>
+              <Card className={l.status === "hidden" || l.status === "rejected" ? "opacity-60" : undefined}>
+                <CardContent className="p-6 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-2 gap-3">
+                    <h3 className="font-semibold text-lg truncate">{l.title}</h3>
+                    <Badge variant={l.status === "approved" ? "default" : "secondary"} className="shrink-0">
                       {STATUS_LABEL[l.status] ?? l.status}
-                    </span>
-                    <p className="text-sm tabular-nums">
-                      {l.price_type === "fixed" && l.price_kobo !== null
-                        ? formatKobo(l.price_kobo)
-                        : "On request"}
-                    </p>
+                    </Badge>
                   </div>
-                </Card>
-              </Link>
-            </li>
+                  <p className="text-sm text-muted-foreground mb-6 flex-1">{l.categories?.name}</p>
+                  <div className="flex items-center justify-between border-t border-border pt-4 mt-auto">
+                    <div className="text-xs text-muted-foreground">
+                      {l.price_type === "fixed" ? "Fixed price" : "Negotiable"}
+                    </div>
+                    <div className="font-bold text-primary">
+                      {l.price_type === "fixed" && l.price_kobo !== null ? formatKobo(l.price_kobo) : "On request"}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
-    </>
+    </div>
   );
 }

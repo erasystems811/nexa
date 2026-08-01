@@ -1,8 +1,9 @@
+import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { requireProvider, getMyListing, listAvailability } from "@/modules/provider";
-import { PageHeader } from "@/components/ui";
-import { StudioBack } from "@/components/studio-back";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { AvailabilityManager } from "./availability-manager";
 
 /** Availability calendar.: Available / Booked / Unavailable. */
@@ -16,12 +17,16 @@ export default async function AvailabilityPage({ params }: { params: Promise<{ i
   const { blocks, booked } = await listAvailability(id);
 
   return (
-    <>
-      <StudioBack fallback={`/listings/${id}` as Route} className="mb-4" />
-      <PageHeader
-        title="Availability"
-        subtitle={listing.title}
-      />
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <Link href={`/listings/${id}` as Route}>
+        <Button variant="ghost" size="sm">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to listing
+        </Button>
+      </Link>
+      <div>
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2">Availability</h1>
+        <p className="text-muted-foreground">{listing.title}</p>
+      </div>
       <AvailabilityManager
         listingId={id}
         blocks={blocks}
@@ -30,6 +35,6 @@ export default async function AvailabilityPage({ params }: { params: Promise<{ i
           end: b.scheduled_end,
         }))}
       />
-    </>
+    </div>
   );
 }

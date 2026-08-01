@@ -25,7 +25,7 @@ export function ListingControls({
           type="button"
           disabled={pending}
           onClick={() => start(() => pauseListingAction(listingId, status !== "paused"))}
-          className="h-9 rounded-full border border-[color:var(--color-line)] px-4 text-xs font-medium disabled:opacity-40"
+          className="h-9 rounded-full border border-input px-4 text-xs font-medium disabled:opacity-40"
         >
           {status === "paused" ? "Unpause" : "Pause"}
         </button>
@@ -35,7 +35,7 @@ export function ListingControls({
         type="button"
         disabled={pending}
         onClick={() => start(() => duplicateListingAction(listingId))}
-        className="h-9 rounded-full border border-[color:var(--color-line)] px-4 text-xs font-medium disabled:opacity-40"
+        className="h-9 rounded-full border border-input px-4 text-xs font-medium disabled:opacity-40"
       >
         Duplicate
       </button>
@@ -48,7 +48,7 @@ export function ListingControls({
             start(() => deleteListingAction(listingId));
           }
         }}
-        className="h-9 rounded-full border border-[color:var(--color-line)] px-4 text-xs font-medium text-[color:var(--color-danger)] disabled:opacity-40"
+        className="h-9 rounded-full border border-input px-4 text-xs font-medium text-destructive disabled:opacity-40"
       >
         Delete
       </button>

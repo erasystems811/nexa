@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
 import type { Metadata } from "next";
-import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "Terms of Service - Nexa",
@@ -13,17 +12,13 @@ const CONTACT = "hello@erasystems.com.ng";
 
 export default function TermsPage() {
   return (
-    <main className="mx-auto max-w-2xl px-5 pb-20">
-      <header className="py-6">
-        <Link href={"/" as Route} aria-label="Nexa home">
-          <Logo markClassName="size-10 rounded-[1.1rem]" textClassName="text-lg" />
-        </Link>
-      </header>
+    <div className="mx-auto max-w-2xl">
+      <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">
+        Terms of Service
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">Last updated {UPDATED}</p>
 
-      <h1 className="text-3xl font-semibold tracking-tight">Terms of Service</h1>
-      <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">Last updated {UPDATED}</p>
-
-      <div className="mt-8 space-y-8 text-[15px] leading-relaxed">
+      <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-foreground">
         <section>
           <p>
             Nexa is operated by <strong>ERA Systems</strong>. By using Nexa you agree to these
@@ -127,7 +122,7 @@ export default function TermsPage() {
         </Section>
       </div>
 
-      <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-xs text-[color:var(--color-ink-muted)]">
+      <footer className="mt-14 border-t border-border pt-6 text-xs text-muted-foreground">
         <Link href={"/" as Route} className="underline">
           Back to Nexa
         </Link>
@@ -136,14 +131,14 @@ export default function TermsPage() {
           Privacy Policy
         </Link>
       </footer>
-    </main>
+    </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       <div className="mt-2 space-y-2">{children}</div>
     </section>
   );
@@ -154,7 +149,7 @@ function List({ items }: { items: string[] }) {
     <ul className="mt-2 space-y-2">
       {items.map((item) => (
         <li key={item} className="flex gap-2">
-          <span className="mt-[0.55rem] size-1 shrink-0 rounded-full bg-[color:var(--color-ink-muted)]" />
+          <span className="mt-[0.55rem] size-1 shrink-0 rounded-full bg-muted-foreground" />
           <span>{item}</span>
         </li>
       ))}

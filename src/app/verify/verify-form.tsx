@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { Logo } from "@/components/logo";
-import { Alert, Button, Field } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { verifySignupCode, type AuthFormState } from "@/modules/auth/actions";
 
 const initialState: AuthFormState = {};
@@ -12,41 +15,59 @@ export function VerifyForm({ email }: { email: string }) {
   const [state, formAction, pending] = useActionState(verifySignupCode, initialState);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <Link href="/" aria-label="Nexa home">
-        <Logo markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-12">
+      <Link href="/" aria-label="Nexa home" className="mb-6 flex justify-center">
+        <Logo markClassName="size-12 rounded-2xl" textClassName="text-lg" />
       </Link>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight">Enter verification code</h1>
-      <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-        We sent a verification code to {email || "your email"}.
-      </p>
 
-      <form action={formAction} className="mt-8 space-y-4">
-        <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={email} required />
-        <Field
-          label="Verification code"
-          name="code"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={8}
-          required
-        />
+      <Card>
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="font-serif text-2xl">Enter verification code</CardTitle>
+          <CardDescription>We sent a verification code to {email || "your email"}.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={formAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                defaultValue={email}
+                required
+              />
+            </div>
 
-        {state.error ? <Alert>{state.error}</Alert> : null}
-        {state.message ? <Alert tone="success">{state.message}</Alert> : null}
+            <div className="space-y-2">
+              <Label htmlFor="code">Verification code</Label>
+              <Input
+                id="code"
+                name="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+                required
+              />
+            </div>
 
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Checking..." : "Verify account"}
-        </Button>
-      </form>
+            {state.error ? <p className="text-sm font-medium text-destructive">{state.error}</p> : null}
+            {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
 
-      <p className="mt-6 text-center text-sm text-[color:var(--color-ink-muted)]">
-        Wrong email?{" "}
-        <Link href="/register" className="font-medium text-[color:var(--color-ink)] underline">
-          Create account again
-        </Link>
-      </p>
+            <Button type="submit" className="w-full" disabled={pending}>
+              {pending ? "Checking..." : "Verify account"}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Wrong email?{" "}
+            <Link href="/register" className="font-medium text-foreground underline">
+              Create account again
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

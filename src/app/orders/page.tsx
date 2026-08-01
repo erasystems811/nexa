@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { Route } from "next";
+import { Calendar, ChevronRight } from "lucide-react";
 import { requireSession } from "@/modules/auth";
 import { listMyOrders } from "@/modules/bookings";
 import { formatKobo } from "@/lib/money";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import { StatusPill } from "@/components/status-pill";
-import { BackBar } from "@/components/back-bar";
+import { cn } from "@/lib/utils";
 import { ResumePaymentButton } from "./resume-payment-button";
 import type { BookingStatus } from "@/lib/db/types";
 
@@ -65,26 +67,24 @@ export default async function OrdersPage({
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
-      <BackBar className="mb-4" />
-      <PageHeader title="My orders" />
+    <div className="space-y-8">
+      <div>
+        <h1 className="mb-2 font-serif text-3xl font-bold text-primary">My Orders</h1>
+        <p className="text-muted-foreground">Manage your event services and payments.</p>
+      </div>
 
       {orders.length === 0 ? (
-        <Card className="text-sm text-[color:var(--color-ink-muted)]">
-          Nothing booked yet.
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">Nothing booked yet.</CardContent>
         </Card>
       ) : (
         <>
-          <div className="mb-6 flex gap-1 rounded-full bg-[color:var(--color-surface-sunk)] p-1">
+          <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2">
             {TABS.map((t) => (
               <Link
                 key={t.key}
                 href={`/orders?tab=${t.key}` as Route}
-                className={`flex-1 rounded-full px-3 py-1.5 text-center text-xs font-medium transition ${
-                  current === t.key
-                    ? "bg-[color:var(--color-surface)] shadow-sm"
-                    : "text-[color:var(--color-ink-muted)]"
-                }`}
+                className={cn(buttonVariants({ variant: current === t.key ? "default" : "outline" }))}
               >
                 {t.label}
                 {counts[t.key] > 0 ? ` (${counts[t.key]})` : ""}
@@ -121,7 +121,7 @@ export default async function OrdersPage({
           ) : null}
         </>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -141,12 +141,12 @@ function Section({
 
   return (
     <section>
-      <h2 className="text-sm font-semibold">{title}</h2>
-      {hint ? <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">{hint}</p> : null}
-      <div className="mt-3 space-y-3">
+      <h2 className="font-serif text-lg font-semibold">{title}</h2>
+      {hint ? <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p> : null}
+      <div className="mt-3 space-y-4">
         {isEmpty ? (
           empty ? (
-            <p className="text-sm text-[color:var(--color-ink-muted)]">{empty}</p>
+            <div className="py-12 text-center text-muted-foreground">{empty}</div>
           ) : null
         ) : (
           items
@@ -170,35 +170,47 @@ function OrderRow({
   const provider = o.providers as unknown as { business_name: string } | null;
 
   const body = (
-    <>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{listing?.title ?? "Booking"}</p>
-          <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
-            {provider?.business_name}
-            {" · "}
-            {new Date(o.scheduled_start).toLocaleString("en-NG", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
-          </p>
-          <p className="mt-1 font-mono text-[11px] text-[color:var(--color-ink-muted)]">
-            {o.reference}
-          </p>
+    <CardContent className="flex flex-col items-start justify-between gap-4 p-6 md:flex-row md:items-center">
+      <div className="flex flex-1 items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Calendar className="h-6 w-6" />
         </div>
-        <div className="shrink-0 text-right">
-          <StatusPill status={o.status} />
-          <p className="mt-1 text-sm tabular-nums">{formatKobo(o.agreed_price_kobo)}</p>
+        <div className="min-w-0">
+          <h3 className="truncate text-lg font-bold group-hover:text-primary">
+            {listing?.title ?? "Booking"}
+          </h3>
+          <p className="text-sm font-medium text-muted-foreground">{provider?.business_name}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <StatusPill status={o.status} />
+            <span className="text-muted-foreground">•</span>
+            <span className="text-muted-foreground">
+              {new Date(o.scheduled_start).toLocaleString("en-NG", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </span>
+          </div>
+          <p className="mt-1 font-mono text-[11px] text-muted-foreground">{o.reference}</p>
+
+          {code ? (
+            <div className="mt-3 flex items-center justify-between gap-4 rounded-xl bg-secondary/50 px-3 py-2">
+              <span className="text-xs text-muted-foreground">Your completion code</span>
+              <span className="font-mono text-sm font-semibold tracking-[0.2em]">{code}</span>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {code ? (
-        <div className="mt-3 flex items-center justify-between rounded-xl bg-[color:var(--color-surface-sunk)] px-3 py-2">
-          <span className="text-xs text-[color:var(--color-ink-muted)]">Your completion code</span>
-          <span className="font-mono text-sm font-semibold tracking-[0.2em]">{code}</span>
+      <div className="flex w-full items-center justify-between gap-6 border-t border-border pt-4 md:w-auto md:justify-end md:border-t-0 md:pt-0">
+        <div className="text-left md:text-right">
+          <div className="mb-1 text-sm text-muted-foreground">Total</div>
+          <div className="text-lg font-bold tabular-nums">{formatKobo(o.agreed_price_kobo)}</div>
         </div>
-      ) : null}
-    </>
+        {!resumable ? (
+          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+        ) : null}
+      </div>
+    </CardContent>
   );
 
   // A resumable (unpaid) order cannot be a link — it carries a form button, which
@@ -207,12 +219,9 @@ function OrderRow({
     return (
       <Card>
         {body}
-        <div className="mt-4 space-y-2">
+        <div className="space-y-2 px-6 pb-6">
           <ResumePaymentButton bookingId={o.id} />
-          <Link
-            href={`/orders/${o.id}` as Route}
-            className="block text-center text-xs text-[color:var(--color-ink-muted)] underline"
-          >
+          <Link href={`/orders/${o.id}` as Route} className="block text-center text-xs text-muted-foreground underline">
             View details
           </Link>
         </div>
@@ -222,7 +231,7 @@ function OrderRow({
 
   return (
     <Link href={`/orders/${o.id}` as Route} className="block">
-      <Card className="transition hover:shadow-card-hover">{body}</Card>
+      <Card className="group cursor-pointer transition-colors hover:border-primary/50">{body}</Card>
     </Link>
   );
 }
