@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { setStaffRoleAction, setStaffStatusAction } from "@/modules/admin/actions";
 import type { StaffRole } from "@/modules/admin/permissions";
+import { Button } from "@/components/ui/button";
 
 export function StaffControls({
   staffId,
@@ -27,25 +28,26 @@ export function StaffControls({
           defaultValue={role}
           disabled={pending}
           onChange={(e) => start(() => setStaffRoleAction(staffId, e.target.value as StaffRole))}
-          className="ml-2 h-9 rounded-lg border border-[color:var(--color-line)] px-3 text-sm"
+          className="ml-2 h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           {roles.map((r) => (
-            <option key={r} value={r}>{roleLabels[r]}</option>
+            <option key={r} value={r}>
+              {roleLabels[r]}
+            </option>
           ))}
         </select>
       </label>
 
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         disabled={pending}
         onClick={() => start(() => setStaffStatusAction(staffId, status === "active" ? "suspended" : "active"))}
-        className="h-9 rounded-lg border border-[color:var(--color-line)] px-3 text-xs font-medium disabled:opacity-40"
       >
         {status === "active" ? "Suspend account" : "Reactivate"}
-      </button>
-      <span className="text-xs text-[color:var(--color-ink-muted)]">
-        Changing the role resets their views to that role&rsquo;s default bundle.
-      </span>
+      </Button>
+      <span className="text-xs text-muted-foreground">Changing the role resets their views to that role&rsquo;s default bundle.</span>
     </div>
   );
 }

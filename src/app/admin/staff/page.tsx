@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { requireView, listStaff, PERMISSIONS as P, STAFF_ROLE_LABELS } from "@/modules/admin";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui/card";
 import { InviteStaff } from "./invite-staff";
 
 /** Staff & permissions. */
@@ -11,28 +11,33 @@ export default async function StaffPage() {
 
   return (
     <>
-      <PageHeader title="Staff" subtitle="Every teammate has their own login. Assign roles; grant extra views per person." />
+      <h1 className="font-serif text-2xl font-bold">Staff</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Every teammate has their own login. Assign roles; grant extra views per person.
+      </p>
 
-      <InviteStaff />
+      <div className="mt-4">
+        <InviteStaff />
+      </div>
 
       <ul className="mt-4 space-y-2">
         {staff.map((m) => (
           <li key={m.id}>
             <Link href={`/staff/${m.id}` as Route}>
-              <Card className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">
-                    {(m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? m.email ?? "Staff"}
-                  </p>
-                  <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
-                    {STAFF_ROLE_LABELS[m.staff_role]}
-                    {m.staff_role !== "super_admin" ? ` · ${m.permissions.length} views` : " · all views"}
-                    {m.last_login_at ? ` · last in ${new Date(m.last_login_at).toLocaleDateString("en-NG")}` : " · never signed in"}
-                  </p>
-                </div>
-                {m.status === "suspended" ? (
-                  <span className="text-[11px] text-[color:var(--color-danger)]">suspended</span>
-                ) : null}
+              <Card className="transition hover:border-primary/50">
+                <CardContent className="flex items-center justify-between gap-3 py-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {(m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? m.email ?? "Staff"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {STAFF_ROLE_LABELS[m.staff_role]}
+                      {m.staff_role !== "super_admin" ? ` · ${m.permissions.length} views` : " · all views"}
+                      {m.last_login_at ? ` · last in ${new Date(m.last_login_at).toLocaleDateString("en-NG")}` : " · never signed in"}
+                    </p>
+                  </div>
+                  {m.status === "suspended" ? <span className="text-[11px] text-destructive">suspended</span> : null}
+                </CardContent>
               </Card>
             </Link>
           </li>
