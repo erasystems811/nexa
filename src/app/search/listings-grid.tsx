@@ -34,7 +34,7 @@ export function ListingsGrid({
 
   return (
     <>
-      <ul className="mt-6 grid grid-cols-2 gap-4">
+      <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
         {items.map((r) => (
           <li key={r.id}>
             <ListingCard listing={r} />
@@ -47,7 +47,7 @@ export function ListingsGrid({
           type="button"
           onClick={loadMore}
           disabled={pending}
-          className="mx-auto mt-6 block h-11 rounded-full border border-[color:var(--color-line)] px-6 text-sm font-medium disabled:opacity-40"
+          className="mx-auto mt-6 block h-11 rounded-full border px-6 text-sm font-medium disabled:opacity-40"
         >
           {pending ? "Loading…" : "Show more"}
         </button>

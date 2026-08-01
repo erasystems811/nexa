@@ -13,7 +13,7 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
   return (
     <Link
       href={`/p/${vendor.slug}` as Route}
-      className="group block overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]/30 hover:shadow-card-hover"
+      className="group block overflow-hidden rounded-2xl border bg-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/30"
     >
       {vendor.logoUrl ? (
         <Photo
@@ -25,7 +25,7 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
           imageClassName="transition duration-300 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="flex aspect-[16/10] items-center justify-center bg-[color:var(--color-accent-soft)] text-3xl font-semibold text-[color:var(--color-accent)]">
+        <div className="flex aspect-[16/10] items-center justify-center bg-primary/10 text-3xl font-semibold text-primary">
           {vendor.businessName.charAt(0).toUpperCase()}
         </div>
       )}
@@ -35,27 +35,27 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
           <p className="truncate text-sm font-semibold">{vendor.businessName}</p>
           <span
             title="Verified"
-            className="flex size-4 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent)] text-[9px] text-white"
+            className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground"
           >
             ✓
           </span>
         </div>
 
-        <p className="mt-0.5 truncate text-xs text-[color:var(--color-ink-muted)]">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {vendor.cityName ? `${vendor.cityName} · ` : ""}
           {vendor.serviceCount} {vendor.serviceCount === 1 ? "service" : "services"}
         </p>
 
         {vendor.reviewCount > 0 ? (
           <p className="mt-1.5 text-xs font-medium">
-            <span className="text-[color:var(--color-star)]">★</span> {vendor.avgRating}
-            <span className="font-normal text-[color:var(--color-ink-muted)]">
+            <span className="fill-primary text-primary">★</span> {vendor.avgRating}
+            <span className="font-normal text-muted-foreground">
               {" "}
               · {vendor.reviewCount} {vendor.reviewCount === 1 ? "review" : "reviews"}
             </span>
           </p>
         ) : (
-          <p className="mt-1.5 text-xs text-[color:var(--color-ink-muted)]">New on Nexa</p>
+          <p className="mt-1.5 text-xs text-muted-foreground">New on Nexa</p>
         )}
       </div>
     </Link>

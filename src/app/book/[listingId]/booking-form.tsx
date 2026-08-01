@@ -2,7 +2,9 @@
 
 import { useActionState } from "react";
 import { checkoutAction, type CheckoutState } from "@/modules/bookings/actions";
-import { Alert, Button, Field } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initial: CheckoutState = {};
 
@@ -12,17 +14,30 @@ export function BookingForm({ listingId }: { listingId: string }) {
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="listingId" value={listingId} />
-      <Field label="Date" name="date" type="date" required />
-      <Field label="Time" name="time" type="time" required />
-      <Field label="Address" name="address" placeholder="Where is the event?" />
-      <Field label="Notes" name="notes" placeholder="Anything the provider should know" />
 
-      {state.error ? <Alert>{state.error}</Alert> : null}
+      <div className="space-y-1.5">
+        <Label htmlFor="date">Date</Label>
+        <Input id="date" name="date" type="date" required />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="time">Time</Label>
+        <Input id="time" name="time" type="time" required />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="address">Address</Label>
+        <Input id="address" name="address" placeholder="Where is the event?" />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="notes">Notes</Label>
+        <Input id="notes" name="notes" placeholder="Anything the provider should know" />
+      </div>
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+
+      <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "Holding your payment…" : "Confirm and pay"}
       </Button>
-      <p className="text-center text-xs text-[color:var(--color-ink-muted)]">
+      <p className="text-center text-xs text-muted-foreground">
         Your money is held by Nexa, not sent to the provider.
       </p>
     </form>

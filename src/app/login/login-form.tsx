@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { signIn, type AuthFormState } from "@/modules/auth/actions";
 import { Logo } from "@/components/logo";
-import { Alert, Button, Field } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Surface } from "@/lib/surfaces";
 
 const initialState: AuthFormState = {};
@@ -45,62 +48,68 @@ export function LoginForm({ next, surface }: { next: string; surface: Surface })
   const isAdmin = surface === "admin" || next === "/admin" || next.startsWith("/admin/");
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-12">
-      <Link href="/" aria-label={`${copy.label} home`}>
-        <Logo label={copy.label} markClassName="size-12 rounded-[1.35rem]" textClassName="text-lg" />
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-12">
+      <Link href="/" aria-label={`${copy.label} home`} className="mb-6 flex justify-center">
+        <Logo label={copy.label} markClassName="size-12 rounded-2xl" textClassName="text-lg" />
       </Link>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight">{copy.title}</h1>
-      <p className="mt-2 text-sm text-[color:var(--color-ink-muted)]">
-        {copy.subtitle}
-      </p>
 
-      <form action={formAction} className="mt-8 space-y-4">
-        <input type="hidden" name="next" value={next} />
-        <input type="hidden" name="surface" value={surface} />
-        <Field
-          label={isAdmin ? "Username" : "Email"}
-          name="email"
-          type={isAdmin ? "text" : "email"}
-          autoComplete={isAdmin ? "username" : "email"}
-          // Keeps what they typed when a sign-in fails, instead of blanking it.
-          defaultValue={state.identifier ?? ""}
-          required
-        />
-        <Field
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
+      <Card>
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="font-serif text-2xl">{copy.title}</CardTitle>
+          <CardDescription>{copy.subtitle}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={formAction} className="space-y-4">
+            <input type="hidden" name="next" value={next} />
+            <input type="hidden" name="surface" value={surface} />
 
-        {/* The Admin login is a fixed env username/password, so there is nothing
-            for a code to reset. Everyone else — including a vendor whose account
-            Admin created without a password — starts here. */}
-        {isAdmin ? null : (
-          <p className="text-right text-sm">
-            <Link href="/reset" className="font-medium text-[color:var(--color-ink)] underline">
-              Forgot password?
-            </Link>
+            <div className="space-y-2">
+              <Label htmlFor="email">{isAdmin ? "Username" : "Email"}</Label>
+              <Input
+                id="email"
+                name="email"
+                type={isAdmin ? "text" : "email"}
+                autoComplete={isAdmin ? "username" : "email"}
+                // Keeps what they typed when a sign-in fails, instead of blanking it.
+                defaultValue={state.identifier ?? ""}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" autoComplete="current-password" required />
+            </div>
+
+            {/* The Admin login is a fixed env username/password, so there is nothing
+                for a code to reset. Everyone else — including a vendor whose account
+                Admin created without a password — starts here. */}
+            {isAdmin ? null : (
+              <p className="text-right text-sm">
+                <Link href="/reset" className="font-medium text-foreground underline">
+                  Forgot password?
+                </Link>
+              </p>
+            )}
+
+            {state.error ? <p className="text-sm font-medium text-destructive">{state.error}</p> : null}
+            {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
+
+            <Button type="submit" className="w-full" disabled={pending}>
+              {pending ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {copy.footer}{" "}
+            {copy.showRegister ? (
+              <Link href="/register" className="font-medium text-foreground underline">
+                Create an account
+              </Link>
+            ) : null}
           </p>
-        )}
-
-        {state.error ? <Alert>{state.error}</Alert> : null}
-        {state.message ? <Alert tone="success">{state.message}</Alert> : null}
-
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Signing in..." : "Sign in"}
-        </Button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-[color:var(--color-ink-muted)]">
-        {copy.footer}{" "}
-        {copy.showRegister ? (
-          <Link href="/register" className="font-medium text-[color:var(--color-ink)] underline">
-            Create an account
-          </Link>
-        ) : null}
-      </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

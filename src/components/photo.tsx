@@ -50,7 +50,7 @@ export function Photo({
   if (!src) {
     return (
       <div
-        className={`bg-[color:var(--color-surface-sunk)] ${className ?? ""}`}
+        className={`bg-muted ${className ?? ""}`}
         style={!fill ? { width, height } : undefined}
       />
     );
@@ -60,7 +60,7 @@ export function Photo({
 
   if (fill) {
     return (
-      <div className={`relative overflow-hidden bg-[color:var(--color-surface-sunk)] ${className ?? ""}`}>
+      <div className={`relative overflow-hidden bg-muted ${className ?? ""}`}>
         <Image
           src={src}
           alt={alt}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { discussListingAction } from "@/modules/bookings/actions";
 import { discussProviderAction } from "@/modules/messaging/actions";
-import { Button } from "@/components/ui";
+import { Button } from "@/components/ui/button";
 
 /**
  * "Chat on WhatsApp" — the button that used to be hidden.
@@ -21,7 +21,7 @@ import { Button } from "@/components/ui";
 /** The promise the product is built on, said out loud. Nothing else was saying it. */
 export function PrivacyNote({ className }: { className?: string }) {
   return (
-    <p className={`text-center text-xs text-[color:var(--color-ink-muted)] ${className ?? ""}`}>
+    <p className={`text-center text-xs text-muted-foreground ${className ?? ""}`}>
       You chat through Nexa&rsquo;s WhatsApp number. You never see their number, and they never see
       yours.
     </p>
@@ -33,7 +33,7 @@ export function ChatOnWhatsApp({
   providerId,
   signedIn,
   next,
-  variant = "ghost",
+  variant = "outline",
 }: {
   /** Chat about one listing. */
   listingId?: string;
@@ -42,7 +42,7 @@ export function ChatOnWhatsApp({
   signedIn: boolean;
   /** Where to come back to after signing in. */
   next: string;
-  variant?: "primary" | "ghost";
+  variant?: "default" | "outline";
 }) {
   if (!signedIn) {
     return (

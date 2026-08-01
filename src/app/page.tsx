@@ -1,17 +1,20 @@
 import { listCategories, categoryImages } from "@/modules/marketplace";
 import { searchVendors } from "@/modules/search";
-import { getSession } from "@/modules/auth";
 import Link from "next/link";
+import type { Route } from "next";
 import Image from "next/image";
-import { Logo } from "@/components/logo";
 import { SearchBar } from "@/components/search-bar";
 import { CategoryIcon } from "@/components/category-icon";
 import { VendorCard } from "@/components/vendor-card";
-import { Badge } from "@/components/ui";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
-/** Marketplace home. */
+/**
+ * Marketplace home — Nexa's brand/nav chrome lives in the sidebar shell now
+ * (see src/components/customer-shell.tsx), so this is just the hero and the
+ * browse feed, not a self-contained page-with-header like it used to be.
+ */
 export default async function HomePage() {
-  const session = await getSession();
   const [categories, images, vendors] = await Promise.all([
     listCategories(),
     categoryImages(),
@@ -19,142 +22,125 @@ export default async function HomePage() {
   ]);
 
   return (
-    <>
-      {/* Sticky and translucent, the way Spotify/Netflix keep their nav present
-          without it feeling heavy — it never competes with what's underneath it. */}
-      <header className="sticky top-0 z-40 border-b border-[color:var(--color-line)]/60 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-          <Link href="/" aria-label="Nexa home">
-            <Logo markClassName="size-9 rounded-[1rem]" textClassName="text-base" />
-          </Link>
-          <nav className="flex items-center gap-5 text-sm">
-            <Link href="/apply" className="text-[color:var(--color-ink-muted)] transition-colors hover:text-[color:var(--color-ink)]">
-              Apply to be a vendor
+    <div className="space-y-14 pb-8">
+      {/* A soft glow behind the hero — the one purely decorative brand touch,
+          the kind of detail that separates a landing page from a template. */}
+      <section className="relative max-w-2xl overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 left-0 h-[26rem] w-[36rem] rounded-full bg-primary/[0.07] blur-3xl"
+        />
+        <div className="relative">
+          <h1 className="font-serif text-5xl font-bold leading-[1.08] tracking-tight text-primary md:text-6xl">
+            Everything your event needs,
+            <br />
+            booked with confidence.
+          </h1>
+          <div className="mt-8">
+            <SearchBar />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Verified vendors</Badge>
+            <Badge variant="secondary">Payment held until delivery</Badge>
+            <Link href={"/apply" as Route} className="ml-auto">
+              <Button variant="outline" size="sm">
+                List your business
+              </Button>
             </Link>
-            {session ? (
-              <Link href="/account" className="font-medium">Account</Link>
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-full bg-[color:var(--color-accent)] px-4 py-2 font-medium text-white transition-transform active:scale-95"
-              >
-                Get started
-              </Link>
-            )}
-          </nav>
+          </div>
         </div>
-      </header>
+      </section>
 
-      <main className="mx-auto max-w-3xl px-5 pb-16">
-        {/* A soft glow behind the hero — the one purely decorative brand touch,
-            the kind of detail that separates a landing page from a template. */}
-        <section className="relative overflow-hidden pt-5 sm:pt-12">
+      {categories.length > 0 ? (
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-serif text-xl font-semibold">Browse by category</h2>
+          </div>
+          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:-mx-8 md:px-8">
+            {categories.map((c) => {
+              const image = images[c.slug];
+              return (
+                <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-2xl border bg-card transition duration-200 group-hover:-translate-y-0.5 group-hover:border-primary group-hover:shadow-md">
+                    {image ? (
+                      <>
+                        <Image src={image} alt="" fill sizes="112px" className="object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6">
+                          <span className="text-center text-[11px] font-medium leading-tight text-white">
+                            {c.name}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2.5">
+                        <CategoryIcon
+                          slug={c.slug}
+                          className="size-7 text-muted-foreground transition-colors group-hover:text-primary"
+                        />
+                        <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {vendors.length > 0 ? (
+        <section>
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="font-serif text-xl font-semibold">Vendors on Nexa</h2>
+            <Link href={"/search" as Route} className="shrink-0 text-sm font-medium text-primary hover:opacity-80">
+              View all
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {vendors.map((v) => (
+              <VendorCard key={v.id} vendor={v} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section>
+        <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl bg-primary px-6 py-4 text-primary-foreground">
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-24 left-1/2 h-[26rem] w-[36rem] -translate-x-1/2 rounded-full bg-[color:var(--color-accent)]/[0.07] blur-3xl"
+            className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-white/10 blur-2xl"
           />
-          <div className="relative">
-            <h1 className="font-display text-[2.4rem] leading-[1.08] tracking-tight sm:text-6xl">
-              Everything your event needs,
-              <br />
-              <span className="text-[color:var(--color-accent)]">booked with confidence.</span>
-            </h1>
-            <div className="mt-8">
-              <SearchBar />
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="accent">Verified vendors</Badge>
-              <Badge>Payment held until delivery</Badge>
-            </div>
-          </div>
-        </section>
+          <h2 className="relative font-serif text-base sm:text-lg">Let Nexa plan your event for you</h2>
+          <p className="relative shrink-0 font-serif text-lg italic opacity-90 sm:text-xl">Nexa it!</p>
+        </div>
+      </section>
 
-        {categories.length > 0 ? (
-          <section className="mt-14">
-            <h2 className="mb-4 text-sm font-semibold text-[color:var(--color-ink-muted)]">Browse by category</h2>
-            <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
-              {categories.map((c) => {
-                const image = images[c.slug];
-                return (
-                  <Link key={c.id} href={`/search?category=${c.slug}`} className="group shrink-0">
-                    <div className="relative h-28 w-28 overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-white transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[color:var(--color-accent)] group-hover:shadow-card">
-                      {image ? (
-                        <>
-                          <Image src={image} alt="" fill sizes="112px" className="object-cover" />
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-6">
-                            <span className="text-center text-[11px] font-medium leading-tight text-white">
-                              {c.name}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-2.5">
-                          <CategoryIcon
-                            slug={c.slug}
-                            className="size-7 text-[color:var(--color-ink-muted)] transition-colors group-hover:text-[color:var(--color-accent)]"
-                          />
-                          <span className="px-2 text-center text-[11px] font-medium leading-tight">{c.name}</span>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
-        {vendors.length > 0 ? (
-          <section className="mt-14">
-            <h2 className="mb-4 text-sm font-semibold text-[color:var(--color-ink-muted)]">
-              Vendors on Nexa
-            </h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              {vendors.map((v) => (
-                <VendorCard key={v.id} vendor={v} />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="mt-14">
-          <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-[var(--radius-card)] bg-[color:var(--color-accent)] px-6 py-4 text-white">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-white/10 blur-2xl"
-            />
-            <h2 className="relative font-display text-base sm:text-lg">Let Nexa plan your event for you</h2>
-            <p className="relative shrink-0 font-display text-lg italic text-white/90 sm:text-xl">Nexa it!</p>
-          </div>
-        </section>
-
-        <footer className="mt-14 border-t border-[color:var(--color-line)] pt-6 text-center text-xs text-[color:var(--color-ink-muted)]">
-          <p>
-            <Link href="/contact" className="underline hover:text-[color:var(--color-ink)]">
-              Contact us
-            </Link>
-            <span className="mx-2">·</span>
-            <Link href="/privacy" className="underline hover:text-[color:var(--color-ink)]">
-              Privacy
-            </Link>
-            <span className="mx-2">·</span>
-            <Link href="/terms" className="underline hover:text-[color:var(--color-ink)]">
-              Terms
-            </Link>
-          </p>
-          <p className="mt-4 text-[10px] text-[color:var(--color-ink-muted)]/60">
-            Powered by{" "}
-            <a
-              href="https://erasystems.com.ng"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-[color:var(--color-ink)]"
-            >
-              ERA Systems
-            </a>
-          </p>
-        </footer>
-      </main>
-    </>
+      <footer className="border-t pt-6 text-center text-xs text-muted-foreground">
+        <p>
+          <Link href="/contact" className="underline hover:text-foreground">
+            Contact us
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/privacy" className="underline hover:text-foreground">
+            Privacy
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/terms" className="underline hover:text-foreground">
+            Terms
+          </Link>
+        </p>
+        <p className="mt-4 text-[10px] text-muted-foreground/60">
+          Powered by{" "}
+          <a
+            href="https://erasystems.com.ng"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            ERA Systems
+          </a>
+        </p>
+      </footer>
+    </div>
   );
 }

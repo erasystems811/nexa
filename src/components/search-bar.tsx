@@ -20,14 +20,14 @@ export function SearchBar({ defaultValue = "" }: { defaultValue?: string }) {
     >
       <Search
         aria-hidden
-        className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[color:var(--color-ink-muted)]"
+        className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
       />
       <input
         name="q"
         defaultValue={defaultValue}
         placeholder="DJ, cake, chairs, decorator…"
         aria-label="Search providers and listings"
-        className="h-12 w-full rounded-full border border-[color:var(--color-line)] bg-black/[0.03] pl-12 pr-5 shadow-sm outline-none transition focus:border-[color:var(--color-ink)] focus:bg-white focus:shadow-md"
+        className="h-12 w-full rounded-full border border-input bg-muted pl-12 pr-5 shadow-sm outline-none transition focus:border-primary focus:bg-card focus:shadow-md"
       />
     </form>
   );
