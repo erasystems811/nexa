@@ -2,8 +2,7 @@ import { notFound } from "next/navigation";
 import { requireView, getListingForReview, PERMISSIONS as P } from "@/modules/admin";
 import { decideListingAction, restoreListingAction, decideMediaAction } from "@/modules/admin/actions";
 import { formatKobo } from "@/lib/money";
-import { Card, PageHeader } from "@/components/ui";
-import { AdminBack } from "@/components/admin-back";
+import { Card, CardContent } from "@/components/ui/card";
 import { ActionButton } from "../../action-button";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -55,113 +54,97 @@ export default async function AdminListingDetail({ params }: { params: Promise<{
 
   return (
     <>
-      <AdminBack fallback="/listings" />
+      <h1 className="font-serif text-2xl font-bold">{listing.title}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {provider?.business_name ?? "Unknown vendor"} · {category?.name ?? "—"}
+      </p>
 
-      <div className="mt-3">
-        <PageHeader
-          title={listing.title}
-          subtitle={`${provider?.business_name ?? "Unknown vendor"} · ${category?.name ?? "—"}`}
-        />
-      </div>
-
-      <div className="mb-4 flex items-center gap-2">
-        <span className="rounded-full bg-[color:var(--color-surface-sunk)] px-2.5 py-0.5 text-[11px] font-medium">
+      <div className="mb-4 mt-4 flex items-center gap-2">
+        <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium">
           {STATUS_LABEL[listing.status] ?? listing.status}
         </span>
-        <span className="text-lg font-semibold text-[color:var(--color-accent)]">{price}</span>
+        <span className="text-lg font-semibold text-accent">{price}</span>
       </div>
 
       {/* Photos — the whole reason this screen exists. */}
       <Card className="mb-4">
-        <h2 className="mb-3 text-sm font-semibold">
-          Photos {media.length > 0 ? `(${media.length})` : ""}
-        </h2>
-        {media.length === 0 ? (
-          <p className="text-sm text-[color:var(--color-ink-muted)]">
-            The vendor has not added any photos to this listing yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {media.map((m) => (
-              <div key={m.id} className="overflow-hidden rounded-xl border border-[color:var(--color-line)]">
-                <div className="aspect-[4/3] bg-[color:var(--color-surface-sunk)]">
-                  {m.url && m.kind === "image" ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- private storage, signed URL
-                    <img src={m.url} alt={m.alt_text ?? ""} className="h-full w-full object-cover" />
-                  ) : m.url && m.kind === "video" ? (
-                    <video src={m.url} controls className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-[color:var(--color-ink-muted)]">
-                      preview unavailable
-                    </div>
-                  )}
-                </div>
-                <p className="px-2 py-1 text-[11px] text-[color:var(--color-ink-muted)]">
-                  {m.status === "approved" ? "Approved" : "Waiting for approval"}
-                </p>
-                {m.status !== "approved" ? (
-                  <div className="flex gap-1.5 border-t border-[color:var(--color-line)] p-1.5">
-                    <ActionButton
-                      label="Approve"
-                      variant="primary"
-                      run={decideMediaAction.bind(null, m.id, listing.id, true)}
-                    />
-                    <ActionButton
-                      label="Reject"
-                      variant="danger"
-                      run={decideMediaAction.bind(null, m.id, listing.id, false)}
-                    />
+        <CardContent className="pt-6">
+          <h2 className="mb-3 text-sm font-semibold">Photos {media.length > 0 ? `(${media.length})` : ""}</h2>
+          {media.length === 0 ? (
+            <p className="text-sm text-muted-foreground">The vendor has not added any photos to this listing yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {media.map((m) => (
+                <div key={m.id} className="overflow-hidden rounded-xl border">
+                  <div className="aspect-[4/3] bg-muted">
+                    {m.url && m.kind === "image" ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- private storage, signed URL
+                      <img src={m.url} alt={m.alt_text ?? ""} className="h-full w-full object-cover" />
+                    ) : m.url && m.kind === "video" ? (
+                      <video src={m.url} controls className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                        preview unavailable
+                      </div>
+                    )}
                   </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="mt-3 text-xs text-[color:var(--color-ink-muted)]">
-          Approving the listing approves its photos alongside it. A photo added to a listing that is
-          already live is approved here, on its own.
-        </p>
+                  <p className="px-2 py-1 text-[11px] text-muted-foreground">
+                    {m.status === "approved" ? "Approved" : "Waiting for approval"}
+                  </p>
+                  {m.status !== "approved" ? (
+                    <div className="flex gap-1.5 border-t p-1.5">
+                      <ActionButton label="Approve" variant="primary" run={decideMediaAction.bind(null, m.id, listing.id, true)} />
+                      <ActionButton label="Reject" variant="danger" run={decideMediaAction.bind(null, m.id, listing.id, false)} />
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Approving the listing approves its photos alongside it. A photo added to a listing that is already live
+            is approved here, on its own.
+          </p>
+        </CardContent>
       </Card>
 
       <Card className="mb-4">
-        <h2 className="mb-2 text-sm font-semibold">Description</h2>
-        <p className="whitespace-pre-wrap text-sm text-[color:var(--color-ink-muted)]">
-          {listing.description?.trim() || "No description written."}
-        </p>
+        <CardContent className="pt-6">
+          <h2 className="mb-2 text-sm font-semibold">Description</h2>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+            {listing.description?.trim() || "No description written."}
+          </p>
+        </CardContent>
       </Card>
 
       <Card className="mb-4">
-        <h2 className="mb-3 text-sm font-semibold">Details</h2>
-        <dl className="space-y-1.5 text-sm">
-          <Row k="Price" v={price} />
-          <Row
-            k="Pricing"
-            v={listing.price_type === "fixed" ? "Fixed price" : "Negotiable / on request"}
-          />
-          <Row
-            k="Payment"
-            v={listing.payment_type === "full" ? "Paid in full" : String(listing.payment_type).replace(/_/g, " ")}
-          />
-          <Row k="Category" v={category?.name ?? "—"} />
-        </dl>
+        <CardContent className="pt-6">
+          <h2 className="mb-3 text-sm font-semibold">Details</h2>
+          <dl className="space-y-1.5 text-sm">
+            <Row k="Price" v={price} />
+            <Row k="Pricing" v={listing.price_type === "fixed" ? "Fixed price" : "Negotiable / on request"} />
+            <Row k="Payment" v={listing.payment_type === "full" ? "Paid in full" : String(listing.payment_type).replace(/_/g, " ")} />
+            <Row k="Category" v={category?.name ?? "—"} />
+          </dl>
+        </CardContent>
       </Card>
 
       <Card className="mb-4">
-        <h2 className="mb-3 text-sm font-semibold">Cancellation policy</h2>
-        {policy.length === 0 ? (
-          <p className="text-sm text-[color:var(--color-ink-muted)]">No cancellation tiers set.</p>
-        ) : (
-          <ul className="space-y-1.5 text-sm">
-            {policy.map((t, i) => (
-              <li key={i} className="flex justify-between gap-3">
-                <span className="text-[color:var(--color-ink-muted)]">
-                  Cancel {t.min_hours_before}+ hours before
-                </span>
-                <span className="tabular-nums">{t.refund_percent}% refund</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <CardContent className="pt-6">
+          <h2 className="mb-3 text-sm font-semibold">Cancellation policy</h2>
+          {policy.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No cancellation tiers set.</p>
+          ) : (
+            <ul className="space-y-1.5 text-sm">
+              {policy.map((t, i) => (
+                <li key={i} className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Cancel {t.min_hours_before}+ hours before</span>
+                  <span className="tabular-nums">{t.refund_percent}% refund</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
       </Card>
 
       {/* Decisions. */}
@@ -177,17 +160,8 @@ export default async function AdminListingDetail({ params }: { params: Promise<{
 
         {listing.status === "pending_approval" ? (
           <>
-            <ActionButton
-              label="Ask for changes"
-              prompt="What needs changing? The vendor sees this."
-              run={decideListingAction.bind(null, listing.id, "changes_requested")}
-            />
-            <ActionButton
-              label="Reject"
-              variant="danger"
-              prompt="Why? The vendor sees this."
-              run={decideListingAction.bind(null, listing.id, "rejected")}
-            />
+            <ActionButton label="Ask for changes" prompt="What needs changing? The vendor sees this." run={decideListingAction.bind(null, listing.id, "changes_requested")} />
+            <ActionButton label="Reject" variant="danger" prompt="Why? The vendor sees this." run={decideListingAction.bind(null, listing.id, "rejected")} />
           </>
         ) : null}
 
@@ -201,11 +175,7 @@ export default async function AdminListingDetail({ params }: { params: Promise<{
         ) : null}
 
         {listing.status === "hidden" || listing.status === "rejected" ? (
-          <ActionButton
-            label="Put it back"
-            variant="primary"
-            run={restoreListingAction.bind(null, listing.id)}
-          />
+          <ActionButton label="Put it back" variant="primary" run={restoreListingAction.bind(null, listing.id)} />
         ) : null}
       </div>
     </>
@@ -215,7 +185,7 @@ export default async function AdminListingDetail({ params }: { params: Promise<{
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex justify-between gap-3">
-      <dt className="text-[color:var(--color-ink-muted)]">{k}</dt>
+      <dt className="text-muted-foreground">{k}</dt>
       <dd className="text-right">{v}</dd>
     </div>
   );

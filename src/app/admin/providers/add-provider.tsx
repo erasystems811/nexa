@@ -2,7 +2,9 @@
 
 import { useActionState, useState } from "react";
 import { addProviderAction, type AdminActionState } from "@/modules/admin/actions";
-import { Alert } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 /** Add a vendor by hand. */
 export function AddProvider() {
@@ -11,44 +13,44 @@ export function AddProvider() {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="h-10 rounded-full bg-[color:var(--color-ink)] px-5 text-sm font-medium text-white"
-      >
+      <Button onClick={() => setOpen(true)} className="shrink-0">
         Add a vendor
-      </button>
+      </Button>
     );
   }
 
   return (
-    <form action={action} className="rounded-[var(--radius-card)] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-4">
-      <h2 className="text-sm font-semibold">Add a vendor</h2>
-      <p className="mt-1 text-xs text-[color:var(--color-ink-muted)]">
-        Creates their account and approves them straight away. They get an email with a code to set their
-        own password.
-      </p>
-      <div className="mt-3 space-y-2">
-        <input name="email" type="email" placeholder="Email" required className="h-11 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm" />
-        <input name="business_name" placeholder="Business name" required className="h-11 w-full rounded-lg border border-[color:var(--color-line)] px-3 text-sm" />
-      </div>
-      {state.error ? <div className="mt-2"><Alert>{state.error}</Alert></div> : null}
-      {state.ok ? (
-        <div className="mt-2 space-y-2">
-          <Alert tone="success">
-            {state.warning ? "Vendor added." : "Vendor added. A set-password email is on its way to them."}
-          </Alert>
-          {state.warning ? <Alert>{state.warning}</Alert> : null}
-        </div>
-      ) : null}
-      <div className="mt-3 flex gap-2">
-        <button type="submit" disabled={pending} className="h-10 rounded-full bg-[color:var(--color-ink)] px-5 text-sm font-medium text-white disabled:opacity-40">
-          {pending ? "Adding…" : "Add vendor"}
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="h-10 rounded-full border border-[color:var(--color-line)] px-5 text-sm">
-          Cancel
-        </button>
-      </div>
-    </form>
+    <Card className="w-full">
+      <CardContent className="pt-6">
+        <form action={action}>
+          <h2 className="text-sm font-semibold">Add a vendor</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Creates their account and approves them straight away. They get an email with a code to set their own
+            password.
+          </p>
+          <div className="mt-3 space-y-2">
+            <Input name="email" type="email" placeholder="Email" required />
+            <Input name="business_name" placeholder="Business name" required />
+          </div>
+          {state.error ? <p className="mt-2 text-sm text-destructive">{state.error}</p> : null}
+          {state.ok ? (
+            <div className="mt-2 space-y-1">
+              <p className="text-sm text-emerald-700">
+                {state.warning ? "Vendor added." : "Vendor added. A set-password email is on its way to them."}
+              </p>
+              {state.warning ? <p className="text-sm text-destructive">{state.warning}</p> : null}
+            </div>
+          ) : null}
+          <div className="mt-3 flex gap-2">
+            <Button type="submit" disabled={pending}>
+              {pending ? "Adding…" : "Add vendor"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,10 +1,8 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import {
-  assignSupportRequestAction,
-  resolveSupportRequestAction,
-} from "@/modules/admin/actions";
+import { assignSupportRequestAction, resolveSupportRequestAction } from "@/modules/admin/actions";
+import { Button } from "@/components/ui/button";
 
 export function SupportRequestActions({
   requestId,
@@ -45,7 +43,7 @@ export function SupportRequestActions({
         disabled={pending}
         defaultValue=""
         onChange={(e) => assign(e.target.value)}
-        className="h-9 rounded-lg border border-[color:var(--color-line)] bg-white px-2 text-xs"
+        className="h-9 rounded-md border border-input bg-transparent px-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <option value="" disabled>
           Assign to…
@@ -56,15 +54,10 @@ export function SupportRequestActions({
           </option>
         ))}
       </select>
-      <button
-        type="button"
-        disabled={pending}
-        onClick={resolve}
-        className="h-9 rounded-lg bg-[color:var(--color-ink)] px-3 text-xs font-medium text-white disabled:opacity-40"
-      >
+      <Button size="sm" disabled={pending} onClick={resolve}>
         Mark resolved
-      </button>
-      {error ? <span className="text-xs text-[color:var(--color-danger)]">{error}</span> : null}
+      </Button>
+      {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </div>
   );
 }

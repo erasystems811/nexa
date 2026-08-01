@@ -1,10 +1,8 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import {
-  payVendorInDisputeAction,
-  refundCustomerInDisputeAction,
-} from "@/modules/admin/actions";
+import { payVendorInDisputeAction, refundCustomerInDisputeAction } from "@/modules/admin/actions";
+import { Button } from "@/components/ui/button";
 
 /**
  * The founder's fallback, made concrete.
@@ -32,28 +30,24 @@ export function DisputeActions({ disputeId }: { disputeId: string }) {
   };
 
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      <button
-        type="button"
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <Button
+        size="sm"
         disabled={pending}
-        onClick={() =>
-          act(payVendorInDisputeAction, "Pay the vendor without a code? Add a note for the record:")
-        }
-        className="h-9 rounded-lg bg-[color:var(--color-ink)] px-3 text-xs font-medium text-white disabled:opacity-40"
+        onClick={() => act(payVendorInDisputeAction, "Pay the vendor without a code? Add a note for the record:")}
       >
         Pay the vendor
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="text-destructive"
         disabled={pending}
-        onClick={() =>
-          act(refundCustomerInDisputeAction, "Refund the customer? Add a note for the record:")
-        }
-        className="h-9 rounded-lg border border-[color:var(--color-line)] px-3 text-xs font-medium text-[color:var(--color-danger)] disabled:opacity-40"
+        onClick={() => act(refundCustomerInDisputeAction, "Refund the customer? Add a note for the record:")}
       >
         Refund the customer
-      </button>
-      {error ? <span className="text-xs text-[color:var(--color-danger)]">{error}</span> : null}
+      </Button>
+      {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </div>
   );
 }
