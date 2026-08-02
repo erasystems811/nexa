@@ -1,8 +1,16 @@
+import Link from "next/link";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { currentStaff, can, listStaff, listDisputes, listSupportRequests, PERMISSIONS as P } from "@/modules/admin";
 import { Card, CardContent } from "@/components/ui/card";
 import { DisputeActions } from "./dispute-actions";
 import { SupportRequestActions } from "./support-request-actions";
+
+const DISPUTE_FILTERS = [
+  { label: "Open", value: undefined },
+  { label: "Resolved", value: "resolved" },
+  { label: "Rejected", value: "rejected" },
+] as const;
 
 const REASON_LABEL: Record<string, string> = {
   vendor_no_code: "Vendor says the customer won't give the code",
@@ -22,15 +30,21 @@ const CHANNEL_LABEL: Record<string, string> = {
  * decides where it goes). Different permissions, same page - most people who
  * handle one end up handling both.
  */
-export default async function DisputesPage() {
+export default async function DisputesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const staff = await currentStaff();
   const canSupport = can(staff, P.supportHandle);
   const canDisputes = can(staff, P.disputesView);
   if (!staff || (!canSupport && !canDisputes)) redirect("/admin");
 
+  const { status } = await searchParams;
+
   const [requests, disputes, staffList] = await Promise.all([
     canSupport ? listSupportRequests() : Promise.resolve([]),
-    canDisputes ? listDisputes() : Promise.resolve([]),
+    canDisputes ? listDisputes(status) : Promise.resolve([]),
     canSupport ? listStaff() : Promise.resolve([]),
   ]);
 
@@ -89,6 +103,21 @@ export default async function DisputesPage() {
       {canDisputes ? (
         <section>
           <h2 className="mb-3 font-serif text-lg font-semibold">Disputes</h2>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {DISPUTE_FILTERS.map((f) => (
+              <Link
+                key={f.label}
+                href={(f.value ? `/disputes?status=${f.value}` : "/disputes") as Route}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                  status === f.value
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "hover:border-muted-foreground"
+                }`}
+              >
+                {f.label}
+              </Link>
+            ))}
+          </div>
           {disputes.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-sm text-muted-foreground">Nothing open.</CardContent>

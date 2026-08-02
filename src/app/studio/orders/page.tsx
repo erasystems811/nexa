@@ -1,13 +1,23 @@
+import Link from "next/link";
+import type { Route } from "next";
 import { requireProvider, listProviderOrders } from "@/modules/provider";
 import { formatKobo } from "@/lib/money";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusPill } from "@/components/status-pill";
 import { OrderActions } from "./order-actions";
 
+const STATUSES = ["paid_held", "accepted", "in_progress", "completed", "cancelled", "disputed"] as const;
+
 /** Orders. Providers own ordinary fulfillment. */
-export default async function StudioOrders() {
+export default async function StudioOrders({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const provider = await requireProvider();
-  const orders = await listProviderOrders(provider.id);
+  const { status } = await searchParams;
+  const allOrders = await listProviderOrders(provider.id);
+  const orders = status ? allOrders.filter((o) => o.status === status) : allOrders;
 
   return (
     <>
@@ -16,12 +26,26 @@ export default async function StudioOrders() {
         Accept bookings, coordinate fulfillment, and complete events.
       </p>
 
+      <div className="mb-4 mt-6 flex flex-wrap gap-2">
+        <Filter label="All" href="/studio/orders" active={!status} />
+        {STATUSES.map((s) => (
+          <Filter
+            key={s}
+            label={s.replace("_", " ")}
+            href={`/studio/orders?status=${s}` as Route}
+            active={status === s}
+          />
+        ))}
+      </div>
+
       {orders.length === 0 ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6 text-sm text-muted-foreground">No orders yet.</CardContent>
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            {allOrders.length === 0 ? "No orders yet." : "No orders match that filter."}
+          </CardContent>
         </Card>
       ) : (
-        <ul className="mt-6 space-y-3">
+        <ul className="space-y-3">
           {orders.map((o) => (
             <li key={o.id}>
               <Card className="border-l-4 border-l-primary">
@@ -48,5 +72,18 @@ export default async function StudioOrders() {
         </ul>
       )}
     </>
+  );
+}
+
+function Filter({ label, href, active }: { label: string; href: Route; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition ${
+        active ? "border-accent bg-accent text-accent-foreground" : "hover:border-muted-foreground"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }
