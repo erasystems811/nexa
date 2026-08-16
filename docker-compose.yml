@@ -13,6 +13,8 @@ services:
     build:
       context: .
       dockerfile: apps/customer/Dockerfile
+      secrets:
+        - envfile
     restart: unless-stopped
     env_file: .env
     environment:
@@ -26,6 +28,8 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
+      secrets:
+        - envfile
     restart: unless-stopped
     env_file: .env
     environment:
@@ -36,8 +40,14 @@ services:
     build:
       context: .
       dockerfile: apps/studio/Dockerfile
+      secrets:
+        - envfile
     restart: unless-stopped
     env_file: .env
     environment:
       - PORT=3000
     mem_limit: 200m
+
+secrets:
+  envfile:
+    file: .env
