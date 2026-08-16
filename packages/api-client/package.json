@@ -1,0 +1,14 @@
+{
+  "name": "@nexa/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed fetch wrapper for api-server — what apps/customer, apps/studio, and apps/admin call instead of talking to Supabase directly. Function shapes deliberately mirror the old src/modules/* signatures (minus the implicit Supabase client) so callers barely change.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

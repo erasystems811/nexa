@@ -1,0 +1,15 @@
+{
+  "name": "@nexa/db-types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Generated Supabase types + the thin domain-type layer over them — the shared schema contract between apps/customer, apps/studio, apps/admin, and api-server. Regenerate with: supabase gen types typescript --linked --schema public > src/generated.ts (run from this package's directory).",
+  "main": "./src/types.ts",
+  "types": "./src/types.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "db:types": "supabase gen types typescript --linked --schema public > src/generated.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

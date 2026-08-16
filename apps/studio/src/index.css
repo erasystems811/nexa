@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Tailwind's automatic content detection only scans this app's own src/ —
+   it never reaches into packages/design-system, so classes used ONLY inside
+   a design-system component (never typed literally in this app's own
+   source) are silently never generated — e.g. bg-popover/text-popover-
+   foreground, used only inside select.tsx/popover.tsx/dropdown-menu.tsx. */
+@source "../../../packages/design-system/src";
+
+@import "@nexa/design-system/src/styles/tokens.css";

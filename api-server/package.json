@@ -1,0 +1,33 @@
+{
+  "name": "@nexa/api-server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Nexa's shared backend. Owns every module (auth provisioning, marketplace, search, bookings, payments, provider, messaging, admin) — the customer, Studio, and admin apps all call this over HTTP instead of talking to Supabase directly.",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env.local src/index.ts",
+    "start": "tsx --env-file=.env.local src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@nexa/db-types": "*",
+    "@nexa/money": "*",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/multipart": "^9.0.1",
+    "@supabase/supabase-js": "^2.58.0",
+    "fastify": "^5.1.0",
+    "fastify-plugin": "^5.0.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "eslint": "^9.36.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.0.0"
+  }
+}

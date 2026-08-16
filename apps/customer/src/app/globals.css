@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+/* Tailwind's automatic content detection only scans this app's own files —
+   it never reaches into packages/design-system, so any class used ONLY
+   inside a design-system component (never typed literally in this app's own
+   source) is silently never generated. bg-card/bg-primary/etc "worked" only
+   by coincidence, because this app's own files also happen to use those
+   exact class names somewhere; bg-popover/text-popover-foreground (used only
+   inside select.tsx/popover.tsx/dropdown-menu.tsx/calendar.tsx) did not,
+   which is why an open <Select>'s dropdown rendered with no background at
+   all. This tells Tailwind to scan that package's source too. */
+@source "../../../../packages/design-system/src";
+
+/* Shared trust-blue token system + shadcn/ui base layer — see
+   packages/design-system, which Studio and Admin will import too. */
+@import "@nexa/design-system/src/styles/tokens.css";

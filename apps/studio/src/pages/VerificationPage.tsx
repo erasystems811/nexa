@@ -1,0 +1,120 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@nexa/design-system/src/components/ui/card";
+import { Badge } from "@nexa/design-system/src/components/ui/badge";
+import { apiGet } from "../lib/api";
+import { VerifyForm, type IdTypeOption } from "../components/verify-form";
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "With Nexa — we are looking at it",
+  approved: "Approved",
+  rejected: "Not accepted",
+};
+
+// Static reference data mirroring api-server's modules/provider/identification.ts
+// ID_TYPES / ACCEPTED_ID_MIME_TYPES — not exposed as its own endpoint, and it
+// never changes independently of a deploy, so it is safe to inline here.
+const ACCEPTED_ID_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+
+interface IdentityDocument {
+  id: string;
+  kind: string;
+  label: string;
+  idNumber: string | null;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+interface IdentityStatus {
+  verified: boolean;
+  required: number;
+  approvedCount: number;
+  documents: IdentityDocument[];
+  remainingTypes: IdTypeOption[];
+}
+
+/**
+ * Who you are, in Business Studio.
+ *
+ * Every vendor lands here: the business that applied on the open marketplace and
+ * the business Nexa added by hand. Nexa is asking the same thing of both.
+ */
+export function VerificationPage() {
+  const [identity, setIdentity] = useState<IdentityStatus | null>(null);
+
+  function refresh() {
+    apiGet<IdentityStatus>("/provider/identity").then(setIdentity);
+  }
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  if (!identity) return <div className="text-muted-foreground">Loading…</div>;
+
+  return (
+    <div>
+      <h1 className="font-serif text-2xl font-bold">Prove who you are</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {identity.verified
+          ? "Nexa has what it needs. Your services can go live."
+          : `Nexa needs ${identity.required} means of identification before your services can go in front of customers. You have ${identity.approvedCount} approved.`}
+      </p>
+
+      {identity.verified ? null : (
+        <div className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+          Until then, everything else in Business Studio is yours — your orders, your wallet, your profile. It is
+          only listing a service that waits.
+        </div>
+      )}
+
+      {identity.documents.length > 0 ? (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-sm">What you have sent</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ul className="space-y-3">
+              {identity.documents.map((doc) => (
+                <li key={doc.id} className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{doc.label}</p>
+                    {doc.idNumber ? (
+                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">{doc.idNumber}</p>
+                    ) : null}
+                    {doc.status === "rejected" && doc.notes ? (
+                      <p className="mt-1 text-xs text-destructive">{doc.notes}</p>
+                    ) : null}
+                  </div>
+                  <Badge
+                    variant={doc.status === "approved" ? "default" : doc.status === "rejected" ? "destructive" : "secondary"}
+                    className="shrink-0"
+                  >
+                    {STATUS_LABEL[doc.status] ?? doc.status}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-sm">{identity.documents.length > 0 ? "Send another" : "Send your first one"}</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            A CAC certificate, NIN, BVN, international passport or driver's licence. Two different ones. Only Nexa
+            sees them — never a customer.
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <VerifyForm
+            remainingTypes={identity.remainingTypes}
+            acceptedMimeTypes={ACCEPTED_ID_MIME_TYPES}
+            onSubmitted={refresh}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
