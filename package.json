@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Nexa event vendor marketplace — one API server, three separate apps (customer, vendor Business Studio, admin console). Powered by ERA.",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "api-server",
     "apps/*",

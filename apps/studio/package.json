@@ -4,6 +4,9 @@
   "private": true,
   "description": "Nexa Vendor Business Studio — the vendor-facing dashboard app. Vite SPA, talks to api-server over HTTP.",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

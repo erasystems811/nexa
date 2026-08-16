@@ -4,6 +4,9 @@
   "private": true,
   "description": "Nexa Admin Console — internal ops app. Vite SPA, talks to api-server over HTTP.",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
