@@ -9,18 +9,20 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "serve -s dist -l $PORT"
   },
   "dependencies": {
-    "@nexa/design-system": "*",
     "@nexa/db-types": "*",
+    "@nexa/design-system": "*",
     "@nexa/money": "*",
     "@supabase/supabase-js": "^2.58.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.25.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.1.1"
+    "react-router-dom": "^7.1.1",
+    "serve": "^14.2.6"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
