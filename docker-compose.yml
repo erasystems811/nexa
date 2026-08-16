@@ -1,0 +1,43 @@
+services:
+  api-server:
+    build:
+      context: .
+      dockerfile: api-server/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PORT=4000
+    mem_limit: 400m
+
+  customer:
+    build:
+      context: .
+      dockerfile: apps/customer/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PORT=3000
+      - API_BASE_URL=http://api-server:4000
+    depends_on:
+      - api-server
+    mem_limit: 500m
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PORT=3000
+    mem_limit: 200m
+
+  vendor:
+    build:
+      context: .
+      dockerfile: apps/studio/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PORT=3000
+    mem_limit: 200m
