@@ -4,7 +4,7 @@
   "private": true,
   "description": "Nexa's shared backend. Owns every module (auth provisioning, marketplace, search, bookings, payments, provider, messaging, admin) — the customer, Studio, and admin apps all call this over HTTP instead of talking to Supabase directly.",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "type": "module",
   "scripts": {

@@ -1,4 +1,6 @@
-FROM node:20-alpine
+# Node 22+ specifically (not just the >=20 engines.node minimum) - @supabase/
+# supabase-js's realtime client needs native WebSocket, which lands in 22.
+FROM node:22-alpine
 
 WORKDIR /app
 

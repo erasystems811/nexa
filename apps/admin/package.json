@@ -5,7 +5,7 @@
   "description": "Nexa Admin Console — internal ops app. Vite SPA, talks to api-server over HTTP.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "vite",

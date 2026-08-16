@@ -4,7 +4,7 @@
   "private": true,
   "description": "Nexa event vendor access marketplace. Powered by ERA.",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "next dev",
