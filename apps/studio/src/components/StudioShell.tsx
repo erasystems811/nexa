@@ -88,7 +88,7 @@ export function StudioShell({
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/30 md:flex-row">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4 md:hidden">
+      <div className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 md:hidden">
         <div className="flex items-center">
           {brand}
           <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">Vendor</span>
