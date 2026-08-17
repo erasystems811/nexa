@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log("[diag] webhook POST received", new Date().toISOString());
   const env = serverEnv();
 
   if (!env.WHATSAPP_APP_SECRET) {
