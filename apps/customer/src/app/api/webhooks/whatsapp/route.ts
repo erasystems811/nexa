@@ -55,6 +55,10 @@ async function forwardToBali(entryId: string, value: unknown): Promise<void> {
   }
 }
 
+// Real-time chat never needs this long - a stale message is backlog from an
+// outage, not a slow reply.
+const STALE_MESSAGE_MS = 5 * 60 * 1000;
+
 function signatureIsValid(rawBody: string, header: string | null, appSecret: string): boolean {
   if (!header?.startsWith("sha256=")) return false;
 
@@ -134,6 +138,14 @@ export async function POST(request: NextRequest) {
           };
           from?: string;
           id?: string;
+          // Epoch seconds, set by Meta to when the sender actually sent it -
+          // not when this webhook fires. When Nexa's endpoint is unreachable
+          // (an outage, a migration), Meta queues and retries delivery for
+          // days afterward, and every one of those arrives here looking like
+          // a message that just came in. Without checking this, a customer's
+          // "hi" from three days ago gets answered and relayed to a vendor
+          // right now, as if it were live.
+          timestamp?: string;
         }>;
         // Delivery receipts for messages Nexa sent (sent/delivered/read/failed).
         // Meta only sends these once the `statuses` webhook field is subscribed
@@ -167,6 +179,14 @@ export async function POST(request: NextRequest) {
 
       for (const message of Array.isArray(value.messages) ? value.messages : []) {
         if (!message.from || !message.id) continue;
+
+        if (message.timestamp) {
+          const sentAt = Number(message.timestamp) * 1000;
+          if (Number.isFinite(sentAt) && Date.now() - sentAt > STALE_MESSAGE_MS) {
+            console.log("Ignoring stale WhatsApp message", message.id, "from", message.from, "sent", new Date(sentAt).toISOString());
+            continue;
+          }
+        }
 
         if (message.type === "text" && message.text?.body) {
           await handleIncomingWhatsappText({

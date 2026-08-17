@@ -30,19 +30,14 @@ export default async function WhatsappHandoffPage({
   if (!conversation) notFound();
 
   const vendorName =
-    (conversation.providers as unknown as { business_name: string } | null)?.business_name ?? null;
-  const listingTitle =
-    (conversation.listings as unknown as { title: string } | null)?.title ?? null;
+    (conversation.providers as unknown as { business_name: string } | null)?.business_name ?? "this vendor";
 
-  const about = listingTitle
-    ? `"${listingTitle}"${vendorName ? ` from ${vendorName}` : ""}`
-    : vendorName ?? "an event service";
   // The full conversation id has to be in the message: the webhook reads it back
   // out ("Booking reference: <id>") to know which conversation the WhatsApp chat
   // belongs to and which vendor to forward it to. Shortening it breaks the bot —
   // nothing binds, nothing relays. Worded as a plain "booking reference" rather
   // than a raw code, since the customer sees this text before they send it.
-  const message = `Hi Nexa! I'd like to book ${about}.\n\nBooking reference: ${id}`;
+  const message = `Hi Nexa, I want to book ${vendorName} for my event.\n\nBooking reference: ${id}`;
 
   // Normalised, not trusted: a number typed the way Nigerians say it (08022748369)
   // builds a wa.me link that goes nowhere.

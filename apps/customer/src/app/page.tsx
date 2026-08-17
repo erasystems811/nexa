@@ -37,8 +37,8 @@ export default async function HomePage() {
           </span>
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-          Browse verified caterers, DJs, decorators and more, compare real work, and book with your payment held safe
-          until the job is done.
+          Search for verified venues, caterers, rentals, DJs, photographers and more, and book with your payment
+          held safe until the job is done.
         </p>
         <div className="mx-auto mt-8 max-w-2xl">
           <HomeSearchBar cities={cities} />
