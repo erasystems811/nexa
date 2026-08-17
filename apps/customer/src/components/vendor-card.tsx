@@ -20,8 +20,9 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
           src={vendor.logoUrl}
           alt=""
           fill
+          fit="contain"
           sizes="(max-width: 640px) 50vw, 300px"
-          className="aspect-[16/10]"
+          className="aspect-[16/10] p-4"
           imageClassName="transition duration-300 group-hover:scale-[1.03]"
         />
       ) : (

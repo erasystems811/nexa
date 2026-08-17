@@ -32,6 +32,7 @@ export function Photo({
   className,
   imageClassName,
   priority,
+  fit = "cover",
 }: {
   src: string | null | undefined;
   alt: string;
@@ -44,6 +45,13 @@ export function Photo({
   /** In `fill` mode only: extra classes on the <img> itself — e.g. a hover scale. */
   imageClassName?: string;
   priority?: boolean;
+  /**
+   * "cover" (default) fills the box and crops overflow — right for a cover/
+   * listing photo, wrong for a logo: a logo isn't shot to any aspect ratio,
+   * so cropping it cuts off part of the actual mark. "contain" shows the
+   * whole image, letterboxed inside the box instead.
+   */
+  fit?: "cover" | "contain";
 }) {
   const [loaded, setLoaded] = useState(false);
 
@@ -68,7 +76,7 @@ export function Photo({
           priority={priority}
           sizes={sizes ?? "100vw"}
           onLoad={() => setLoaded(true)}
-          className={`object-cover ${fadeClass} ${imageClassName ?? ""}`}
+          className={`${fit === "contain" ? "object-contain" : "object-cover"} ${fadeClass} ${imageClassName ?? ""}`}
         />
       </div>
     );
