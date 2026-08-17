@@ -185,7 +185,15 @@ async function bindThreadFromReference(input: {
   contactId: string;
   waId: string;
 }): Promise<
-  | { conversationId: string; side: WhatsappSide; senderId: string; isNewBind: boolean; vendorName: string }
+  | {
+      conversationId: string;
+      side: WhatsappSide;
+      senderId: string;
+      isNewBind: boolean;
+      vendorName: string;
+      listingTitle: string;
+      isSelfServe: boolean;
+    }
   | null
   | "wrong_number"
 > {
@@ -197,7 +205,9 @@ async function bindThreadFromReference(input: {
 
   const { data: conversation } = await db
     .from("conversations")
-    .select("id, customer_id, provider_id, providers ( user_id, business_name ), profiles ( phone )")
+    .select(
+      "id, customer_id, provider_id, providers ( user_id, business_name ), profiles ( phone ), listings ( title, categories ( vendor_tier ) )",
+    )
     .eq("id", conversationId)
     .maybeSingle();
 
@@ -207,6 +217,11 @@ async function bindThreadFromReference(input: {
     (conversation.providers as unknown as { user_id: string } | null)?.user_id ?? null;
   const vendorName =
     (conversation.providers as unknown as { business_name: string } | null)?.business_name?.trim() || "the vendor";
+  const listingTitle =
+    (conversation.listings as unknown as { title: string } | null)?.title?.trim() || "your event";
+  const isSelfServe =
+    (conversation.listings as unknown as { categories: { vendor_tier?: string } | null } | null)?.categories
+      ?.vendor_tier === "self_serve";
   const customerPhone =
     (conversation.profiles as unknown as { phone: string | null } | null)?.phone ?? null;
 
@@ -269,7 +284,7 @@ async function bindThreadFromReference(input: {
     if (error) return null;
   }
 
-  return { conversationId, side, senderId, isNewBind: !existing, vendorName };
+  return { conversationId, side, senderId, isNewBind: !existing, vendorName, listingTitle, isSelfServe };
 }
 
 export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Promise<void> {
@@ -379,6 +394,23 @@ export async function handleIncomingWhatsappText(input: WhatsappTextMessage): Pr
           `I'll connect you with ${bound.vendorName} now. ` +
           `If you don't hear back after a while, just say "menu" to search for another vendor.`,
       });
+
+      // This first message is just the prefilled "I want to book..." link
+      // text - it carries the booking reference and nothing a vendor should
+      // read verbatim (raw "Booking reference: <id>" included). Send them a
+      // clean intro instead; the customer's actual next message is real chat
+      // and relays normally below, unchanged.
+      const context = await getWhatsappThreadContext(conversationId);
+      if (context?.vendorWaId) {
+        await sendWhatsappText({
+          to: context.vendorWaId,
+          body: bound.isSelfServe
+            ? `Hey ${bound.vendorName}, a customer wants to know about "${bound.listingTitle}" through Nexa. They'll message you here.`
+            : `Hey ${bound.vendorName}, a customer wants to book "${bound.listingTitle}" through Nexa. They'll message you here.`,
+          nudgeName: bound.vendorName,
+        });
+      }
+      return;
     }
   }
 

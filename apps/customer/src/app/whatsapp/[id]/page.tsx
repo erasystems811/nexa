@@ -31,13 +31,23 @@ export default async function WhatsappHandoffPage({
 
   const vendorName =
     (conversation.providers as unknown as { business_name: string } | null)?.business_name ?? "this vendor";
+  const listingTitle = (conversation.listings as unknown as { title: string } | null)?.title ?? null;
+  // Self-serve vendors (e.g. food/ice-cream sellers) sell directly to the
+  // customer at the event, priced on the spot - never "booked" through Nexa.
+  // See VENDOR_TIERS. "Book {vendor}" is the wrong verb for them; a customer
+  // reaching out here wants to know about the actual item.
+  const isSelfServe =
+    (conversation.listings as unknown as { categories: { vendor_tier?: string } | null } | null)?.categories
+      ?.vendor_tier === "self_serve";
 
   // The full conversation id has to be in the message: the webhook reads it back
   // out ("Booking reference: <id>") to know which conversation the WhatsApp chat
   // belongs to and which vendor to forward it to. Shortening it breaks the bot —
   // nothing binds, nothing relays. Worded as a plain "booking reference" rather
   // than a raw code, since the customer sees this text before they send it.
-  const message = `Hi Nexa, I want to book ${vendorName} for my event.\n\nBooking reference: ${id}`;
+  const message = isSelfServe
+    ? `Hi Nexa, I want to know about ${listingTitle ?? "an item"} from ${vendorName}.\n\nBooking reference: ${id}`
+    : `Hi Nexa, I want to book ${vendorName} for my event.\n\nBooking reference: ${id}`;
 
   // Normalised, not trusted: a number typed the way Nigerians say it (08022748369)
   // builds a wa.me link that goes nowhere.
