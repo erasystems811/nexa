@@ -32,15 +32,16 @@ export default async function HomePage() {
             <ShieldCheck className="size-4" /> The secure event marketplace
           </div>
         </Reveal>
-        <Reveal immediate delay={100}>
-          <h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            Find and book
-            <br />
-            <span className="text-primary underline decoration-accent decoration-[6px] underline-offset-[10px]">
+        <h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+          <Reveal immediate direction="left">
+            <span className="block">Find and book</span>
+          </Reveal>
+          <Reveal immediate delay={150} direction="right">
+            <span className="block text-primary underline decoration-accent decoration-[6px] underline-offset-[10px]">
               all you need for your event.
             </span>
-          </h1>
-        </Reveal>
+          </Reveal>
+        </h1>
         <Reveal immediate delay={200}>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
             Search for verified venues, caterers, rentals, DJs, photographers and more, and book with your payment
