@@ -56,7 +56,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           <div className="flex items-center gap-3">
             <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-primary text-lg font-semibold text-primary-foreground">
               {logo ? (
-                <Photo src={logo} alt="" fill fit="contain" sizes="64px" className="h-full w-full p-1" />
+                <Photo src={logo} alt="" fill fit="contain" sizes="64px" className="h-full w-full" />
               ) : (
                 provider.business_name.charAt(0).toUpperCase()
               )}
