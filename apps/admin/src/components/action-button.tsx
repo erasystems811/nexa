@@ -12,13 +12,17 @@ export function ActionButton({
   variant = "ghost",
 }: {
   label: string;
-  run: (value?: string) => Promise<void>;
+  /** Return a string to show it as a non-failure warning - the action still
+   * succeeded (e.g. "approved, but no email went out"), it just has a caveat
+   * worth surfacing. Throw only for a genuine failure. */
+  run: (value?: string) => Promise<void | string>;
   confirm?: string;
   prompt?: string;
   variant?: "primary" | "ghost" | "danger";
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const onClick = () => {
     let value: string | undefined;
@@ -31,8 +35,10 @@ export function ActionButton({
     }
     start(async () => {
       setError(null);
+      setWarning(null);
       try {
-        await run(value);
+        const result = await run(value);
+        if (result) setWarning(result);
       } catch (e) {
         setError(e instanceof Error ? e.message : "That did not work");
       }
@@ -57,6 +63,7 @@ export function ActionButton({
         {pending ? "…" : label}
       </button>
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
+      {warning ? <span className="text-xs text-amber-600">{warning}</span> : null}
     </>
   );
 }

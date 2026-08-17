@@ -166,7 +166,7 @@ export function ProviderDetailPage() {
                   `/admin/providers/${provider.id}/approve-with-listings`,
                 );
                 load();
-                if (result.warning) throw new Error(result.warning);
+                return result.warning;
               }}
             />
             <ActionButton

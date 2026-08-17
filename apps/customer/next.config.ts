@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/**",
       },
+      {
+        // Self-hosted Supabase (moved off the cloud project 2026-08-16) - see
+        // db.nexa.erasystems.com.ng in project memory. Without this, next/image
+        // silently refuses every photo (vendor logos, listing media, category
+        // tiles) since the hostname doesn't match the pattern above.
+        protocol: "https",
+        hostname: "db.nexa.erasystems.com.ng",
+        pathname: "/storage/v1/object/**",
+      },
     ],
   },
   experimental: {
