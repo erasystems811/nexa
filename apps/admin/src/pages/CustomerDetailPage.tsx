@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 import { StatusPill } from "../components/status-pill";
@@ -38,22 +37,19 @@ interface CustomerDetail {
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { staff } = useAuth();
-  const [result, setResult] = useState<CustomerDetail | null | undefined>(undefined);
-
-  useEffect(() => {
-    if (!id) return;
-    setResult(undefined);
-    apiGet<CustomerDetail>(`/admin/customers/${id}`)
-      .then(setResult)
-      .catch(() => setResult(null));
-  }, [id]);
+  const { data: result, error } = useApiQuery<CustomerDetail>(
+    ["customer", id],
+    `/admin/customers/${id}`,
+    undefined,
+    { enabled: Boolean(id) },
+  );
 
   if (!can(staff, P.customersView)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view customers.</p>;
   }
 
-  if (result === undefined) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (result === null) return <p className="text-sm text-muted-foreground">That customer does not exist.</p>;
+  if (error) return <p className="text-sm text-muted-foreground">That customer does not exist.</p>;
+  if (!result) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   const { profile, bookings, disputes } = result;
 

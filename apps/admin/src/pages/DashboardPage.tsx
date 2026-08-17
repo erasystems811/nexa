@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Wallet, CalendarCheck, AlertTriangle } from "lucide-react";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 interface AdminDashboardStats {
   vendorsWaiting: number;
@@ -28,13 +27,9 @@ interface MoneyMove {
  * people's money am I holding, and who is waiting on me?
  */
 export function DashboardPage() {
-  const [d, setD] = useState<AdminDashboardStats | null>(null);
-  const [moves, setMoves] = useState<MoneyMove[]>([]);
-
-  useEffect(() => {
-    apiGet<AdminDashboardStats>("/admin/dashboard").then(setD);
-    apiGet<MoneyMove[]>("/admin/money/recent", { limit: 8 }).then(setMoves).catch(() => setMoves([]));
-  }, []);
+  const { data: d } = useApiQuery<AdminDashboardStats>(["dashboard"], "/admin/dashboard");
+  const { data: movesData } = useApiQuery<MoneyMove[]>(["money-recent", 8], "/admin/money/recent", { limit: 8 });
+  const moves = movesData ?? [];
 
   if (!d) return <div className="text-muted-foreground">Loading…</div>;
 

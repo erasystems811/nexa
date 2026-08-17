@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { PhotoUpload } from "../components/photo-upload";
 import { ProfileForm } from "../components/profile-form";
 
@@ -20,22 +19,13 @@ interface Contact {
 /** Business profile. */
 export function ProfilePage() {
   const { refreshProvider } = useAuth();
-  const [provider, setProvider] = useState<ProviderProfile | null>(null);
-  const [contact, setContact] = useState<Contact | null>(null);
+  const { data: provider } = useApiQuery<ProviderProfile>(["provider-me"], "/provider/me");
+  const { data: contact } = useApiQuery<Contact>(["provider-contact"], "/provider/contact");
 
-  useEffect(() => {
-    // Loaded together so ProfileForm mounts with real defaults instead of an
-    // empty contact section that a later fetch can no longer update — its
-    // fields are uncontrolled-from-initial-state, set once at mount.
-    Promise.all([apiGet<ProviderProfile>("/provider/me"), apiGet<Contact>("/provider/contact")]).then(
-      ([p, c]) => {
-        setProvider(p);
-        setContact(c);
-      },
-    );
-  }, []);
-
-  if (!provider) return <div className="text-muted-foreground">Loading…</div>;
+  // Both must be in hand before ProfileForm mounts: its contact fields are
+  // uncontrolled-from-initial-state, set once at mount, so a contact fetch
+  // that resolves after mount would leave them stuck empty.
+  if (!provider || !contact) return <div className="text-muted-foreground">Loading…</div>;
 
   return (
     <div>

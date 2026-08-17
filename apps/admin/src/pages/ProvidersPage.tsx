@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
+import { useQueryClient } from "@tanstack/react-query";
 import { AddProvider } from "../components/add-provider";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
@@ -34,13 +34,15 @@ export function ProvidersPage() {
   const { staff } = useAuth();
   const [searchParams] = useSearchParams();
   const status = searchParams.get("status") ?? undefined;
-  const [providers, setProviders] = useState<ProviderListItem[] | null>(null);
-
-  function load() {
-    apiGet<ProviderListItem[]>("/admin/providers", status ? { status } : undefined).then(setProviders);
-  }
-
-  useEffect(load, [status]);
+  const queryClient = useQueryClient();
+  const queryKey = ["providers", status] as const;
+  const { data: providers } = useApiQuery<ProviderListItem[]>(
+    queryKey,
+    "/admin/providers",
+    status ? { status } : undefined,
+    { enabled: can(staff, P.providersView) },
+  );
+  const reload = () => queryClient.invalidateQueries({ queryKey });
 
   if (!can(staff, P.providersView)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view vendors.</p>;
@@ -55,7 +57,7 @@ export function ProvidersPage() {
 
       {can(staff, P.providersApprove) ? (
         <div className="mt-4">
-          <AddProvider onAdded={load} />
+          <AddProvider onAdded={reload} />
         </div>
       ) : null}
 

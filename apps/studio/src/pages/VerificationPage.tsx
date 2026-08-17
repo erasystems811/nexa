@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@nexa/design-system/src/components/ui/card";
 import { Badge } from "@nexa/design-system/src/components/ui/badge";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { VerifyForm, type IdTypeOption } from "../components/verify-form";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -40,15 +40,11 @@ interface IdentityStatus {
  * the business Nexa added by hand. Nexa is asking the same thing of both.
  */
 export function VerificationPage() {
-  const [identity, setIdentity] = useState<IdentityStatus | null>(null);
+  const queryClient = useQueryClient();
+  const identityKey = ["provider-identity"] as const;
+  const { data: identity } = useApiQuery<IdentityStatus>(identityKey, "/provider/identity");
 
-  function refresh() {
-    apiGet<IdentityStatus>("/provider/identity").then(setIdentity);
-  }
-
-  useEffect(() => {
-    refresh();
-  }, []);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: identityKey });
 
   if (!identity) return <div className="text-muted-foreground">Loading…</div>;
 

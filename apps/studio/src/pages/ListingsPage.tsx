@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
 import { Button } from "@nexa/design-system/src/components/ui/button";
 import { Badge } from "@nexa/design-system/src/components/ui/badge";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -28,11 +27,7 @@ interface ListingRow {
 
 /** Listings. */
 export function ListingsPage() {
-  const [listings, setListings] = useState<ListingRow[] | null>(null);
-
-  useEffect(() => {
-    apiGet<ListingRow[]>("/provider/listings").then(setListings);
-  }, []);
+  const { data: listings } = useApiQuery<ListingRow[]>(["provider-listings"], "/provider/listings");
 
   if (!listings) return <div className="text-muted-foreground">Loading…</div>;
 

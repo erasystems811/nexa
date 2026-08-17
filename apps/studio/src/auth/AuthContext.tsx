@@ -53,7 +53,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      // TOKEN_REFRESHED fires whenever the tab regains focus and Supabase
+      // silently rotates the access token in the background — the signed-in
+      // user hasn't changed, so don't blank the page and refetch /provider/me.
+      // INITIAL_SESSION is already handled by the getSession() call above;
+      // handling it here too would double-fetch on every mount.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+        setSession(newSession);
+        return;
+      }
       setSession(newSession);
       if (newSession) await loadProvider();
       else setProvider(null);

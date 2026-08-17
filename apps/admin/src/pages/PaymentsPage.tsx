@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 
@@ -44,16 +43,20 @@ export function PaymentsPage() {
   const { staff } = useAuth();
   const canView = can(staff, P.paymentsView);
 
-  const [o, setO] = useState<MoneyOverview | null>(null);
-  const [waiting, setWaiting] = useState<VendorWaiting[]>([]);
-  const [moves, setMoves] = useState<MoneyMove[]>([]);
-
-  useEffect(() => {
-    if (!canView) return;
-    apiGet<MoneyOverview>("/admin/money/overview").then(setO);
-    apiGet<VendorWaiting[]>("/admin/money/vendors-waiting").then(setWaiting).catch(() => setWaiting([]));
-    apiGet<MoneyMove[]>("/admin/money/recent").then(setMoves).catch(() => setMoves([]));
-  }, [canView]);
+  const { data: o } = useApiQuery<MoneyOverview>(["money-overview"], "/admin/money/overview", undefined, {
+    enabled: canView,
+  });
+  const { data: waitingData } = useApiQuery<VendorWaiting[]>(
+    ["money-vendors-waiting"],
+    "/admin/money/vendors-waiting",
+    undefined,
+    { enabled: canView },
+  );
+  const waiting = waitingData ?? [];
+  const { data: movesData } = useApiQuery<MoneyMove[]>(["money-recent"], "/admin/money/recent", undefined, {
+    enabled: canView,
+  });
+  const moves = movesData ?? [];
 
   if (!canView) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view this page.</p>;

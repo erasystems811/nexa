@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@nexa/db-types/src/types";
 import { createAdminClient } from "../../supabase.js";
-import { notifyWhatsappOfferIfBound } from "../messaging/notify-stub.js";
+import { notifyWhatsappOfferIfBound } from "../messaging/whatsapp.js";
 import { BookingsError } from "./service.js";
 
 /**

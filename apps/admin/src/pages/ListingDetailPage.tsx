@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 import { ActionButton } from "../components/action-button";
@@ -59,23 +60,22 @@ interface Media {
 export function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { staff } = useAuth();
-  const [result, setResult] = useState<{ listing: Listing; media: Media[] } | null | undefined>(undefined);
-
-  function reload() {
-    if (!id) return;
-    apiGet<{ listing: Listing; media: Media[] }>(`/admin/listings/${id}`)
-      .then(setResult)
-      .catch(() => setResult(null));
-  }
-
-  useEffect(reload, [id]);
+  const queryClient = useQueryClient();
+  const queryKey = ["listing", id] as const;
+  const { data: result, error } = useApiQuery<{ listing: Listing; media: Media[] }>(
+    queryKey,
+    `/admin/listings/${id}`,
+    undefined,
+    { enabled: Boolean(id) },
+  );
+  const reload = () => queryClient.invalidateQueries({ queryKey });
 
   if (!can(staff, P.listingsView)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view listings.</p>;
   }
 
-  if (result === undefined) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (result === null) return <p className="text-sm text-muted-foreground">That listing does not exist.</p>;
+  if (error) return <p className="text-sm text-muted-foreground">That listing does not exist.</p>;
+  if (!result) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   const { listing, media } = result;
   const provider = listing.providers;

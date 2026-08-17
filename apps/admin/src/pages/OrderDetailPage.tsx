@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatKobo, koboToNaira, nairaToKobo } from "@nexa/money";
 import type { BookingStatus } from "@nexa/db-types";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
@@ -10,7 +11,8 @@ import { StatusPill } from "../components/status-pill";
 import { ActionButton } from "../components/action-button";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
-import { apiGet, apiSend, ApiError } from "../lib/api";
+import { apiSend, ApiError } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 /** Plain names for every movement of money on this booking. */
 const MOVE: Record<string, string> = {
@@ -75,21 +77,13 @@ export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { staff } = useAuth();
   const allowed = can(staff, P.ordersView);
-  const [d, setD] = useState<OrderDetail | null>(null);
-  const [notFound, setNotFound] = useState(false);
-
-  function reload() {
-    if (!id || !allowed) return;
-    apiGet<OrderDetail>(`/admin/orders/${id}`)
-      .then(setD)
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 404) setNotFound(true);
-      });
-  }
-
-  useEffect(() => {
-    reload();
-  }, [id, allowed]);
+  const queryClient = useQueryClient();
+  const queryKey = ["order", id] as const;
+  const { data: d, error } = useApiQuery<OrderDetail>(queryKey, `/admin/orders/${id}`, undefined, {
+    enabled: Boolean(id) && allowed,
+  });
+  const notFound = error instanceof ApiError && error.status === 404;
+  const reload = () => queryClient.invalidateQueries({ queryKey });
 
   if (!allowed) return <div className="text-muted-foreground">You don&rsquo;t have permission to view bookings.</div>;
   if (notFound) return <div className="text-muted-foreground">No such booking.</div>;

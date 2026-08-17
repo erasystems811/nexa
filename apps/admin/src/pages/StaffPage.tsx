@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, STAFF_ROLE_LABELS, can, type StaffRole } from "../lib/permissions";
 import { InviteStaff } from "../components/invite-staff";
@@ -19,13 +19,10 @@ interface StaffRow {
 /** Staff & permissions. */
 export function StaffPage() {
   const { staff } = useAuth();
-  const [rows, setRows] = useState<StaffRow[] | null>(null);
-
-  function reload() {
-    apiGet<StaffRow[]>("/admin/staff").then(setRows);
-  }
-
-  useEffect(reload, []);
+  const queryClient = useQueryClient();
+  const queryKey = ["staff"] as const;
+  const { data: rows } = useApiQuery<StaffRow[]>(queryKey, "/admin/staff");
+  const reload = () => queryClient.invalidateQueries({ queryKey });
 
   if (!can(staff, P.staffManage)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view staff.</p>;

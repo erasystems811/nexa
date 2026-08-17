@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
 import { Badge } from "@nexa/design-system/src/components/ui/badge";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { ActionButton } from "../components/action-button";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
@@ -112,13 +113,10 @@ interface ProviderDetail {
 export function ProviderDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const { staff } = useAuth();
-  const [d, setD] = useState<ProviderDetail | null>(null);
-
-  function load() {
-    apiGet<ProviderDetail>(`/admin/providers/${id}`).then(setD);
-  }
-
-  useEffect(load, [id]);
+  const queryClient = useQueryClient();
+  const queryKey = ["provider", id] as const;
+  const { data: d } = useApiQuery<ProviderDetail>(queryKey, `/admin/providers/${id}`);
+  const load = () => queryClient.invalidateQueries({ queryKey });
 
   if (!can(staff, P.providersView)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view vendors.</p>;

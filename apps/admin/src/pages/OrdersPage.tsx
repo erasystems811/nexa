@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { formatKobo } from "@nexa/money";
 import type { BookingStatus } from "@nexa/db-types";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
 import { StatusPill } from "../components/status-pill";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 
@@ -27,14 +26,8 @@ export function OrdersPage() {
   const { staff } = useAuth();
   const [searchParams] = useSearchParams();
   const status = searchParams.get("status") ?? undefined;
-  const [orders, setOrders] = useState<OrderListItem[] | null>(null);
   const allowed = can(staff, P.ordersView);
-
-  useEffect(() => {
-    if (!allowed) return;
-    setOrders(null);
-    apiGet<OrderListItem[]>("/admin/orders", { status }).then(setOrders);
-  }, [status, allowed]);
+  const { data: orders } = useApiQuery<OrderListItem[]>(["orders", status], "/admin/orders", { status }, { enabled: allowed });
 
   if (!allowed) return <div className="text-muted-foreground">You don&rsquo;t have permission to view bookings.</div>;
 
@@ -50,7 +43,7 @@ export function OrdersPage() {
         ))}
       </div>
 
-      {orders === null ? (
+      {!orders ? (
         <div className="text-muted-foreground">Loading…</div>
       ) : (
         <ul className="space-y-2">

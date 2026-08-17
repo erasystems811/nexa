@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { ActionButton } from "../components/action-button";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
@@ -65,19 +66,25 @@ export function SubscriptionsPage() {
 
   const [params] = useSearchParams();
   const status = params.get("status") ?? undefined;
+  const queryClient = useQueryClient();
 
-  const [subs, setSubs] = useState<Subscription[] | null>(null);
-  const [overview, setOverview] = useState<SubscriptionOverview | null>(null);
+  const subsKey = ["subscriptions", status] as const;
+  const overviewKey = ["subscriptions-overview"] as const;
 
-  const reload = useCallback(() => {
-    apiGet<Subscription[]>("/admin/subscriptions", status ? { status } : undefined).then(setSubs);
-    apiGet<SubscriptionOverview>("/admin/subscriptions/overview").then(setOverview);
-  }, [status]);
+  const { data: subs } = useApiQuery<Subscription[]>(
+    subsKey,
+    "/admin/subscriptions",
+    status ? { status } : undefined,
+    { enabled: canView },
+  );
+  const { data: overview } = useApiQuery<SubscriptionOverview>(overviewKey, "/admin/subscriptions/overview", undefined, {
+    enabled: canView,
+  });
 
-  useEffect(() => {
-    if (!canView) return;
-    reload();
-  }, [canView, reload]);
+  const reload = () => {
+    queryClient.invalidateQueries({ queryKey: subsKey });
+    queryClient.invalidateQueries({ queryKey: overviewKey });
+  };
 
   if (!canView) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view this page.</p>;

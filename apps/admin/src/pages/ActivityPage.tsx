@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 
@@ -55,11 +54,7 @@ const ACTION_LABELS: Record<string, string> = {
 
 export function ActivityPage() {
   const { staff } = useAuth();
-  const [feed, setFeed] = useState<ActivityEntry[] | null>(null);
-
-  useEffect(() => {
-    apiGet<ActivityEntry[]>("/admin/activity").then(setFeed);
-  }, []);
+  const { data: feed } = useApiQuery<ActivityEntry[]>(["activity"], "/admin/activity");
 
   if (!can(staff, P.staffManage)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view activity.</p>;

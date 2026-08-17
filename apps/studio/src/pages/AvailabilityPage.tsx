@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import type { Listing } from "@nexa/db-types/src/types";
 import { Button } from "@nexa/design-system/src/components/ui/button";
-import { apiGet, ApiError } from "../lib/api";
+import { ApiError } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { AvailabilityManager } from "../components/availability-manager";
 
 interface Block {
@@ -22,31 +23,30 @@ interface Booked {
 /** Availability calendar. Available / Booked / Unavailable. */
 export function AvailabilityPage() {
   const { id } = useParams<{ id: string }>();
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [blocks, setBlocks] = useState<Block[]>([]);
-  const [booked, setBooked] = useState<Booked[]>([]);
-  const [notFound, setNotFound] = useState(false);
+  const queryClient = useQueryClient();
+  const availabilityKey = ["provider-listing-availability", id] as const;
 
-  const refetchAvailability = useCallback(() => {
-    if (!id) return;
-    apiGet<{ blocks: Block[]; booked: Booked[] }>(`/provider/listings/${id}/availability`).then((d) => {
-      setBlocks(d.blocks);
-      setBooked(d.booked);
-    });
-  }, [id]);
+  const { data: listing, error: listingError } = useApiQuery<Listing>(
+    ["provider-listing", id],
+    `/provider/listings/${id}`,
+    undefined,
+    { enabled: !!id },
+  );
+  const { data: availability } = useApiQuery<{ blocks: Block[]; booked: Booked[] }>(
+    availabilityKey,
+    `/provider/listings/${id}/availability`,
+    undefined,
+    { enabled: !!id },
+  );
 
-  useEffect(() => {
-    if (!id) return;
-    apiGet<Listing>(`/provider/listings/${id}`)
-      .then(setListing)
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 404) setNotFound(true);
-      });
-    refetchAvailability();
-  }, [id, refetchAvailability]);
+  const refetchAvailability = () => queryClient.invalidateQueries({ queryKey: availabilityKey });
 
+  const notFound = listingError instanceof ApiError && listingError.status === 404;
   if (notFound) return <p className="text-muted-foreground">Listing not found.</p>;
   if (!id || !listing) return <div className="text-muted-foreground">Loading…</div>;
+
+  const blocks = availability?.blocks ?? [];
+  const booked = availability?.booked ?? [];
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">

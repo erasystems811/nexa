@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BookingStatus, Database } from "@nexa/db-types/src/types";
 import { createAdminClient } from "../../supabase.js";
 import { holdFunds, refund, settleVendorPayout, vendorCanBePaid } from "../payments/index.js";
-import { notifyVendorOfNewBooking } from "../messaging/notify-stub.js";
+import { notifyVendorOfNewBooking } from "../messaging/whatsapp.js";
 import { env } from "../../env.js";
 import { assertTransition } from "./state.js";
 

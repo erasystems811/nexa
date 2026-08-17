@@ -1,11 +1,12 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Wallet as WalletIcon, HourglassIcon, CheckCircle2 } from "lucide-react";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent, CardHeader, CardTitle } from "@nexa/design-system/src/components/ui/card";
 import { Button } from "@nexa/design-system/src/components/ui/button";
 import { Input } from "@nexa/design-system/src/components/ui/input";
 import { Label } from "@nexa/design-system/src/components/ui/label";
-import { apiGet, apiSend, ApiError } from "../lib/api";
+import { apiSend, ApiError } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 /** The only three things that can happen to money, since 0030. */
 const KIND_LABEL: Record<string, string> = {
@@ -54,15 +55,9 @@ interface WalletData {
 
 /** Wallet & payouts. */
 export function WalletPage() {
-  const [data, setData] = useState<WalletData | null>(null);
-  const [banks, setBanks] = useState<Bank[] | null>(null);
-
-  useEffect(() => {
-    apiGet<WalletData>("/provider/wallet").then(setData);
-    apiGet<Bank[]>("/provider/banks")
-      .then(setBanks)
-      .catch(() => setBanks([]));
-  }, []);
+  const { data } = useApiQuery<WalletData>(["provider-wallet"], "/provider/wallet");
+  const { data: banksData, error: banksError } = useApiQuery<Bank[]>(["provider-banks"], "/provider/banks");
+  const banks = banksError ? [] : (banksData ?? null);
 
   if (!data || banks === null) return <div className="text-muted-foreground">Loading…</div>;
 

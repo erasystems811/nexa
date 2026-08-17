@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
 import { Button } from "@nexa/design-system/src/components/ui/button";
@@ -7,7 +8,8 @@ import { Input } from "@nexa/design-system/src/components/ui/input";
 import { Textarea } from "@nexa/design-system/src/components/ui/textarea";
 import type { BookingStatus } from "@nexa/db-types/src/types";
 import { StatusPill } from "../components/status-pill";
-import { apiGet, apiSend, ApiError } from "../lib/api";
+import { apiSend, ApiError } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 const STATUSES = ["paid_held", "accepted", "in_progress", "completed", "cancelled", "disputed"] as const;
 
@@ -24,19 +26,15 @@ interface Order {
 
 /** Bookings. Providers own ordinary fulfillment. */
 export function OrdersPage() {
-  const [orders, setOrders] = useState<Order[] | null>(null);
   const [searchParams] = useSearchParams();
   const status = searchParams.get("status") ?? undefined;
+  const queryClient = useQueryClient();
+  const ordersKey = ["provider-orders"] as const;
+  const { data: orders } = useApiQuery<Order[]>(ordersKey, "/provider/orders");
 
-  const refetch = () => {
-    apiGet<Order[]>("/provider/orders").then(setOrders);
-  };
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ordersKey });
 
-  useEffect(() => {
-    refetch();
-  }, []);
-
-  if (orders === null) return <div className="text-muted-foreground">Loading…</div>;
+  if (orders === undefined) return <div className="text-muted-foreground">Loading…</div>;
 
   const filtered = status ? orders.filter((o) => o.status === status) : orders;
 

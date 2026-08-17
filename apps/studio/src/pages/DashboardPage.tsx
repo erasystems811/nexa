@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Activity, Calendar, Clock, DollarSign, Star } from "lucide-react";
 import { formatKobo } from "@nexa/money";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@nexa/design-system/sr
 import { Button } from "@nexa/design-system/src/components/ui/button";
 import { StatusPill } from "../components/status-pill";
 import { useAuth } from "../auth/AuthContext";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 interface DashboardStats {
   awaitingResponse: number;
@@ -28,17 +27,12 @@ interface Order {
 
 export function DashboardPage() {
   const { provider } = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
-
-  useEffect(() => {
-    apiGet<DashboardStats>("/provider/dashboard").then(setStats);
-    apiGet<Order[]>("/provider/orders").then(setOrders);
-  }, []);
+  const { data: stats } = useApiQuery<DashboardStats>(["dashboard-stats"], "/provider/dashboard");
+  const { data: orders } = useApiQuery<Order[]>(["dashboard-orders"], "/provider/orders");
 
   if (!provider || !stats) return <div className="text-muted-foreground">Loading…</div>;
 
-  const recentOrders = orders.slice(0, 4);
+  const recentOrders = (orders ?? []).slice(0, 4);
 
   return (
     <div className="space-y-8">

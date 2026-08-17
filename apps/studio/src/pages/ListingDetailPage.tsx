@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock } from "lucide-react";
 import type { Category, Listing } from "@nexa/db-types/src/types";
 import { Button } from "@nexa/design-system/src/components/ui/button";
 import { Badge } from "@nexa/design-system/src/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@nexa/design-system/src/components/ui/card";
-import { apiGet, ApiError } from "../lib/api";
+import { ApiError } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { isFlagEnabled } from "../lib/flags";
 import { ListingForm } from "../components/listing-form";
 import { ListingControls } from "../components/listing-controls";
@@ -30,31 +32,34 @@ interface Media {
 
 export function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [media, setMedia] = useState<Media[]>([]);
+  const queryClient = useQueryClient();
   const [negotiableEnabled, setNegotiableEnabled] = useState(true);
-  const [notFound, setNotFound] = useState(false);
 
-  const refetch = useCallback(() => {
-    if (!id) return;
-    apiGet<Listing>(`/provider/listings/${id}`)
-      .then(setListing)
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 404) setNotFound(true);
-      });
-    apiGet<Media[]>(`/provider/listings/${id}/media`).then(setMedia);
-  }, [id]);
+  const { data: categories } = useApiQuery<Category[]>(["marketplace-categories"], "/marketplace/categories");
+
+  const listingKey = ["provider-listing", id] as const;
+  const mediaKey = ["provider-listing-media", id] as const;
+
+  const { data: listing, error: listingError } = useApiQuery<Listing>(
+    listingKey,
+    `/provider/listings/${id}`,
+    undefined,
+    { enabled: !!id },
+  );
+  const { data: media } = useApiQuery<Media[]>(mediaKey, `/provider/listings/${id}/media`, undefined, {
+    enabled: !!id,
+  });
 
   useEffect(() => {
-    apiGet<Category[]>("/marketplace/categories").then(setCategories);
     isFlagEnabled("negotiable_pricing", "provider").then(setNegotiableEnabled);
   }, []);
 
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: listingKey });
+    queryClient.invalidateQueries({ queryKey: mediaKey });
+  };
 
+  const notFound = listingError instanceof ApiError && listingError.status === 404;
   if (notFound) return <p className="text-muted-foreground">Listing not found.</p>;
   if (!id || !listing) return <div className="text-muted-foreground">Loading…</div>;
 
@@ -91,7 +96,12 @@ export function ListingDetailPage() {
           <CardTitle>Media</CardTitle>
         </CardHeader>
         <CardContent>
-          <MediaManager listingId={listing.id} media={media} live={listing.status === "approved"} onChanged={refetch} />
+          <MediaManager
+            listingId={listing.id}
+            media={media ?? []}
+            live={listing.status === "approved"}
+            onChanged={refetch}
+          />
         </CardContent>
       </Card>
 
@@ -101,7 +111,7 @@ export function ListingDetailPage() {
         </CardHeader>
         <CardContent>
           <ListingForm
-            categories={categories}
+            categories={categories ?? []}
             listing={listing}
             submitLabel="Save changes"
             confirmOnSave={

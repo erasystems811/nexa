@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import {
   PERMISSIONS as P,
@@ -36,17 +36,13 @@ interface StaffDetail {
 export function StaffDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { staff } = useAuth();
-  const [m, setM] = useState<StaffDetail | null>(null);
-  const [notFound, setNotFound] = useState(false);
-
-  const reload = useCallback(() => {
-    if (!id) return;
-    apiGet<StaffDetail>(`/admin/staff/${id}`)
-      .then(setM)
-      .catch(() => setNotFound(true));
-  }, [id]);
-
-  useEffect(reload, [reload]);
+  const queryClient = useQueryClient();
+  const queryKey = ["staff-member", id] as const;
+  const { data: m, error } = useApiQuery<StaffDetail>(queryKey, `/admin/staff/${id}`, undefined, {
+    enabled: Boolean(id),
+  });
+  const notFound = Boolean(error);
+  const reload = () => queryClient.invalidateQueries({ queryKey });
 
   if (!can(staff, P.staffManage)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view staff.</p>;

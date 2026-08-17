@@ -1,6 +1,8 @@
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 import { ActionButton } from "../components/action-button";
@@ -60,19 +62,16 @@ function VendorTierSelect({ categoryId, value, onChanged }: { categoryId: string
  */
 export function CategoriesPage() {
   const { staff } = useAuth();
-  const [categories, setCategories] = useState<AdminCategory[] | null>(null);
-
-  function reload() {
-    apiGet<AdminCategory[]>("/admin/categories").then(setCategories);
-  }
-
-  useEffect(reload, []);
+  const queryClient = useQueryClient();
+  const queryKey = ["categories"] as const;
+  const { data: categories } = useApiQuery<AdminCategory[]>(queryKey, "/admin/categories");
+  const reload = () => queryClient.invalidateQueries({ queryKey });
 
   if (!can(staff, P.settingsManage)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to manage categories.</p>;
   }
 
-  if (categories === null) {
+  if (!categories) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 

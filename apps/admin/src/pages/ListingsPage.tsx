@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatKobo } from "@nexa/money";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
 import { Button } from "@nexa/design-system/src/components/ui/button";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 import { ActionButton } from "../components/action-button";
@@ -50,19 +51,23 @@ export function ListingsPage() {
   const { staff } = useAuth();
   const [searchParams] = useSearchParams();
   const status = searchParams.get("status") ?? "";
+  const queryClient = useQueryClient();
 
-  const [listings, setListings] = useState<ListingRow[] | null>(null);
-  const [waiting, setWaiting] = useState<ListingRow[]>([]);
+  const listingsKey = ["listings", status] as const;
+  const { data: listings } = useApiQuery<ListingRow[]>(
+    listingsKey,
+    !status ? "/admin/listings/queue" : "/admin/listings",
+    !status || status === "all" ? undefined : { status },
+  );
+
+  const waitingKey = ["listings-queue"] as const;
+  const { data: waitingData } = useApiQuery<ListingRow[]>(waitingKey, "/admin/listings/queue");
+  const waiting = waitingData ?? [];
 
   function reload() {
-    const main = !status
-      ? apiGet<ListingRow[]>("/admin/listings/queue")
-      : apiGet<ListingRow[]>("/admin/listings", status === "all" ? undefined : { status });
-    main.then(setListings);
-    apiGet<ListingRow[]>("/admin/listings/queue").then(setWaiting);
+    queryClient.invalidateQueries({ queryKey: listingsKey });
+    queryClient.invalidateQueries({ queryKey: waitingKey });
   }
-
-  useEffect(reload, [status]);
 
   if (!can(staff, P.listingsView)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view listings.</p>;
@@ -85,7 +90,7 @@ export function ListingsPage() {
         ))}
       </div>
 
-      {listings === null ? (
+      {!listings ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : listings.length === 0 ? (
         <Card>

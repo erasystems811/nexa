@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FeatureFlag, PlatformSetting } from "@nexa/db-types";
 import {
   Card,
@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 import { FlagToggle } from "../components/flag-toggle";
@@ -28,23 +28,30 @@ interface NotificationNumber {
  */
 export function SettingsPage() {
   const { staff } = useAuth();
-  const [settings, setSettings] = useState<PlatformSetting[] | null>(null);
-  const [flags, setFlags] = useState<FeatureFlag[] | null>(null);
-  const [notificationNumbers, setNotificationNumbers] = useState<NotificationNumber[] | null>(null);
+  const queryClient = useQueryClient();
+
+  const settingsKey = ["settings-values"] as const;
+  const flagsKey = ["settings-flags"] as const;
+  const notificationNumbersKey = ["notification-numbers"] as const;
+
+  const { data: settings } = useApiQuery<PlatformSetting[]>(settingsKey, "/settings/values");
+  const { data: flags } = useApiQuery<FeatureFlag[]>(flagsKey, "/settings/flags");
+  const { data: notificationNumbers } = useApiQuery<NotificationNumber[]>(
+    notificationNumbersKey,
+    "/admin/support/notification-numbers",
+  );
 
   function reload() {
-    apiGet<PlatformSetting[]>("/settings/values").then(setSettings);
-    apiGet<FeatureFlag[]>("/settings/flags").then(setFlags);
-    apiGet<NotificationNumber[]>("/admin/support/notification-numbers").then(setNotificationNumbers);
+    queryClient.invalidateQueries({ queryKey: settingsKey });
+    queryClient.invalidateQueries({ queryKey: flagsKey });
+    queryClient.invalidateQueries({ queryKey: notificationNumbersKey });
   }
-
-  useEffect(reload, []);
 
   if (!can(staff, P.settingsManage)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to manage settings.</p>;
   }
 
-  if (settings === null || flags === null || notificationNumbers === null) {
+  if (!settings || !flags || !notificationNumbers) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 

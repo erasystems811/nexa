@@ -1,8 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
 import { Button } from "@nexa/design-system/src/components/ui/button";
 import { Input } from "@nexa/design-system/src/components/ui/input";
-import { apiGet, apiSend, ApiError } from "../lib/api";
+import { apiSend, ApiError } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 
 interface Review {
   id: string;
@@ -18,16 +20,14 @@ interface Review {
 
 /** Reviews. Read and reply. */
 export function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[] | null>(null);
-
-  useEffect(() => {
-    apiGet<Review[]>("/provider/reviews").then(setReviews);
-  }, []);
+  const queryClient = useQueryClient();
+  const reviewsKey = ["provider-reviews"] as const;
+  const { data: reviews } = useApiQuery<Review[]>(reviewsKey, "/provider/reviews");
 
   if (!reviews) return <div className="text-muted-foreground">Loading…</div>;
 
   function handleReplied(id: string, reply: string) {
-    setReviews((prev) =>
+    queryClient.setQueryData<Review[]>(reviewsKey, (prev) =>
       prev
         ? prev.map((r) => (r.id === id ? { ...r, provider_reply: reply, provider_replied_at: new Date().toISOString() } : r))
         : prev,

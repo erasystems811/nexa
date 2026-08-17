@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
 import { Navigate, Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { can, PERMISSIONS as P } from "../lib/permissions";
 import { ActionButton } from "../components/action-button";
@@ -65,27 +66,25 @@ export function DisputesPage() {
 
   const [searchParams] = useSearchParams();
   const status = searchParams.get("status") ?? undefined;
+  const queryClient = useQueryClient();
 
-  const [requests, setRequests] = useState<SupportRequest[]>([]);
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const requestsKey = ["support-requests"] as const;
+  const { data: requestsData } = useApiQuery<SupportRequest[]>(requestsKey, "/admin/support", undefined, {
+    enabled: canSupport,
+  });
+  const requests = requestsData ?? [];
 
-  const loadRequests = useCallback(() => {
-    if (!canSupport) return;
-    apiGet<SupportRequest[]>("/admin/support").then(setRequests);
-  }, [canSupport]);
+  const disputesKey = ["disputes", status] as const;
+  const { data: disputesData } = useApiQuery<Dispute[]>(
+    disputesKey,
+    "/admin/disputes",
+    status ? { status } : undefined,
+    { enabled: canDisputes },
+  );
+  const disputes = disputesData ?? [];
 
-  const loadDisputes = useCallback(() => {
-    if (!canDisputes) return;
-    apiGet<Dispute[]>("/admin/disputes", status ? { status } : undefined).then(setDisputes);
-  }, [canDisputes, status]);
-
-  useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
-
-  useEffect(() => {
-    loadDisputes();
-  }, [loadDisputes]);
+  const loadRequests = () => queryClient.invalidateQueries({ queryKey: requestsKey });
+  const loadDisputes = () => queryClient.invalidateQueries({ queryKey: disputesKey });
 
   if (!staff || (!canSupport && !canDisputes)) return <Navigate to="/" replace />;
 

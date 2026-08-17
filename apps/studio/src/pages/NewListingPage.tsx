@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Category } from "@nexa/db-types/src/types";
 import { Button } from "@nexa/design-system/src/components/ui/button";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { isFlagEnabled } from "../lib/flags";
 import { ListingForm } from "../components/listing-form";
 
@@ -16,19 +16,20 @@ interface IdentityStatus {
 
 export function NewListingPage() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[] | null>(null);
-  const [verified, setVerified] = useState<boolean | null>(null);
   const [negotiableEnabled, setNegotiableEnabled] = useState(true);
 
+  const { data: categories } = useApiQuery<Category[]>(["marketplace-categories"], "/marketplace/categories");
+  const { data: identity, error: identityError } = useApiQuery<IdentityStatus>(
+    ["provider-identity"],
+    "/provider/identity",
+  );
+  const verified = identityError ? false : identity?.verified ?? null;
+
   useEffect(() => {
-    apiGet<Category[]>("/marketplace/categories").then(setCategories);
-    apiGet<IdentityStatus>("/provider/identity")
-      .then((i) => setVerified(i.verified))
-      .catch(() => setVerified(false));
     isFlagEnabled("negotiable_pricing", "provider").then(setNegotiableEnabled);
   }, []);
 
-  if (categories === null || verified === null) {
+  if (!categories || verified === null) {
     return <div className="text-muted-foreground">Loading…</div>;
   }
 

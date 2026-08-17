@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet, apiSend } from "../lib/api";
+import { apiSend } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { can, PERMISSIONS as P } from "../lib/permissions";
 import { ActionButton } from "../components/action-button";
@@ -34,18 +35,18 @@ export function ModerationPage() {
   const canResolve = can(staff, P.moderationResolve);
   const canStrike = can(staff, P.moderationStrike);
 
-  const [pending, setPending] = useState<Flag[]>([]);
-  const [confirmed, setConfirmed] = useState<Flag[]>([]);
+  const queryClient = useQueryClient();
+  const pendingKey = ["moderation", "pending"] as const;
+  const confirmedKey = ["moderation", "confirmed"] as const;
+  const { data: pendingData } = useApiQuery<Flag[]>(pendingKey, "/admin/moderation", { status: "pending" }, { enabled: canView });
+  const { data: confirmedData } = useApiQuery<Flag[]>(confirmedKey, "/admin/moderation", { status: "confirmed" }, { enabled: canView });
+  const pending = pendingData ?? [];
+  const confirmed = confirmedData ?? [];
 
-  const load = useCallback(() => {
-    if (!canView) return;
-    apiGet<Flag[]>("/admin/moderation", { status: "pending" }).then(setPending);
-    apiGet<Flag[]>("/admin/moderation", { status: "confirmed" }).then(setConfirmed);
-  }, [canView]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const load = () => {
+    queryClient.invalidateQueries({ queryKey: pendingKey });
+    queryClient.invalidateQueries({ queryKey: confirmedKey });
+  };
 
   if (!staff || !canView) return <Navigate to="/" replace />;
 

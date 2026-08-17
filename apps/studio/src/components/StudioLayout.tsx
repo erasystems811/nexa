@@ -26,7 +26,11 @@ export function StudioLayout() {
     if (!provider) return;
     apiGet<Subscription | null>("/provider/subscription").then(setSubscription).catch(() => setSubscription(null));
     apiGet<IdentityStatus>("/provider/identity").then(setIdentity).catch(() => setIdentity(null));
-  }, [provider]);
+    // Keyed on provider.id, not the provider object itself — loadProvider()
+    // returns a new object reference on every call, which would otherwise
+    // re-fire this effect (and its two requests) any time auth re-resolves,
+    // even when the actual provider hasn't changed.
+  }, [provider?.id]);
 
   // providerLoading covers the gap right after sign-in where `session` is
   // already set but the /provider/me fetch hasn't resolved yet — without

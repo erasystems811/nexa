@@ -34,6 +34,16 @@ const schema = z.object({
   NEXA_SUPER_ADMIN_USERNAME: z.string().optional(),
   NEXA_SUPER_ADMIN_EMAIL: z.string().email().optional(),
   NEXA_SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
+
+  // Outbound WhatsApp notifications only (vendor "new booking" ping, customer
+  // "offer accept" button) — the inbound bot/webhook itself is still
+  // apps/customer's, unaffected by these. Unset means whatsappIsConfigured()
+  // is false and every notify call here is a silent no-op, same as it was
+  // when this lived in apps/customer.
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_TEMPLATE_NAME: z.string().default("nexa_new_message"),
+  WHATSAPP_TEMPLATE_LANG: z.string().default("en"),
 });
 
 export const env = schema.parse(process.env);

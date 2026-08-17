@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@nexa/design-system/src/components/ui/card";
-import { apiGet } from "../lib/api";
+import { useApiQuery } from "../lib/query";
 import { useAuth } from "../auth/AuthContext";
 import { PERMISSIONS as P, can } from "../lib/permissions";
 
@@ -16,17 +15,13 @@ interface CustomerListItem {
 /** Customer management. */
 export function CustomersPage() {
   const { staff } = useAuth();
-  const [customers, setCustomers] = useState<CustomerListItem[] | null>(null);
-
-  useEffect(() => {
-    apiGet<CustomerListItem[]>("/admin/customers").then(setCustomers);
-  }, []);
+  const { data: customers } = useApiQuery<CustomerListItem[]>(["customers"], "/admin/customers");
 
   if (!can(staff, P.customersView)) {
     return <p className="text-sm text-muted-foreground">You do not have permission to view customers.</p>;
   }
 
-  if (customers === null) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (!customers) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   return (
     <>
