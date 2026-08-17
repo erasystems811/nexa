@@ -22,11 +22,11 @@ export function VendorCard({ vendor }: { vendor: VendorResult }) {
           fill
           fit="contain"
           sizes="(max-width: 640px) 50vw, 300px"
-          className="aspect-[16/10]"
+          className="aspect-square"
           imageClassName="transition duration-300 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="flex aspect-[16/10] items-center justify-center bg-primary/10 text-3xl font-semibold text-primary">
+        <div className="flex aspect-square items-center justify-center bg-primary/10 text-3xl font-semibold text-primary">
           {vendor.businessName.charAt(0).toUpperCase()}
         </div>
       )}

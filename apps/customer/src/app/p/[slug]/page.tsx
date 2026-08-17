@@ -26,7 +26,12 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   const logo = (provider as unknown as { logo_url: string | null }).logo_url;
   // The big hero image. Vendors upload a profile photo (logo_url), not a separate
   // banner, so fall back to it — otherwise the hero is blank for every vendor.
-  const cover = (provider as unknown as { cover_url: string | null }).cover_url ?? logo;
+  const realCover = (provider as unknown as { cover_url: string | null }).cover_url;
+  const cover = realCover ?? logo;
+  // A real cover photo is shot for this wide banner and can safely be cropped
+  // to fill it. The logo standing in for one wasn't - cropping it here is the
+  // exact "top image is cut" bug, so it gets shown whole instead.
+  const coverFit = realCover ? "cover" : "contain";
   const cityName = (provider.cities as unknown as { name: string } | null)?.name;
   const providerPath = `/p/${provider.slug}`;
   // Self-serve vendors (e.g. food/ice-cream sellers) are never booked or paid
@@ -44,6 +49,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         src={cover}
         alt={provider.business_name}
         fill
+        fit={coverFit}
         priority
         sizes="(max-width: 640px) 100vw, 1024px"
         className="aspect-[16/9] rounded-2xl sm:aspect-[21/9]"
