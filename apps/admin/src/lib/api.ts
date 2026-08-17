@@ -53,9 +53,16 @@ export async function apiSend<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  const headers = await authHeader();
+  // Fastify's JSON body parser rejects a request that carries a
+  // Content-Type: application/json header but zero bytes of body -
+  // "Body cannot be empty when content-type is set to 'application/json'".
+  // Every bodyless action (approve, suspend, etc.) was hitting exactly this.
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+
   const res = await fetch(new URL(path, BASE_URL), {
     method,
-    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   return handle<T>(res);
