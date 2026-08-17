@@ -30,15 +30,15 @@ export function MediaManager({
     e.preventDefault();
     const form = e.currentTarget;
     const input = form.elements.namedItem("file") as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!file) {
-      setError("Choose a file");
+    const files = input?.files ? Array.from(input.files) : [];
+    if (files.length === 0) {
+      setError("Choose at least one file");
       return;
     }
     if (
       live &&
       !window.confirm(
-        "This listing is live. Adding a photo sends it back to Nexa for approval, and it stays hidden from customers until Nexa approves it again. Upload anyway?",
+        `This listing is live. Adding ${files.length > 1 ? "these photos" : "a photo"} sends it back to Nexa for approval, and it stays hidden from customers until Nexa approves it again. Upload anyway?`,
       )
     ) {
       return;
@@ -47,7 +47,13 @@ export function MediaManager({
     setPending(true);
     setError(null);
     try {
-      await apiUpload(`/provider/listings/${listingId}/media`, file);
+      // One at a time, not Promise.all: the server processes each upload
+      // (storage write + a moderation row) independently, and firing them
+      // all at once risks the same rate limits a human clicking upload
+      // ten times fast would hit.
+      for (const file of files) {
+        await apiUpload(`/provider/listings/${listingId}/media`, file);
+      }
       form.reset();
       onChanged();
     } catch (err) {

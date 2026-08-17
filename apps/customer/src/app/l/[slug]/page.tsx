@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
-import { getListingBySlug } from "@/modules/marketplace";
+// See the same note in app/p/[slug]/page.tsx - api-client is always live,
+// the local @/modules/marketplace module can lag an Admin change by up to 60s.
+import { getListingBySlug } from "@nexa/api-client";
 import { getSession } from "@/modules/auth";
 import { formatKobo } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChatOnWhatsApp } from "@/components/chat-cta";
-import { Photo } from "@/components/photo";
+import { ListingGallery } from "@/components/listing-gallery";
 import { ShieldCheck } from "lucide-react";
 import { BackButton } from "@/components/back-button";
 
@@ -20,16 +22,19 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const session = await getSession();
   const category = listing.categories;
   const provider = listing.providers;
+  // Both are non-nullable in practice (FK constraints), the API type is just
+  // conservative about the join — this satisfies the type and doubles as a
+  // sane fallback if the data is ever actually inconsistent.
+  if (!category || !provider) notFound();
   const isFixed = listing.price_type === "fixed";
   // Self-serve vendors (e.g. food/ice-cream sellers invited to sell directly
   // to guests) are never booked or paid through Nexa — see VENDOR_TIERS.
   const isSelfServe = category.vendor_tier === "self_serve";
 
-  // The listing's own uploaded photo first; the provider's banner only as a
-  // fallback for a listing with no image of its own.
-  const cover =
-    (listing as unknown as { coverUrl: string | null }).coverUrl ??
-    (provider as unknown as { cover_url: string | null }).cover_url;
+  // Every photo the vendor uploaded for this listing, not just the first -
+  // falling back to the provider's own banner only when they haven't
+  // uploaded any listing photo at all.
+  const photos = listing.photos.length > 0 ? listing.photos : provider.cover_url ? [provider.cover_url] : [];
   const listingPath = `/l/${listing.slug}`;
   const bookPath = `/book/${listing.id}` as Route;
   const loginToBookPath = `/login?next=${encodeURIComponent(bookPath)}` as Route;
@@ -37,14 +42,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   return (
     <div className="max-w-2xl pb-8">
       <BackButton fallbackHref="/search" label="Back to services" />
-      <Photo
-        src={cover}
-        alt={listing.title}
-        fill
-        priority
-        sizes="(max-width: 640px) 100vw, 672px"
-        className="aspect-[16/9] rounded-2xl"
-      />
+      <ListingGallery photos={photos} alt={listing.title} />
 
       <div className="pt-5">
         <h1 className="font-serif text-3xl font-bold text-primary">{listing.title}</h1>

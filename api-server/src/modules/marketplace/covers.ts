@@ -50,3 +50,24 @@ export async function listingCovers(listingIds: string[]): Promise<Map<string, s
   }
   return out;
 }
+
+/** Every approved photo on one listing, signed, in the vendor's chosen order — not just the first. */
+export async function listingPhotos(listingId: string): Promise<string[]> {
+  const db = createAdminClient();
+
+  const { data: media } = await db
+    .from("listing_media")
+    .select("storage_path, sort_order")
+    .eq("listing_id", listingId)
+    .eq("status", "approved")
+    .eq("kind", "image")
+    .order("sort_order");
+
+  const paths = (media ?? []).map((m) => m.storage_path);
+  if (paths.length === 0) return [];
+
+  const { data: signed } = await db.storage.from(BUCKET).createSignedUrls(paths, TTL_SECONDS);
+  const urlByPath = new Map((signed ?? []).filter((s) => s.signedUrl).map((s) => [s.path, s.signedUrl] as const));
+
+  return paths.map((p) => urlByPath.get(p)).filter((url): url is string => Boolean(url));
+}

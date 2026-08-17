@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@nexa/db-types/src/types";
-import { listingCovers } from "./covers.js";
+import { listingCovers, listingPhotos } from "./covers.js";
 
 export { categoryImages, categoryImageUrl, BUCKET as CATEGORY_BUCKET } from "./category-images.js";
 
@@ -127,6 +127,6 @@ export async function getListingBySlug(supabase: SupabaseClient<Database>, slug:
 
   if (!data) return null;
 
-  const covers = await listingCovers([data.id]);
-  return { ...data, coverUrl: covers.get(data.id) ?? null };
+  const photos = await listingPhotos(data.id);
+  return { ...data, coverUrl: photos[0] ?? null, photos };
 }

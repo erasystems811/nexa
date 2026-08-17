@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProviderBySlug } from "@/modules/marketplace";
+// Deliberately @nexa/api-client, not the local @/modules/marketplace: that
+// module wraps every read in unstable_cache with no invalidation hook, so an
+// Admin action (e.g. toggling "featured") could take up to 60s to show here,
+// or never if the cache doesn't revalidate on this host. api-client's fetch
+// is cache: "no-store" - always the live value.
+import { getProviderBySlug } from "@nexa/api-client";
 import { getSession } from "@/modules/auth";
 import { formatKobo } from "@/lib/money";
 import { ChatOnWhatsApp } from "@/components/chat-cta";
